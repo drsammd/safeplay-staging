@@ -1,0 +1,59 @@
+
+# SafePlay™ Staging Environment - No Public Access
+# This is a private beta environment for authorized stakeholders only
+
+User-agent: *
+Disallow: /
+
+# Explicitly block all major search engines
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: facebookexternalhit
+Disallow: /
+
+User-agent: Twitterbot
+Disallow: /
+
+User-agent: LinkedInBot
+Disallow: /
+
+User-agent: WhatsApp
+Disallow: /
+
+User-agent: Telegram
+Disallow: /
+
+User-agent: Discord
+Disallow: /
+
+# Block common crawlers and scrapers
+User-agent: crawler
+Disallow: /
+
+User-agent: spider
+Disallow: /
+
+User-agent: bot
+Disallow: /
+
+User-agent: scraper
+Disallow: /
+
+# No sitemap provided for staging environment
+# Contact: Authorized stakeholders only - see project documentation for access
