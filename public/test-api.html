@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SafePlay API Test</title>
+</head>
+<body>
+    <h1>SafePlay API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        async function testRecommendationsAPI() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing API...</p>';
+            
+            try {
+                console.log('🧪 Testing recommendations API...');
+                
+                const response = await fetch('/api/cameras/recommendations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        venueId: 'test-venue-id',
+                        floorPlanId: 'test-floor-plan-id',
+                        regenerate: true
+                    })
+                });
+                
+                console.log('📡 Response status:', response.status);
+                
+                const result = await response.text();
+                console.log('📡 Response body:', result);
+                
+                results.innerHTML = `
+                    <h2>API Test Results</h2>
+                    <p><strong>Status:</strong> ${response.status}</p>
+                    <p><strong>Response:</strong> ${result}</p>
+                    <p>Check browser console for detailed logs</p>
+                `;
+                
+            } catch (error) {
+                console.error('❌ Error testing API:', error);
+                results.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Auto-run test
+        testRecommendationsAPI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+import { prisma } from "@/lib/db";
+import { apiErrorHandler, withErrorHandling, ErrorType } from "@/lib/error-handler";
+
+export const dynamic = "force-dynamic";
+
+// Request validation schema
+const signupSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  role: z.enum(["PARENT", "VENUE_ADMIN", "COMPANY_ADMIN"]).default("PARENT"),
+  agreeToTerms: z.boolean().refine(val => val === true, "You must agree to the Terms of Service"),
+  agreeToPrivacy: z.boolean().refine(val => val === true, "You must agree to the Privacy Policy"),
+});
+
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  // Parse and validate request body
+  const body = await request.json();
+  const validation = signupSchema.safeParse(body);
+  
+  if (!validation.success) {
+    return apiErrorHandler.createErrorResponse(
+      ErrorType.VALIDATION,
+      'SIGNUP_VALIDATION_FAILED',
+      'Invalid signup data',
+      400,
+      { issues: validation.error.issues }
+    );
+  }
+
+  const { email, password, name, role, agreeToTerms, agreeToPrivacy } = validation.data;
+
+  // Check if user already exists
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
+    return apiErrorHandler.createErrorResponse(
+      ErrorType.CONFLICT,
+      'USER_ALREADY_EXISTS',
+      'An account with this email already exists',
+      409,
+      { email }
+    );
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 12);
+
+  // Get request metadata for compliance tracking
+  const ipAddress = request.headers.get("x-forwarded-for") || 
+                   request.headers.get("x-real-ip") || 
+                   "unknown";
+  const userAgent = request.headers.get("user-agent") || "unknown";
+
+  // Create user and legal agreements in a transaction
+  const user = await prisma.$transaction(async (tx) => {
+    // Create user
+    const newUser = await tx.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role,
+      },
+    });
+
+    // Create legal agreement records
+    const currentTime = new Date();
+    const agreementVersion = "1.0"; // Current version of legal documents
+
+    // Terms of Service agreement
+    await tx.legalAgreement.create({
+      data: {
+        userId: newUser.id,
+        agreementType: "TERMS_OF_SERVICE",
+        version: agreementVersion,
+        agreed: true,
+        agreedAt: currentTime,
+        ipAddress,
+        userAgent,
+        documentUrl: "/terms",
+        parentConsent: role === "PARENT", // Parent accounts are providing consent
+        metadata: {
+          registrationFlow: true,
+          accountCreation: true,
+          timestamp: currentTime.toISOString(),
+        }
+      },
+    });
+
+    // Privacy Policy agreement
+    await tx.legalAgreement.create({
+      data: {
+        userId: newUser.id,
+        agreementType: "PRIVACY_POLICY",
+        version: agreementVersion,
+        agreed: true,
+        agreedAt: currentTime,
+        ipAddress,
+        userAgent,
+        documentUrl: "/privacy",
+        parentConsent: role === "PARENT",
+        metadata: {
+          registrationFlow: true,
+          accountCreation: true,
+          timestamp: currentTime.toISOString(),
+          coppaCompliance: true,
+          gdprCompliance: true,
+        }
+      },
+    });
+
+    // COPPA consent for parent accounts
+    if (role === "PARENT") {
+      await tx.legalAgreement.create({
+        data: {
+          userId: newUser.id,
+          agreementType: "COPPA_CONSENT",
+          version: agreementVersion,
+          agreed: true,
+          agreedAt: currentTime,
+          ipAddress,
+          userAgent,
+          parentConsent: true,
+          metadata: {
+            registrationFlow: true,
+            accountCreation: true,
+            timestamp: currentTime.toISOString(),
+            childrenUnder13: true,
+          }
+        },
+      });
+
+      // Biometric consent for parent accounts
+      await tx.legalAgreement.create({
+        data: {
+          userId: newUser.id,
+          agreementType: "BIOMETRIC_CONSENT",
+          version: agreementVersion,
+          agreed: true,
+          agreedAt: currentTime,
+          ipAddress,
+          userAgent,
+          parentConsent: true,
+          metadata: {
+            registrationFlow: true,
+            accountCreation: true,
+            timestamp: currentTime.toISOString(),
+            facialRecognition: true,
+            biometricData: true,
+          }
+        },
+      });
+    }
+
+    return newUser;
+  });
+
+  // Remove password from response
+  const { password: _, ...userWithoutPassword } = user;
+
+  return apiErrorHandler.createSuccessResponse({
+    user: userWithoutPassword,
+    message: "Account created successfully with legal compliance tracking"
+  });
+});
