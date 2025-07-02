@@ -1,3 +1,4 @@
+"use client";
 
 import Link from 'next/link';
 import { Home, ArrowLeft, Search, HelpCircle } from 'lucide-react';
