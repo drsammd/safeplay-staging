@@ -1,8 +1,10 @@
+
 {
   "buildCommand": "npm run build",
-  "installCommand": "npm install",
+  "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
   "env": {
-    "ENABLE_EXPERIMENTAL_COREPACK": "0"
+    "ENABLE_EXPERIMENTAL_COREPACK": "0",
+    "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
   }
 }
