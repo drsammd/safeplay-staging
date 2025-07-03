@@ -26,6 +26,9 @@ const nextConfig = {
   
   // Optimize for Vercel deployment
   poweredByHeader: false,
+  
+  // Fix recharts SSR issues
+  transpilePackages: ['recharts'],
 };
 
 module.exports = nextConfig;
