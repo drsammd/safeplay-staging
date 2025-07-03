@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { rekognitionService, s3Service, validateAWSConfig } from "@/lib/aws";
+import { enhancedRekognitionService, s3Service, validateAWSConfig } from "@/lib/aws";
 
 export const dynamic = "force-dynamic";
 
@@ -79,12 +79,11 @@ export async function POST(request: NextRequest) {
     const imageBuffer = Buffer.from(await file.arrayBuffer());
 
     // Validate face in image
-    const faceValidation = await rekognitionService.validateFaceImage(imageBuffer);
-    if (!faceValidation.valid) {
+    const faceValidation = await enhancedRekognitionService.detectFaces(imageBuffer);
+    if (!faceValidation.success) {
       return NextResponse.json({ 
         error: "Face validation failed",
-        details: faceValidation.errors,
-        warnings: faceValidation.warnings 
+        details: faceValidation.error
       }, { status: 400 });
     }
 
@@ -97,9 +96,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Register face with AWS Rekognition
-    const registrationResult = await rekognitionService.registerFace(
+    const registrationResult = await enhancedRekognitionService.indexFace(
+      uploadResult.imageUrl!,
       child.faceCollection.awsCollectionId,
-      imageBuffer,
       `child-${childId}-${Date.now()}`
     );
 
@@ -118,12 +117,12 @@ export async function POST(request: NextRequest) {
         awsFaceId: registrationResult.faceId!,
         imageUrl: uploadResult.imageUrl!,
         imageKey: uploadResult.imageKey!,
-        boundingBox: faceValidation.faces[0]?.BoundingBox ? JSON.parse(JSON.stringify(faceValidation.faces[0].BoundingBox)) : {},
-        confidence: registrationResult.confidence,
-        landmarks: faceValidation.faces[0]?.Landmarks ? JSON.parse(JSON.stringify(faceValidation.faces[0].Landmarks)) : [],
-        emotions: faceValidation.faces[0]?.Emotions ? JSON.parse(JSON.stringify(faceValidation.faces[0].Emotions)) : [],
-        ageRange: faceValidation.faces[0]?.AgeRange ? JSON.parse(JSON.stringify(faceValidation.faces[0].AgeRange)) : {},
-        quality: faceValidation.faces[0]?.Quality ? JSON.parse(JSON.stringify(faceValidation.faces[0].Quality)) : {},
+        boundingBox: faceValidation.faces?.[0]?.BoundingBox ? JSON.parse(JSON.stringify(faceValidation.faces[0].BoundingBox)) : {},
+        confidence: registrationResult.confidence || 0,
+        landmarks: faceValidation.faces?.[0]?.Landmarks ? JSON.parse(JSON.stringify(faceValidation.faces[0].Landmarks)) : [],
+        emotions: faceValidation.faces?.[0]?.Emotions ? JSON.parse(JSON.stringify(faceValidation.faces[0].Emotions)) : [],
+        ageRange: faceValidation.faces?.[0]?.AgeRange ? JSON.parse(JSON.stringify(faceValidation.faces[0].AgeRange)) : {},
+        quality: faceValidation.faces?.[0]?.Quality ? JSON.parse(JSON.stringify(faceValidation.faces[0].Quality)) : {},
         status: 'ACTIVE',
         registrationNotes: notes,
         collectionId: child.faceCollection.id,
@@ -141,7 +140,7 @@ export async function POST(request: NextRequest) {
         createdAt: faceRecord.createdAt,
       },
       validation: {
-        warnings: faceValidation.warnings,
+        warnings: faceValidation.warnings || [],
       },
     });
   } catch (error) {

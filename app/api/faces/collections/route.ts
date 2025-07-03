@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { rekognitionService, validateAWSConfig } from "@/lib/aws";
+import { enhancedRekognitionService, validateAWSConfig } from "@/lib/aws";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get AWS collection info
-    const awsCollectionInfo = await rekognitionService.getCollectionInfo(
+    const awsCollectionInfo = await enhancedRekognitionService.getCollectionInfo(
       faceCollection.awsCollectionId
     );
 
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create AWS Rekognition collection
-    const collectionResult = await rekognitionService.createCollection(childId);
+    const collectionResult = await enhancedRekognitionService.createCollection(childId);
     
     if (!collectionResult.success) {
       return NextResponse.json({ 
@@ -229,7 +229,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete AWS collection
-    await rekognitionService.deleteCollection(faceCollection.awsCollectionId);
+    await enhancedRekognitionService.deleteCollection(faceCollection.awsCollectionId);
 
     // Delete database records (cascade will handle face records)
     await prisma.faceCollection.delete({

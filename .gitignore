@@ -28,3 +28,5 @@ coverage/
 # OS files
 .DS_Store
 Thumbs.db
+core
+.abacus.donotdelete
