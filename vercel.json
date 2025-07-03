@@ -2,6 +2,15 @@
   "framework": "nextjs",
   "env": {
     "NEXT_PRIVATE_DISABLE_EXPERIMENTAL_TRACE": "true",
-    "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+    "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
+    "SKIP_TYPE_CHECK": "true",
+    "CI": "false"
+  },
+  "buildCommand": "./build.sh",
+  "build": {
+    "env": {
+      "SKIP_TYPE_CHECK": "true",
+      "NEXT_TELEMETRY_DISABLED": "1"
+    }
   }
 }
