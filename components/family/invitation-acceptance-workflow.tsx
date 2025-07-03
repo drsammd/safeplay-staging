@@ -576,7 +576,17 @@ export default function InvitationAcceptanceWorkflow({
           <div className="flex space-x-4">
             <Button 
               onClick={handleAcceptInvitation}
-              disabled={isLoading || (token && !!accountForm.createAccount && (!accountForm.name || !accountForm.password || !accountForm.acceptTerms || accountForm.password !== accountForm.confirmPassword))}
+              disabled={(() => {
+                if (isLoading) return true;
+                if (token && !!accountForm.createAccount) {
+                  const hasName = Boolean(accountForm.name?.trim());
+                  const hasPassword = Boolean(accountForm.password?.trim());
+                  const hasAcceptedTerms = Boolean(accountForm.acceptTerms);
+                  const passwordsMatch = accountForm.password === accountForm.confirmPassword;
+                  return !hasName || !hasPassword || !hasAcceptedTerms || !passwordsMatch;
+                }
+                return false;
+              })()}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
               {isLoading ? (
