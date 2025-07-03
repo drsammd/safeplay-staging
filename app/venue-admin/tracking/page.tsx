@@ -2,9 +2,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, Users, AlertTriangle, Camera, MapPin, Clock } from "lucide-react";
+import { Eye, Users, AlertTriangle, Camera, MapPin, Clock, Monitor, Play } from "lucide-react";
+import Link from "next/link";
+import DemoCameraFeed from "@/components/venue/demo-camera-feed";
+import DemoZoneMap from "@/components/venue/demo-zone-map";
 
 export default function LiveTrackingPage() {
+  const [isDemoMode, setIsDemoMode] = useState(true);
+  const [selectedZone, setSelectedZone] = useState<string>('');
+  const [selectedCamera, setSelectedCamera] = useState('Main Entrance Camera');
+
   const [activeChildren, setActiveChildren] = useState([
     {
       id: 1,
@@ -57,17 +64,50 @@ export default function LiveTrackingPage() {
     { id: 6, name: "Restroom Area", status: "online", zone: "Restroom" }
   ]);
 
-  const [selectedCamera, setSelectedCamera] = useState(1);
+  const demoCameras = [
+    'Main Entrance Camera',
+    'Play Area A Camera', 
+    'Play Area B Camera',
+    'Climbing Zone Camera',
+    'Ball Pit Camera',
+    'Toddler Area Camera',
+    'Exit Zone Camera',
+    'Overview Camera'
+  ];
 
   return (
     <div className="min-h-full bg-tracking bg-overlay-light">
       <div className="space-y-6 content-overlay">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Live Tracking</h1>
-        <p className="text-gray-600 mt-2">
-          Real-time monitoring of children and camera feeds
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Live Tracking</h1>
+          <p className="text-gray-600 mt-2">
+            Real-time monitoring of children and camera feeds
+          </p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsDemoMode(!isDemoMode)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                isDemoMode 
+                  ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                  : 'bg-gray-100 text-gray-700 border border-gray-300'
+              }`}
+            >
+              <Play className="h-4 w-4 mr-2 inline" />
+              {isDemoMode ? 'Demo Mode Active' : 'Enable Demo Mode'}
+            </button>
+            <Link 
+              href="/venue-admin/demo"
+              className="px-4 py-2 bg-green-100 text-green-700 border border-green-300 rounded-lg text-sm font-medium hover:bg-green-200 transition-colors"
+            >
+              <Monitor className="h-4 w-4 mr-2 inline" />
+              Full Demo Center
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Status Overview */}
@@ -130,46 +170,62 @@ export default function LiveTrackingPage() {
       {/* Main Tracking Interface */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Camera Feed */}
-        <div className="lg:col-span-2 card">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Camera Feed</h2>
-            <select 
-              value={selectedCamera}
-              onChange={(e) => setSelectedCamera(parseInt(e.target.value))}
-              className="input-field"
-            >
-              {cameras.map((camera) => (
-                <option key={camera.id} value={camera.id}>
-                  {camera.name} ({camera.status})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center">
-            <div className="text-center text-white">
-              <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
-              <p className="text-lg font-medium">Live Feed: {cameras.find(c => c.id === selectedCamera)?.name}</p>
-              <p className="text-sm opacity-75">Camera feed would be displayed here</p>
-            </div>
-          </div>
-          
-          {/* Camera Grid */}
-          <div className="grid grid-cols-3 gap-2 mt-4">
-            {cameras.map((camera) => (
-              <button
-                key={camera.id}
-                onClick={() => setSelectedCamera(camera.id)}
-                className={`aspect-video bg-gray-200 rounded flex items-center justify-center text-xs font-medium transition-colors ${
-                  selectedCamera === camera.id ? 'ring-2 ring-blue-500' : ''
-                } ${camera.status === 'offline' ? 'bg-red-100 text-red-600' : 'hover:bg-gray-300'}`}
-              >
-                <div className="text-center">
-                  <Camera className="h-4 w-4 mx-auto mb-1" />
-                  <p>{camera.name}</p>
+        <div className="lg:col-span-2">
+          {isDemoMode ? (
+            <DemoCameraFeed 
+              cameraId="tracking-demo" 
+              cameraName={selectedCamera}
+              selectedZone={selectedZone}
+            />
+          ) : (
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Camera Feed</h2>
+                <select 
+                  value={selectedCamera}
+                  onChange={(e) => setSelectedCamera(e.target.value)}
+                  className="input-field"
+                >
+                  {cameras.map((camera) => (
+                    <option key={camera.id} value={camera.name}>
+                      {camera.name} ({camera.status})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="aspect-video bg-gray-900 rounded-lg flex items-center justify-center">
+                <div className="text-center text-white">
+                  <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">Live Feed: {selectedCamera}</p>
+                  <p className="text-sm opacity-75">Camera feed would be displayed here</p>
+                  <button 
+                    onClick={() => setIsDemoMode(true)}
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Enable Demo Mode
+                  </button>
                 </div>
-              </button>
-            ))}
-          </div>
+              </div>
+              
+              {/* Camera Grid */}
+              <div className="grid grid-cols-3 gap-2 mt-4">
+                {cameras.map((camera) => (
+                  <button
+                    key={camera.id}
+                    onClick={() => setSelectedCamera(camera.name)}
+                    className={`aspect-video bg-gray-200 rounded flex items-center justify-center text-xs font-medium transition-colors ${
+                      selectedCamera === camera.name ? 'ring-2 ring-blue-500' : ''
+                    } ${camera.status === 'offline' ? 'bg-red-100 text-red-600' : 'hover:bg-gray-300'}`}
+                  >
+                    <div className="text-center">
+                      <Camera className="h-4 w-4 mx-auto mb-1" />
+                      <p>{camera.name}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Active Children */}
@@ -214,16 +270,29 @@ export default function LiveTrackingPage() {
       </div>
 
       {/* Zone Map */}
-      <div className="card">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Venue Layout</h2>
-        <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
-          <div className="text-center text-gray-500">
-            <MapPin className="h-16 w-16 mx-auto mb-4" />
-            <p className="text-lg font-medium">Interactive Venue Map</p>
-            <p className="text-sm">Real-time child positions would be displayed here</p>
+      {isDemoMode ? (
+        <DemoZoneMap 
+          selectedZone={selectedZone}
+          onZoneSelect={setSelectedZone}
+        />
+      ) : (
+        <div className="card">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Venue Layout</h2>
+          <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <MapPin className="h-16 w-16 mx-auto mb-4" />
+              <p className="text-lg font-medium">Interactive Venue Map</p>
+              <p className="text-sm">Real-time child positions would be displayed here</p>
+              <button 
+                onClick={() => setIsDemoMode(true)}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Enable Demo Mode
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
       </div>
     </div>
   );

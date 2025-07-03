@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { NO_INDEX_META_TAGS } from "@/lib/security-headers";
 
 export const metadata: Metadata = {
-  title: "SafePlay™ - Stakeholder Access",
+  title: "mySafePlay™ - Stakeholder Access",
   description: "Secure staging environment for authorized stakeholders",
   robots: NO_INDEX_META_TAGS.robots,
   other: {

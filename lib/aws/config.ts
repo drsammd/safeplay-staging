@@ -1,6 +1,7 @@
 
 import { RekognitionClient } from '@aws-sdk/client-rekognition';
 import { S3Client } from '@aws-sdk/client-s3';
+import { SESClient } from '@aws-sdk/client-ses';
 import fs from 'fs';
 import path from 'path';
 
@@ -64,6 +65,14 @@ export const s3Client = new S3Client({
   },
 });
 
+export const sesClient = new SESClient({
+  region,
+  credentials: {
+    accessKeyId,
+    secretAccessKey,
+  },
+});
+
 // Configuration constants
 export const AWS_CONFIG = {
   region,
@@ -75,6 +84,17 @@ export const AWS_CONFIG = {
   supportedImageFormats: ['jpg', 'jpeg', 'png'],
   maxImageSize: 15 * 1024 * 1024, // 15MB
   maxImageDimension: 4096, // Max width or height
+  
+  // Email (SES) Configuration
+  sesFromEmail: process.env.SES_FROM_EMAIL || 'noreply@safeplay.app',
+  sesFromName: process.env.SES_FROM_NAME || 'SafePlay',
+  sesReplyToEmail: process.env.SES_REPLY_TO_EMAIL || 'support@safeplay.app',
+  sesConfigurationSet: process.env.SES_CONFIGURATION_SET,
+  emailDomain: process.env.EMAIL_DOMAIN || 'safeplay.app',
+  unsubscribeBaseUrl: process.env.NEXTAUTH_URL || 'https://localhost:3000',
+  trackingDomain: process.env.EMAIL_TRACKING_DOMAIN || process.env.NEXTAUTH_URL || 'https://localhost:3000',
+  maxEmailsPerSecond: parseInt(process.env.SES_MAX_SEND_RATE || '14'), // AWS SES default
+  maxEmailsPerDay: parseInt(process.env.SES_MAX_SEND_QUOTA || '200'), // AWS SES sandbox limit
 };
 
 // Check if we're in development mode

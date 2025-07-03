@@ -80,7 +80,7 @@ export default function StagingAuthPage() {
               className="h-16 w-auto"
             />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">SafePlay™</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">mySafePlay™</h1>
           <p className="text-gray-600">Stakeholder Access Portal</p>
         </div>
 
@@ -189,7 +189,7 @@ export default function StagingAuthPage() {
                 ) : (
                   <div className="flex items-center space-x-2">
                     <CheckCircle2 className="h-5 w-5" />
-                    <span>Access SafePlay™</span>
+                    <span>Access mySafePlay™</span>
                   </div>
                 )}
               </Button>
@@ -213,7 +213,7 @@ export default function StagingAuthPage() {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-gray-500">
-            © 2025 SafePlay™. Secure Beta Environment v1.0
+            © 2025 mySafePlay™. Secure Beta Environment v1.0
           </p>
           <p className="text-xs text-gray-400 mt-1">
             Protected by enterprise-grade security measures

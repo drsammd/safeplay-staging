@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-    provider = "postgresql"
+    provider = "sqlite"
     url      = env("DATABASE_URL")
 }
 
@@ -17,6 +17,17 @@ model User {
   phone             String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+  
+  // Identity & Phone Verification Fields
+  phoneVerified     Boolean   @default(false)
+  phoneVerifiedAt   DateTime?
+  identityVerified  Boolean   @default(false)
+  identityVerifiedAt DateTime?
+  verificationLevel VerificationLevel @default(UNVERIFIED)
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?   // For authenticator apps
+  twoFactorPhone    String?   // Phone number for SMS 2FA
+  verificationNotes String?   // Admin notes about verification status
   accounts          Account[]
   children          Child[]   @relation("ParentChildren")
   purchasedMemories Memory[]  @relation("MemoryPurchaser")
@@ -77,6 +88,19 @@ model User {
   // Legal Compliance Relations
   legalAgreements           LegalAgreement[]         @relation("UserLegalAgreements")
 
+  // Identity & Phone Verification Relations
+  phoneVerificationAttempts PhoneVerification[]      @relation("UserPhoneVerifications")
+  identityVerificationRequests IdentityVerification[] @relation("UserIdentityVerifications") 
+  twoFactorAttempts         TwoFactorAttempt[]       @relation("UserTwoFactorAttempts")
+  verificationStatusHistory VerificationStatusHistory[] @relation("UserVerificationHistory")
+  twoFactorBackupCodes      TwoFactorBackupCode[]    @relation("UserBackupCodes")
+  
+  // Enhanced Verification Relations
+  webauthnCredentials       WebAuthnCredential[]     @relation("UserWebAuthnCredentials")
+  emailVerifications        EmailVerification[]      @relation("UserEmailVerifications")
+  pushNotificationDevices   PushNotificationDevice[] @relation("UserPushDevices")
+  verificationAuditLogs     VerificationAuditLog[]   @relation("UserVerificationAuditLogs")
+
   // Payment and Subscription Relations
   subscription              UserSubscription?        @relation("UserSubscription")
   paymentMethods            UserPaymentMethod[]      @relation("UserPaymentMethods")
@@ -87,6 +111,31 @@ model User {
   
   // Discount Code Relations
   discountCodeUsages        DiscountCodeUsage[]      @relation("UserDiscountUsages")
+
+  // Email Automation Relations
+  emailPreferences        EmailPreferences?         @relation("UserEmailPreferences")
+  emailLogs               EmailLog[]                @relation("UserEmailLogs")
+  segmentMemberships      EmailSegmentMember[]      @relation("UserSegmentMemberships")
+  createdEmailSegments    EmailSegment[]            @relation("UserEmailSegments")
+  createdEmailCampaigns   EmailCampaign[]           @relation("UserCreatedCampaigns")
+  approvedEmailCampaigns  EmailCampaign[]           @relation("UserApprovedCampaigns")
+  automationRules         EmailAutomationRule[]     @relation("UserAutomationRules")
+  automationExecutions    EmailAutomationExecution[] @relation("UserAutomationExecutions")
+
+  // Support Center Relations
+  supportTickets          SupportTicket[]           @relation("UserSupportTickets")
+  supportAgent            SupportAgent?             @relation("UserSupportAgent")
+  chatSessions            SupportChatSession[]      @relation("UserChatSessions")
+
+  // Family Member Management Relations
+  sentFamilyInvitations     FamilyInvitation[]        @relation("UserSentInvitations")
+  receivedFamilyInvitations FamilyInvitation[]        @relation("UserReceivedInvitations")
+  familyMemberships         FamilyMember[]            @relation("UserFamilyMemberships")
+  familyMembers             FamilyMember[]            @relation("UserFamilyMembers")
+  grantedPermissions        FamilyPermission[]        @relation("UserGrantedPermissions")
+  receivedPermissions       FamilyPermission[]        @relation("UserReceivedPermissions")
+  childAccessGrants         ChildAccess[]             @relation("UserChildAccessGrants")
+  childAccessReceived       ChildAccess[]             @relation("UserChildAccessReceived")
 
   @@map("users")
 }
@@ -102,7 +151,7 @@ model Venue {
   email             String
   operatingHours    Json
   capacity          Int
-  ageGroups         String[]
+  ageGroups         Json?
   cameraConfig      Json
   alertSettings     Json
   adminId           String
@@ -179,6 +228,9 @@ model Venue {
   payoutHistory           PayoutHistory[]          @relation("VenuePayoutHistory")
   discountUsages          DiscountCodeUsage[]      @relation("VenueDiscountUsages")
 
+  // Support Center Relations
+  supportTickets          SupportTicket[]          @relation("VenueSupportTickets")
+
   @@map("venues")
 }
 
@@ -237,6 +289,9 @@ model Child {
   friendships1           ChildFriendship[]        @relation("ChildFriendships1")
   friendships2           ChildFriendship[]        @relation("ChildFriendships2")
   navigationRequests     NavigationRequest[]      @relation("ChildNavigationRequests")
+
+  // Family Member Management Relations
+  familyMemberAccess     ChildAccess[]            @relation("ChildFamilyMemberAccess")
 
   @@map("children")
 }
@@ -445,7 +500,7 @@ model ZoneConfiguration {
   minAge                Int?                   // Minimum age allowed in zone
   requiresAdultSupervision Boolean             @default(false)
   isRestrictedAccess    Boolean                @default(false)
-  accessPermissions     ZoneAccessPermission[] // Who can access this zone
+  accessPermissions     Json? // Who can access this zone
   operatingHours        Json?                  // Operating hours for zone {"start": "09:00", "end": "17:00"}
   isMaintenanceMode     Boolean                @default(false)
   isEmergencyExit       Boolean                @default(false)
@@ -453,9 +508,9 @@ model ZoneConfiguration {
   safetyLevel           SafetyLevel            @default(STANDARD)
   hazardLevel           HazardLevel            @default(NONE)
   evacuationPriority    Int                    @default(1) // 1 = highest priority
-  allowedActivities     String[]               // List of allowed activities
-  prohibitedItems       String[]               // List of prohibited items
-  requiredEquipment     String[]               // Required safety equipment
+  allowedActivities     Json?               // List of allowed activities
+  prohibitedItems       Json?               // List of prohibited items
+  requiredEquipment     Json?               // Required safety equipment
   alertThresholds       Json                   // Alert thresholds for capacity, time, etc.
   environmentSettings   Json?                  // Temperature, lighting, sound levels
   complianceRequirements Json?                 // Regulatory compliance requirements
@@ -546,7 +601,7 @@ model ZoneAccessLog {
   exitTime          DateTime?
   isAuthorized      Boolean          @default(true)
   authorizedBy      String?          // Staff member who authorized access
-  ruleViolations    String[]         // List of violated rules
+  ruleViolations    Json?         // List of violated rules
   alertTriggered    Boolean          @default(false)
   alertId           String?          // Associated alert ID
   ipAddress         String?          // For kiosk/digital access
@@ -585,7 +640,7 @@ model EvacuationRoute {
   inspectedBy       String?
   maintenanceNotes  String?
   emergencyContacts Json?            // Emergency contacts for this route
-  alternativeRoutes String[]         // IDs of alternative routes
+  alternativeRoutes Json?         // IDs of alternative routes
   weatherDependency Boolean          @default(false) // Route affected by weather
   specialRequirements Json?          // Special equipment or procedures needed
   metadata          Json?
@@ -632,8 +687,8 @@ model ZoneNotification {
   title             String
   message           String
   priority          NotificationPriority      @default(NORMAL)
-  targetAudience    NotificationAudience[]    // Who should receive this notification
-  deliveryChannels  NotificationChannel[]     // How to deliver the notification
+  targetAudience    Json?    // Who should receive this notification
+  deliveryChannels  Json?     // How to deliver the notification
   isScheduled       Boolean                   @default(false)
   scheduledAt       DateTime?
   isRecurring       Boolean                   @default(false)
@@ -699,8 +754,8 @@ model ZoneViolation {
   resolvedBy        String?
   resolutionNotes   String?
   preventiveMeasures String?
-  imageUrls         String[]            // Associated evidence images
-  videoUrls         String[]            // Associated evidence videos
+  imageUrls         Json?            // Associated evidence images
+  videoUrls         Json?            // Associated evidence videos
   location          Json?               // Specific location of violation
   timestamp         DateTime            @default(now())
   metadata          Json?
@@ -743,7 +798,7 @@ model ZoneAnalytics {
   incidentRate          Float            @default(0.0)
   responseTimeAverage   Int              @default(0) // Average response time in seconds
   parentFeedbackScore   Float?           // Parent feedback for the zone
-  recommendations       String[]         // AI-generated recommendations
+  recommendations       Json?         // AI-generated recommendations
   trends                Json?            // Trend analysis data
   comparisons           Json?            // Comparison with other zones/periods
   metadata              Json?
@@ -765,7 +820,7 @@ model EmergencyProcedure {
   stepByStepGuide   Json                // Detailed procedure steps
   estimatedDuration Int                 // Expected duration in minutes
   requiredPersonnel Int                 // Number of staff required
-  requiredEquipment String[]            // Required emergency equipment
+  requiredEquipment Json?            // Required emergency equipment
   priorityLevel     EmergencyPriority   @default(MEDIUM)
   contactProcedure  Json                // Emergency contact procedures
   evacuationInstructions Json?          // Specific evacuation instructions
@@ -779,12 +834,12 @@ model EmergencyProcedure {
   isActive          Boolean             @default(true)
   version           Int                 @default(1)
   parentProcedureId String?             // Parent procedure if this is a sub-procedure
-  relatedProcedures String[]            // Related procedure IDs
+  relatedProcedures Json?            // Related procedure IDs
   complianceRequirements Json?          // Regulatory compliance requirements
   successCriteria   Json?               // Success criteria for the procedure
   failureProtocol   Json?               // What to do if procedure fails
-  documentation     String[]            // Links to related documents
-  videoGuides       String[]            // Links to training videos
+  documentation     Json?            // Links to related documents
+  videoGuides       Json?            // Links to training videos
   metadata          Json?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -793,6 +848,338 @@ model EmergencyProcedure {
   @@index([zoneId, procedureType])
   @@index([priorityLevel, isActive])
   @@map("emergency_procedures")
+}
+
+// Identity & Phone Verification Models
+
+model PhoneVerification {
+  id                String                    @id @default(cuid())
+  userId            String
+  phoneNumber       String
+  verificationCode  String
+  codeType          PhoneVerificationCodeType @default(SMS)
+  status            PhoneVerificationStatus   @default(PENDING)
+  attempts          Int                       @default(0)
+  maxAttempts       Int                       @default(3)
+  expiresAt         DateTime
+  verifiedAt        DateTime?
+  ipAddress         String?
+  userAgent         String?
+  metadata          Json?                     // Additional context like registration vs 2FA
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  user              User                      @relation("UserPhoneVerifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, status])
+  @@index([phoneNumber, status])
+  @@index([expiresAt])
+  @@map("phone_verifications")
+}
+
+model IdentityVerification {
+  id                      String                        @id @default(cuid())
+  userId                  String
+  verificationType        IdentityVerificationType
+  status                  IdentityVerificationStatus    @default(PENDING)
+  documentType            DocumentType?
+  documentNumber          String?
+  documentCountry         String?
+  documentState           String?
+  documentExpiryDate      DateTime?
+  documentImages          Json?                         // URLs to uploaded document images (JSON array)
+  selfieImageUrl          String?                       // Selfie for comparison
+  verificationMethod      VerificationMethod            @default(MANUAL)
+  confidence              Float?                        // AI confidence score (0-1)
+  verificationNotes       String?                       // Admin notes
+  rejectionReason         String?                       // Reason for rejection
+  reviewedBy              String?                       // Admin user ID who reviewed
+  reviewedAt              DateTime?
+  verifiedAt              DateTime?
+  expiresAt               DateTime?                     // When verification expires and needs renewal
+  resubmissionAllowed     Boolean                       @default(true)
+  resubmissionCount       Int                           @default(0)
+  maxResubmissions        Int                           @default(3)
+  complianceFlags         Json?                         // Compliance issues found (JSON array)
+  fraudFlags              Json?                         // Potential fraud indicators (JSON array)
+  extractedData           Json?                         // Data extracted from documents
+  verificationMetadata    Json?                         // Additional verification context
+  ipAddress               String?
+  userAgent               String?
+  
+  // Phase 1.6 Address Enhancement Fields
+  userEnteredAddress       Json?                        // Address entered by user during verification
+  extractedAddress         Json?                        // Address extracted from driver's license  
+  addressMatchScore        Float?                       // Confidence score for address matching (0-1)
+  addressComparisonResult  Json?                        // Detailed address comparison results
+  googlePlacesData         Json?                        // Standardized address data from Google Places API
+  
+  // Phase 1.6 Photo Comparison Fields
+  faceComparisonScore      Float?                       // AWS Rekognition face comparison score (0-100)
+  faceComparisonResult     Json?                        // Detailed face comparison results from AWS Rekognition
+  selfieQualityScore       Float?                       // Quality score of the selfie image (0-1)
+  documentPhotoQualityScore Float?                      // Quality score of photo on document (0-1)
+  
+  // Phase 1.6 Enhanced Scoring Fields
+  overallVerificationScore Float?                       // Combined score from all verification factors (0-1)
+  scoringBreakdown         Json?                        // Detailed breakdown of how the score was calculated
+  autoApprovalEligible     Boolean                      @default(false) // Whether this verification is eligible for auto-approval
+  
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  user                    User                          @relation("UserIdentityVerifications", fields: [userId], references: [id], onDelete: Cascade)
+  documentAnalysis        DocumentAnalysis?             @relation("DocumentAnalysis")
+  
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([verificationType, status])
+  @@index([overallVerificationScore])
+  @@index([autoApprovalEligible])
+  @@map("identity_verifications")
+}
+
+model TwoFactorAttempt {
+  id                String                @id @default(cuid())
+  userId            String
+  method            TwoFactorMethod
+  code              String?               // SMS code or TOTP code
+  backupCodeUsed    String?               // Backup code if used
+  status            TwoFactorStatus       @default(PENDING)
+  purpose           TwoFactorPurpose      @default(LOGIN)
+  ipAddress         String?
+  userAgent         String?
+  location          Json?                 // Geolocation data
+  deviceFingerprint String?               // Device identification
+  successAt         DateTime?
+  failureReason     String?
+  expiresAt         DateTime
+  metadata          Json?
+  createdAt         DateTime              @default(now())
+  user              User                  @relation("UserTwoFactorAttempts", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, status])
+  @@index([method, status])
+  @@index([expiresAt])
+  @@map("two_factor_attempts")
+}
+
+model VerificationStatusHistory {
+  id                String            @id @default(cuid())
+  userId            String
+  previousLevel     VerificationLevel
+  newLevel          VerificationLevel
+  changeReason      String
+  changedBy         String?           // Admin user ID who made the change
+  phoneVerified     Boolean
+  identityVerified  Boolean
+  twoFactorEnabled  Boolean
+  metadata          Json?             // Additional context about the change
+  createdAt         DateTime          @default(now())
+  user              User              @relation("UserVerificationHistory", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, createdAt])
+  @@index([newLevel, createdAt])
+  @@map("verification_status_history")
+}
+
+model TwoFactorBackupCode {
+  id                String   @id @default(cuid())
+  userId            String
+  code              String   @unique // Hashed backup code
+  used              Boolean  @default(false)
+  usedAt            DateTime?
+  ipAddress         String?  // IP where code was used
+  userAgent         String?  // User agent where code was used
+  createdAt         DateTime @default(now())
+  user              User     @relation("UserBackupCodes", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, used])
+  @@map("two_factor_backup_codes")
+}
+
+model VerificationRequirement {
+  id                    String                    @id @default(cuid())
+  name                  String                    @unique
+  description           String
+  requiredLevel         VerificationLevel
+  requiredPhone         Boolean                   @default(false)
+  requiredIdentity      Boolean                   @default(false)
+  requiredTwoFactor     Boolean                   @default(false)
+  applicableRoles       Json?                         // UserRole array as JSON
+  applicableActions     Json?                     // Actions that require this verification (JSON array)
+  gracePeriodDays       Int?                      // Days to complete verification
+  enforced              Boolean                   @default(true)
+  enforcementDate       DateTime?                 // When to start enforcing
+  exemptions            Json?                     // User IDs or conditions for exemptions
+  reminderSettings      Json?                     // Reminder configuration
+  metadata              Json?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  
+  @@map("verification_requirements")
+}
+
+// Enhanced Verification Models
+
+model DocumentAnalysis {
+  id                      String                    @id @default(cuid())
+  identityVerificationId  String                    @unique
+  documentType            DocumentType
+  analysisProvider        String                    @default("AWS_TEXTRACT") // AWS_TEXTRACT, AZURE_FORMS, etc.
+  extractedText           String?                   // Full extracted text
+  extractedFields         Json?                     // Structured data extracted from document
+  confidence              Float                     @default(0.0) // Overall confidence score (0-1)
+  fieldConfidences        Json?                     // Individual field confidence scores
+  authenticityScore       Float?                    // Document authenticity score (0-1)
+  qualityScore           Float?                     // Image quality score (0-1)
+  fraudIndicators         Json?                     // Potential fraud indicators found
+  textractJobId          String?                    // AWS Textract job ID for tracking
+  textractResponse        Json?                     // Full Textract response
+  processingStatus        String                    @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  processingError         String?                   // Error message if processing failed
+  autoApproved           Boolean                   @default(false)
+  autoRejected           Boolean                   @default(false)
+  requiresManualReview   Boolean                   @default(true)
+  reviewReason           String?                   // Why manual review is needed
+  
+  // Phase 1.6 Address Extraction Fields
+  extractedAddressData     Json?                    // Structured address data extracted from documents
+  addressExtractionConfidence Float?               // Confidence of address extraction (0-1)
+  addressValidationResult  Json?                    // Results from Google Places API validation
+  
+  // Phase 1.6 Photo Analysis Fields  
+  documentPhotoFaceDetection Json?                 // Face detection results from document photo
+  rekognitionJobId         String?                 // AWS Rekognition job ID for tracking face analysis
+  rekognitionResponse      Json?                   // Full Rekognition response
+  photoAnalysisStatus      String?                 @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  
+  processedAt            DateTime?
+  reviewedAt             DateTime?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+  identityVerification   IdentityVerification      @relation("DocumentAnalysis", fields: [identityVerificationId], references: [id], onDelete: Cascade)
+  
+  @@index([processingStatus, createdAt])
+  @@index([autoApproved, confidence])
+  @@index([photoAnalysisStatus])
+  @@index([addressExtractionConfidence])
+  @@map("document_analyses")
+}
+
+model WebAuthnCredential {
+  id                 String                  @id @default(cuid())
+  userId             String
+  credentialId       String                  @unique // WebAuthn credential ID (base64url encoded)
+  publicKey          String                  // Public key (base64url encoded)
+  counter            BigInt                  @default(0) // Signature counter
+  deviceType         String?                 // authenticator device type
+  deviceName         String?                 // User-friendly device name
+  transports         Json?                   // Supported transports ["usb", "nfc", "ble", "internal"]
+  aaguid             String?                 // Authenticator AAGUID
+  attestationType    String?                 // Attestation type
+  attestationObject  String?                 // Full attestation object
+  backupEligible     Boolean                @default(false)
+  backupState        Boolean                @default(false)
+  lastUsed          DateTime?
+  isActive          Boolean                @default(true)
+  metadata          Json?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  user              User                   @relation("UserWebAuthnCredentials", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isActive])
+  @@map("webauthn_credentials")
+}
+
+model EmailVerification {
+  id                String                    @id @default(cuid())
+  userId            String
+  email             String
+  verificationCode  String
+  purpose           EmailVerificationPurpose  @default(TWO_FACTOR)
+  status            EmailVerificationStatus   @default(PENDING)
+  attempts          Int                       @default(0)
+  maxAttempts       Int                       @default(3)
+  expiresAt         DateTime
+  verifiedAt        DateTime?
+  sentAt            DateTime?
+  ipAddress         String?
+  userAgent         String?
+  metadata          Json?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  user              User                      @relation("UserEmailVerifications", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, status])
+  @@index([email, status])
+  @@index([expiresAt])
+  @@map("email_verifications")
+}
+
+model PushNotificationDevice {
+  id                String                    @id @default(cuid())
+  userId            String
+  deviceToken       String                    @unique // FCM token or APN device token
+  platform          PushNotificationPlatform
+  deviceInfo        Json?                     // Device information
+  appVersion        String?
+  osVersion         String?
+  isActive          Boolean                   @default(true)
+  lastUsed          DateTime?
+  registeredAt      DateTime                  @default(now())
+  metadata          Json?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  user              User                      @relation("UserPushDevices", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, isActive])
+  @@index([platform, isActive])
+  @@map("push_notification_devices")
+}
+
+model VerificationAuditLog {
+  id                String                    @id @default(cuid())
+  userId            String
+  verificationType  String                    // "phone", "identity", "two_factor", etc.
+  action            String                    // "initiated", "completed", "failed", "manually_reviewed", etc.
+  status            String
+  previousValue     Json?                     // Previous state
+  newValue          Json?                     // New state
+  confidence        Float?                    // Confidence score if applicable
+  automated         Boolean                   @default(false)
+  reviewedBy        String?                   // Admin user ID
+  ipAddress         String?
+  userAgent         String?
+  metadata          Json?                     // Additional context
+  timestamp         DateTime                  @default(now())
+  user              User                      @relation("UserVerificationAuditLogs", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId, timestamp])
+  @@index([verificationType, automated])
+  @@index([timestamp])
+  @@map("verification_audit_logs")
+}
+
+model SystemNotification {
+  id                String                       @id @default(cuid())
+  userId            String?                      // Null for system-wide notifications
+  type              SystemNotificationType
+  title             String
+  message           String
+  actionUrl         String?                      // URL for action button
+  actionText        String?                      // Text for action button
+  priority          NotificationPriority         @default(NORMAL)
+  status            SystemNotificationStatus     @default(UNREAD)
+  metadata          Json?
+  readAt            DateTime?
+  dismissedAt       DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime                     @default(now())
+  updatedAt         DateTime                     @updatedAt
+  
+  @@index([userId, status])
+  @@index([type, createdAt])
+  @@index([status, priority])
+  @@map("system_notifications")
 }
 
 enum UserRole {
@@ -1018,7 +1405,7 @@ model CameraRecognitionZone {
   cameraId         String
   coordinates      Json      // polygon defining the recognition zone within camera view
   isActive         Boolean   @default(true)
-  recognitionTypes String[]  // face detection, motion, etc.
+  recognitionTypes Json?  // face detection, motion, etc.
   sensitivity      Float     @default(0.8)
   alertsEnabled    Boolean   @default(true)
   createdAt        DateTime  @default(now())
@@ -1209,7 +1596,7 @@ model AlertRule {
   conditions            Json                   // Conditions for triggering the alert
   thresholds            Json                   // Time thresholds, confidence levels, etc.
   escalationRules       Json                   // Escalation rules and timeframes
-  notificationChannels  NotificationChannel[]  // Which channels to use
+  notificationChannels  Json?  // Which channels to use
   metadata              Json?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -1259,8 +1646,8 @@ model EnhancedAlert {
   floorPlanZoneId     String?
   triggerData         Json?                  // Data that triggered the alert
   location            Json?                  // Specific location information
-  imageUrls           String[]               // Associated images
-  videoUrls           String[]               // Associated videos
+  imageUrls           Json?               // Associated images
+  videoUrls           Json?               // Associated videos
   lastSeenLocation    Json?                  // Last known location for missing child alerts
   lastSeenTime        DateTime?              // Last sighting time
   escalationLevel     Int                    @default(0)
@@ -1303,7 +1690,7 @@ model AIAnalysisSession {
   failedAnalyses        Int                    @default(0)
   averageConfidence     Float?
   resourceUsage         Json?                  // CPU, memory, GPU usage stats
-  errorLogs             String[]
+  errorLogs             Json?
   metadata              Json?
   venue                 Venue                  @relation("VenueAIAnalysisSessions", fields: [venueId], references: [id], onDelete: Cascade)
   camera                Camera?                @relation("CameraAIAnalysisSessions", fields: [cameraId], references: [id])
@@ -1339,7 +1726,7 @@ model AgeEstimationAnalysis {
   parentNotified        Boolean                @default(false)
   staffAlerted          Boolean                @default(false)
   actionTaken           AgeEnforcementAction   @default(NONE)
-  recommendations       String[]               // Age-appropriate recommendations
+  recommendations       Json?               // Age-appropriate recommendations
   timestamp             DateTime               @default(now())
   metadata              Json?
   session               AIAnalysisSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -1377,7 +1764,7 @@ model EmotionDetectionAnalysis {
   emotionalState        EmotionalState         @default(STABLE)
   previousEmotions      Json?                  // Recent emotion history
   contextualFactors     Json?                  // Environmental factors affecting emotion
-  supportRecommendations String[]              // Recommended support actions
+  supportRecommendations Json?              // Recommended support actions
   timestamp             DateTime               @default(now())
   metadata              Json?
   session               AIAnalysisSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -1418,7 +1805,7 @@ model CrowdDensityAnalysis {
   imageUrl              String?
   imageKey              String?
   heatmapUrl            String?                // Crowd density heatmap
-  recommendations       String[]               // Crowd management recommendations
+  recommendations       Json?               // Crowd management recommendations
   timestamp             DateTime               @default(now())
   metadata              Json?
   session               AIAnalysisSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -1448,9 +1835,9 @@ model BehaviorPatternAnalysis {
   emergencyResponse     Boolean                @default(false)
   behaviorDuration      Int?                   // Duration of behavior in seconds
   participantCount      Int                    @default(1) // Number of people involved
-  participantIds        String[]               // IDs of identified participants
+  participantIds        Json?               // IDs of identified participants
   victimId              String?                // Victim in bullying scenarios
-  aggressorIds          String[]               // Aggressors in bullying/violence
+  aggressorIds          Json?               // Aggressors in bullying/violence
   behaviorLocation      Json?                  // Specific location coordinates
   behaviorDescription   String
   contextualFactors     Json?                  // Environmental or situational factors
@@ -1463,11 +1850,11 @@ model BehaviorPatternAnalysis {
   parentNotified        Boolean                @default(false)
   staffNotified         Boolean                @default(false)
   emergencyServicesNotified Boolean            @default(false)
-  interventionActions   String[]               // Actions taken
-  imageUrls             String[]               // Evidence images
-  videoUrls             String[]               // Evidence videos
+  interventionActions   Json?               // Actions taken
+  imageUrls             Json?               // Evidence images
+  videoUrls             Json?               // Evidence videos
   timelineData          Json?                  // Behavior timeline
-  preventionRecommendations String[]           // Prevention strategies
+  preventionRecommendations Json?           // Prevention strategies
   followUpRequired      Boolean                @default(false)
   followUpNotes         String?
   timestamp             DateTime               @default(now())
@@ -1500,7 +1887,7 @@ model VoicePatternAnalysis {
   panicDetected         Boolean                @default(false)
   excitementDetected    Boolean                @default(false)
   languageDetected      String?                // Detected language
-  keywordsDetected      String[]               // Important keywords (help, stop, etc.)
+  keywordsDetected      Json?               // Important keywords (help, stop, etc.)
   sentimentScore        Float?                 // -1.0 to 1.0 (negative to positive)
   volumeLevel           Float                  // Decibel level
   frequencyAnalysis     Json?                  // Audio frequency analysis
@@ -1515,7 +1902,7 @@ model VoicePatternAnalysis {
   audioUrl              String?                // Audio clip URL
   audioKey              String?                // S3 key for audio
   transcription         String?                // Speech-to-text transcription
-  responseActions       String[]               // Actions taken in response
+  responseActions       Json?               // Actions taken in response
   contextualData        Json?                  // Environmental context
   timestamp             DateTime               @default(now())
   metadata              Json?
@@ -1556,7 +1943,7 @@ model VisualPatternAnalysis {
   boundingBox           Json?                  // Detection bounding box
   keypointAnalysis      Json?                  // Pose keypoint analysis
   movementVector        Json?                  // Movement direction and speed
-  interactionPartners   String[]               // IDs of interaction partners
+  interactionPartners   Json?               // IDs of interaction partners
   groupDynamics         Json?                  // Group interaction analysis
   environmentalContext  Json?                  // Environmental factors
   alertTriggered        Boolean                @default(false)
@@ -1568,7 +1955,7 @@ model VisualPatternAnalysis {
   videoUrl              String?                // Video clip URL
   videoKey              String?                // S3 key for video
   analysisResults       Json?                  // Detailed analysis results
-  recommendations       String[]               // Action recommendations
+  recommendations       Json?               // Action recommendations
   timestamp             DateTime               @default(now())
   metadata              Json?
   session               AIAnalysisSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -1601,13 +1988,13 @@ model AIInsight {
   riskLevel             RiskLevel              @default(LOW)
   actionRequired        Boolean                @default(false)
   actionPriority        ActionPriority         @default(NORMAL)
-  recommendations       String[]               // AI-generated recommendations
-  preventiveMeasures    String[]               // Suggested preventive actions
+  recommendations       Json?               // AI-generated recommendations
+  preventiveMeasures    Json?               // Suggested preventive actions
   implementation        Json?                  // Implementation guidance
   expectedOutcome       String?                // Expected result of implementing recommendations
   costBenefit          Json?                  // Cost-benefit analysis
-  successMetrics        String[]               // How to measure success
-  relatedInsights       String[]               // Related insight IDs
+  successMetrics        Json?               // How to measure success
+  relatedInsights       Json?               // Related insight IDs
   sourceData            Json                   // Data sources used for the insight
   analysisMethod        String                 // AI method used
   lastValidated         DateTime?              // Last validation timestamp
@@ -1618,9 +2005,9 @@ model AIInsight {
   actionResults         Json?                  // Results of implemented actions
   followUpRequired      Boolean                @default(false)
   followUpDate          DateTime?
-  tags                  String[]               // Categorization tags
+  tags                  Json?               // Categorization tags
   visibility            InsightVisibility      @default(ADMIN_ONLY)
-  sharedWith            String[]               // User IDs insight is shared with
+  sharedWith            Json?               // User IDs insight is shared with
   feedback              Json?                  // User feedback on the insight
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -1650,8 +2037,8 @@ model AISafetyScore {
   trendScore            Float                  // Trend improvement score
   riskFactors           Json                   // Identified risk factors
   strengthFactors       Json                   // Identified strength factors
-  improvementAreas      String[]               // Areas needing improvement
-  achievements          String[]               // Recent achievements
+  improvementAreas      Json?               // Areas needing improvement
+  achievements          Json?               // Recent achievements
   benchmarkComparison   Json                   // Comparison with benchmarks
   historicalTrend       Json                   // Historical score trends
   predictiveTrend       Json                   // Predicted future trends
@@ -1661,7 +2048,7 @@ model AISafetyScore {
   confidenceInterval    Json                   // Statistical confidence interval
   lastRecalculated      DateTime               @default(now())
   validUntil            DateTime               // Score validity period
-  recommendations       String[]               // Recommendations to improve score
+  recommendations       Json?               // Recommendations to improve score
   alertThresholds       Json                   // Score thresholds for alerts
   scorePeriod           Json                   // Time period for this score
   metadata              Json?
@@ -1704,7 +2091,7 @@ model AIModelPerformance {
   alertsGenerated       Int                    @default(0) // Alerts generated by this model
   correctAlerts         Int                    @default(0) // Correctly identified alerts
   missedIncidents       Int                    @default(0) // Incidents missed by the model
-  recommendations       String[]               // Performance improvement recommendations
+  recommendations       Json?               // Performance improvement recommendations
   needsRetraining       Boolean                @default(false)
   retrainingScheduled   DateTime?
   evaluationDate        DateTime               @default(now())
@@ -1802,7 +2189,7 @@ model NotificationPreference {
   id                      String              @id @default(cuid())
   userId                  String
   alertType               EnhancedAlertType
-  channels                NotificationChannel[]
+  channels                Json?
   isEnabled               Boolean             @default(true)
   quietHoursStart         String?             // HH:MM format
   quietHoursEnd           String?             // HH:MM format
@@ -2169,7 +2556,7 @@ model VenueQRCode {
   expiresAt         DateTime?
   usageCount        Int                    @default(0)
   maxUsage          Int?
-  allowedRoles      UserRole[]             // Who can use this QR code
+  allowedRoles      Json?             // Who can use this QR code
   metadata          Json?
   createdAt         DateTime               @default(now())
   venue             Venue                  @relation(fields: [venueId], references: [id], onDelete: Cascade)
@@ -2279,7 +2666,7 @@ model AnalyticsEvent {
   deviceId        String?
   location        Json?               // Geographic or floor plan coordinates
   metadata        Json?               // Additional event-specific data
-  tags            String[]            // Tags for categorization
+  tags            Json?            // Tags for categorization
   timestamp       DateTime            @default(now())
   processedAt     DateTime?           // When the event was processed for analytics
   venue           Venue               @relation("VenueAnalyticsEvents", fields: [venueId], references: [id], onDelete: Cascade)
@@ -2321,7 +2708,7 @@ model SafetyReport {
   schedule                ReportSchedule?        @relation(fields: [scheduleId], references: [id])
   scheduleId              String?
   isScheduled             Boolean                @default(false)
-  recipients              String[]               // Email addresses for delivery
+  recipients              Json?               // Email addresses for delivery
   deliveredAt             DateTime?
   deliveryStatus          DeliveryStatus         @default(PENDING)
   downloadCount           Int                    @default(0)
@@ -2355,7 +2742,7 @@ model IncidentReport {
   cameraId              String?
   involvedPersons       Json                  // People involved in the incident
   witnesses             Json?                 // Witness information
-  evidenceUrls          String[]              // Photos, videos, documents
+  evidenceUrls          Json?              // Photos, videos, documents
   timeline              Json                  // Chronological timeline of events
   rootCause             String?
   contributingFactors   Json?                 // Factors that contributed to incident
@@ -2538,8 +2925,8 @@ model PerformanceMetric {
   confidence        Float               @default(1.0) // Confidence in the metric
   status            MetricStatus        @default(NORMAL)
   formula           String?             // Formula used for calculation
-  dependencies      String[]            // Other metrics this depends on
-  tags              String[]            // Tags for categorization
+  dependencies      Json?            // Other metrics this depends on
+  tags              Json?            // Tags for categorization
   isKPI             Boolean             @default(false) // Key Performance Indicator
   isPublic          Boolean             @default(false) // Can be shared publicly
   automaticUpdate   Boolean             @default(true) // Auto-update from data
@@ -2568,7 +2955,7 @@ model ReportSchedule {
   time              String              // HH:MM format
   timezone          String              @default("UTC")
   isActive          Boolean             @default(true)
-  recipients        String[]            // Email addresses
+  recipients        Json?            // Email addresses
   format            ReportFormat        @default(PDF)
   template          String?             // Report template ID
   filters           Json?               // Report filters and parameters
@@ -2896,7 +3283,7 @@ model ParentQRCode {
   parentId          String
   qrCode            String              @unique
   qrData            Json                // Encrypted parent data in QR code
-  linkedChildren    String[]            // Child IDs linked to this parent QR
+  linkedChildren    Json?            // Child IDs linked to this parent QR
   isActive          Boolean             @default(true)
   expiresAt         DateTime?
   usageCount        Int                 @default(0)
@@ -2910,7 +3297,7 @@ model ParentQRCode {
   generatedBy       String
   regenerationCount Int                 @default(0)
   printedCount      Int                 @default(0)
-  backupCodes       String[]            // Backup codes for emergency access
+  backupCodes       Json?            // Backup codes for emergency access
   metadata          Json?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
@@ -2950,7 +3337,7 @@ model PickupAuthorization {
   lastUsedAt            DateTime?
   authorizationCode     String?                   // Special code for verification
   parentQRCodeId        String?
-  custodyDocuments      String[]                  // Legal custody documents
+  custodyDocuments      Json?                  // Legal custody documents
   backgroundCheckStatus BackgroundCheckStatus?
   backgroundCheckDate   DateTime?
   notes                 String?
@@ -2986,8 +3373,8 @@ model PickupEvent {
   supervisorId            String?
   emergencyPickup         Boolean               @default(false)
   digitalSignature        String?               // Base64 encoded signature
-  photoEvidence           String[]              // Photos taken during pickup
-  videoEvidence           String[]              // Video recordings
+  photoEvidence           Json?              // Photos taken during pickup
+  videoEvidence           Json?              // Video recordings
   verificationScore       Float                 @default(0.0)
   riskAssessment          RiskLevel             @default(LOW)
   incidentReported        Boolean               @default(false)
@@ -3192,7 +3579,7 @@ model CheckInKiosk {
   operatingSystem       String?
   hardware              Json?                 // Hardware specifications
   software              Json?                 // Software versions
-  capabilities          KioskCapability[]     // What the kiosk can do
+  capabilities          Json?     // What the kiosk can do
   lastHeartbeat         DateTime?
   lastMaintenance       DateTime?
   nextMaintenance       DateTime?
@@ -3241,12 +3628,12 @@ model KioskSession {
   kioskId               String
   sessionId             String              @unique
   parentId              String?
-  childrenIds           String[]            // Children being processed
+  childrenIds           Json?            // Children being processed
   sessionType           KioskSessionType
   startTime             DateTime            @default(now())
   endTime               DateTime?
   duration              Int?                // Session duration in seconds
-  completedSteps        String[]            // Completed workflow steps
+  completedSteps        Json?            // Completed workflow steps
   currentStep           String?
   status                KioskSessionStatus  @default(ACTIVE)
   language              String              @default("en")
@@ -3260,8 +3647,8 @@ model KioskSession {
   totalInteractions     Int                 @default(0)
   screenTimeouts        Int                 @default(0)
   retryAttempts         Int                 @default(0)
-  printedItems          String[]            // Items printed during session
-  qrCodesScanned        String[]            // QR codes scanned
+  printedItems          Json?            // Items printed during session
+  qrCodesScanned        Json?            // QR codes scanned
   photosCaptured        Int                 @default(0)
   biometricsVerified    Int                 @default(0)
   paymentsProcessed     Float               @default(0.0)
@@ -3309,9 +3696,9 @@ model KioskMaintenanceLog {
   followUpRequired      Boolean             @default(false)
   followUpDate          DateTime?
   qualityRating         Float?              // Maintenance quality rating
-  beforePhotos          String[]            // Photos before maintenance
-  afterPhotos           String[]            // Photos after maintenance
-  documentation         String[]            // Maintenance documentation
+  beforePhotos          Json?            // Photos before maintenance
+  afterPhotos           Json?            // Photos after maintenance
+  documentation         Json?            // Maintenance documentation
   notes                 String?
   metadata              Json?
   createdAt             DateTime            @default(now())
@@ -3395,7 +3782,7 @@ model WorkflowExecution {
   performanceMetrics    Json?                     // Execution performance data
   logEntries            Json?                     // Detailed execution logs
   parentExecutionId     String?                   // Parent workflow execution
-  childExecutions       String[]                  // Child workflow executions
+  childExecutions       Json?                  // Child workflow executions
   correlationId         String?                   // For tracking related executions
   externalReferences    Json?                     // External system references
   qualityScore          Float?                    // Execution quality assessment
@@ -3434,7 +3821,7 @@ model SecurityAuditLog {
   dataAccessed          Json?                 // Data that was accessed
   dataModified          Json?                 // Data that was modified
   sensitiveDataInvolved Boolean               @default(false)
-  complianceFlags       String[]              // Compliance-related flags
+  complianceFlags       Json?              // Compliance-related flags
   riskScore             Float                 @default(0.0)
   alertTriggered        Boolean               @default(false)
   alertId               String?               // Associated alert ID
@@ -3443,7 +3830,7 @@ model SecurityAuditLog {
   mitigationApplied     Boolean               @default(false)
   mitigationDetails     String?
   forensicData          Json?                 // Forensic information
-  correlatedEvents      String[]              // Related security events
+  correlatedEvents      Json?              // Related security events
   externalReferences    Json?                 // External security tools references
   regulatoryImpact      String?               // Regulatory compliance impact
   businessImpact        SecurityImpact        @default(NONE)
@@ -3479,7 +3866,7 @@ model ComplianceReport {
   violations            Json                  // Compliance violations
   recommendations       Json                  // Remediation recommendations
   actionPlan            Json                  // Action plan for improvements
-  evidence              String[]              // Supporting evidence files
+  evidence              Json?              // Supporting evidence files
   auditorName           String?
   auditorCredentials    String?
   auditFirm             String?
@@ -3491,7 +3878,7 @@ model ComplianceReport {
   publicationDate       DateTime?
   confidentialityLevel  ConfidentialityLevel  @default(INTERNAL)
   stakeholders          Json?                 // Relevant stakeholders
-  distributionList      String[]              // Report distribution list
+  distributionList      Json?              // Report distribution list
   followUpRequired      Boolean               @default(false)
   followUpDate          DateTime?
   costOfCompliance      Float?
@@ -4708,7 +5095,7 @@ model SharedMedia {
   capturedAt          DateTime
   venueId             String
   uploadedById        String
-  taggedChildren      String[]            // Array of child IDs
+  taggedChildren      Json?            // Array of child IDs
   facialTagsConfirmed Boolean             @default(false)
   watermarked         Boolean             @default(false)
   originalFileUrl     String?             // Before watermarking
@@ -4781,7 +5168,7 @@ model ChildFriendship {
   totalInteractionTime  Int               @default(0) // in minutes
   lastInteractionAt     DateTime          @default(now())
   confidenceScore       Float             // AI confidence in friendship
-  sharedActivities      String[]          // Activities they do together
+  sharedActivities      Json?          // Activities they do together
   compatibilityScore    Float?            // Family compatibility
   notes                 String?
 
@@ -4820,7 +5207,7 @@ model ParentConnection {
   respondedAt         DateTime?
   message             String?
   connectionReason    String?                 // "children_are_friends", "shared_interests", etc.
-  sharedInterests     String[]
+  sharedInterests     Json?
   compatibilityScore  Float?
   blockedAt           DateTime?
   notes               String?
@@ -4844,7 +5231,7 @@ model SharedActivity {
   location          String?
   venueId           String?
   organizerId       String
-  participantIds    String[]
+  participantIds    Json?
   status            String            @default("planned") // planned, confirmed, completed, cancelled
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
@@ -4995,7 +5382,7 @@ model CommunityGroup {
   adminId           String
   memberLimit       Int?
   location          String?           // geographic area
-  interests         String[]
+  interests         Json?
   ageRange          String?           // "2-5", "6-12", etc.
   requirements      String?           // joining requirements
   createdAt         DateTime          @default(now())
@@ -5062,7 +5449,7 @@ model EventParticipant {
   id                String            @id @default(cuid())
   eventId           String
   userId            String
-  childrenIds       String[]          // Children attending
+  childrenIds       Json?          // Children attending
   status            String            @default("registered") // registered, confirmed, attended, cancelled
   registeredAt      DateTime          @default(now())
   confirmedAt       DateTime?
@@ -5212,9 +5599,9 @@ model SubscriptionPlan {
   name                  String                @unique // "Basic", "Premium", "Family", "Lifetime"
   description           String
   planType              SubscriptionPlanType
-  price                 Decimal               @db.Decimal(10,2) // Monthly price in cents
-  yearlyPrice           Decimal?              @db.Decimal(10,2) // Yearly price with discount
-  lifetimePrice         Decimal?              @db.Decimal(10,2) // One-time lifetime price
+  price                 Float                // Monthly price in cents
+  yearlyPrice           Float?               // Yearly price with discount
+  lifetimePrice         Float?               // One-time lifetime price
   stripePriceId         String?               @unique // Stripe Price ID for recurring plans
   stripeYearlyPriceId   String?               @unique // Stripe Price ID for yearly billing
   stripeLifetimePriceId String?               @unique // Stripe Price ID for lifetime
@@ -5278,7 +5665,7 @@ model UserSubscription {
   lastUsageReset        DateTime                    @default(now())
   
   // Payment
-  nextBillingAmount     Decimal?                    @db.Decimal(10,2)
+  nextBillingAmount     Float?                    
   nextBillingDate       DateTime?
   paymentFailures       Int                         @default(0)
   lastPaymentFailure    DateTime?
@@ -5329,7 +5716,7 @@ model PaymentTransaction {
   
   type                  PaymentTransactionType
   status                PaymentTransactionStatus
-  amount                Decimal                   @db.Decimal(10,2)
+  amount                Float                   
   currency              String                    @default("USD")
   description           String
   
@@ -5341,16 +5728,16 @@ model PaymentTransaction {
   
   // Revenue sharing (for venue-related transactions)
   venueId               String?
-  safeplayAmount        Decimal?                  @db.Decimal(10,2)
-  venueAmount           Decimal?                  @db.Decimal(10,2)
-  revenuePercentage     Decimal?                  @db.Decimal(5,2) // Venue's percentage
+  safeplayAmount        Float?                  
+  venueAmount           Float?                  
+  revenuePercentage     Float?                   // Venue's percentage
   
   // Metadata
   metadata              Json?
   stripeMetadata        Json?
   failureReason         String?
   refundedAt            DateTime?
-  refundAmount          Decimal?                  @db.Decimal(10,2)
+  refundAmount          Float?                  
   
   createdAt             DateTime                  @default(now())
   updatedAt             DateTime                  @updatedAt
@@ -5378,9 +5765,9 @@ model SubscriptionHistory {
   reason                String?
   
   // Pricing at time of change
-  oldAmount             Decimal?                      @db.Decimal(10,2)
-  newAmount             Decimal?                      @db.Decimal(10,2)
-  proratedAmount        Decimal?                      @db.Decimal(10,2)
+  oldAmount             Float?                      
+  newAmount             Float?                      
+  proratedAmount        Float?                      
   
   stripeEventId         String?                       @unique
   metadata              Json?
@@ -5430,7 +5817,7 @@ model BillingEvent {
   description           String
   
   // Amounts
-  amount                Decimal?            @db.Decimal(10,2)
+  amount                Float?            
   currency              String              @default("USD")
   
   // Stripe integration
@@ -5472,13 +5859,13 @@ model VenuePaymentSettings {
   stripeRequirements          Json?               // Stripe requirements
   
   // Revenue sharing
-  revenuePercentage           Decimal             @db.Decimal(5,2) @default(30.00) // Venue's percentage
-  minimumPayoutAmount         Decimal             @db.Decimal(10,2) @default(25.00)
+  revenuePercentage           Float              @default(30.00) // Venue's percentage
+  minimumPayoutAmount         Float              @default(25.00)
   payoutSchedule              PayoutSchedule      @default(WEEKLY)
   
   // Banking
   defaultCurrency             String              @default("USD")
-  supportedCurrencies         String[]            @default(["USD"])
+  supportedCurrencies         Json?
   
   // Status and settings
   isActive                    Boolean             @default(false)
@@ -5509,11 +5896,11 @@ model RevenueTransaction {
   status                RevenueTransactionStatus    @default(PENDING)
   
   // Amounts
-  totalAmount           Decimal                     @db.Decimal(10,2)
-  safeplayAmount        Decimal                     @db.Decimal(10,2)
-  venueAmount           Decimal                     @db.Decimal(10,2)
-  revenuePercentage     Decimal                     @db.Decimal(5,2)
-  processingFees        Decimal                     @db.Decimal(10,2) @default(0)
+  totalAmount           Float                     
+  safeplayAmount        Float                     
+  venueAmount           Float                     
+  revenuePercentage     Float                     
+  processingFees        Float                      @default(0)
   
   currency              String                      @default("USD")
   description           String
@@ -5545,7 +5932,7 @@ model PayoutHistory {
   venueId               String
   
   // Payout details
-  amount                Decimal             @db.Decimal(10,2)
+  amount                Float             
   currency              String              @default("USD")
   description           String
   payoutPeriodStart     DateTime
@@ -5564,7 +5951,7 @@ model PayoutHistory {
   
   // Included transactions
   transactionCount      Int                 @default(0)
-  revenueTransactionIds String[]            // IDs of included revenue transactions
+  revenueTransactionIds Json?            // IDs of included revenue transactions
   
   metadata              Json?
   createdAt             DateTime            @default(now())
@@ -5803,24 +6190,24 @@ model DiscountCode {
   isTimeSensitive       Boolean                   @default(false) // Flash sale type codes
   
   // Applicability
-  applicablePlans       SubscriptionPlanType[]    // Which plans this code applies to
+  applicablePlans       Json?    // Which plans this code applies to
   minimumPurchase       Float?                    // Minimum purchase amount required
   isStackable           Boolean                   @default(false) // Can be used with other codes
   
   // Venue restrictions
   venueSpecific         Boolean                   @default(false)
-  applicableVenues      String[]                  // Venue IDs this code applies to
+  applicableVenues      Json?                  // Venue IDs this code applies to
   
   // User restrictions
-  userRestrictions      DiscountRestrictionType[]
-  allowedUserRoles      UserRole[]                // Which user roles can use this code
+  userRestrictions      Json?
+  allowedUserRoles      Json?                // Which user roles can use this code
   restrictToNewUsers    Boolean                   @default(false)
   restrictToFirstTime   Boolean                   @default(false)
   
   // Geographic restrictions
-  allowedCountries      String[]                  // ISO country codes
-  allowedStates         String[]                  // State codes
-  allowedZipCodes       String[]                  // Specific zip codes
+  allowedCountries      Json?                  // ISO country codes
+  allowedStates         Json?                  // State codes
+  allowedZipCodes       Json?                  // Specific zip codes
   
   // Revenue impact
   estimatedImpact       Float?                    // Estimated revenue impact
@@ -5849,7 +6236,7 @@ model DiscountCode {
   notes                 String?                   // Internal notes
   createdBy             String                    // User ID who created the code
   lastModifiedBy        String?                   // User ID who last modified
-  tags                  String[]                  // Tags for organization
+  tags                  Json?                  // Tags for organization
   isTest                Boolean                   @default(false) // Test code for development
   metadata              Json?                     // Additional metadata
   
@@ -5928,6 +6315,466 @@ model DiscountCodeUsage {
   @@map("discount_code_usages")
 }
 
+// ================================
+// EMAIL AUTOMATION SYSTEM MODELS
+// ================================
+
+model EmailTemplate {
+  id                String              @id @default(cuid())
+  name              String
+  subject           String
+  htmlContent       String              // Rich HTML content
+  textContent       String?             // Plain text fallback
+  templateType      EmailTemplateType
+  category          EmailCategory       @default(SYSTEM)
+  isActive          Boolean             @default(true)
+  isDefault         Boolean             @default(false) // Default template for type
+  variables         Json?               // Available template variables
+  metadata          Json?               // Additional template metadata
+  previewData       Json?               // Sample data for preview
+  designConfig      Json?               // Design configuration (colors, fonts, etc.)
+  version           Int                 @default(1)
+  createdBy         String?             // User who created template
+  lastModifiedBy    String?             // User who last modified
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  campaigns         EmailCampaign[]     @relation("CampaignTemplate")
+  sentEmails        EmailLog[]          @relation("EmailTemplate")
+  automationRules   EmailAutomationRule[] @relation("AutomationTemplate")
+  
+  @@map("email_templates")
+}
+
+model EmailCampaign {
+  id                String              @id @default(cuid())
+  name              String
+  description       String?
+  subject           String?             // Override template subject
+  templateId        String?             // Optional template
+  customContent     Json?               // Custom content if no template
+  campaignType      EmailCampaignType
+  status            EmailCampaignStatus @default(DRAFT)
+  targetSegment     UserSegmentType?
+  emailSegmentId    String?             // Custom segment
+  segmentFilters    Json?               // User filtering criteria
+  scheduledAt       DateTime?           // When to send
+  isRecurring       Boolean             @default(false)
+  recurrencePattern Json?               // Cron-like pattern
+  priority          EmailPriority       @default(NORMAL)
+  trackOpens        Boolean             @default(true)
+  trackClicks       Boolean             @default(true)
+  abTestConfig      Json?               // A/B testing configuration
+  sendImmediately   Boolean             @default(false)
+  maxRecipients     Int?                // Limit number of recipients
+  rateLimitPerHour  Int                 @default(1000) // Email sending rate limit
+  createdBy         String              // User who created campaign
+  approvedBy        String?             // User who approved campaign
+  startedAt         DateTime?           // When campaign actually started
+  completedAt       DateTime?           // When campaign finished
+  pausedAt          DateTime?           // When campaign was paused
+  cancelledAt       DateTime?           // When campaign was cancelled
+  metadata          Json?               // Additional campaign data
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  template          EmailTemplate?      @relation("CampaignTemplate", fields: [templateId], references: [id])
+  emailSegment      EmailSegment?       @relation("CampaignEmailSegment", fields: [emailSegmentId], references: [id])
+  creator           User                @relation("UserCreatedCampaigns", fields: [createdBy], references: [id])
+  approver          User?               @relation("UserApprovedCampaigns", fields: [approvedBy], references: [id])
+  emailLogs         EmailLog[]          @relation("CampaignEmails")
+  analytics         EmailCampaignAnalytics[] @relation("CampaignAnalytics")
+  
+  @@map("email_campaigns")
+}
+
+model EmailAutomationRule {
+  id                String                    @id @default(cuid())
+  name              String
+  description       String?
+  trigger           EmailTrigger
+  triggerConditions Json                      // Conditions that must be met
+  templateId        String
+  delay             Int                       @default(0) // Delay in minutes before sending
+  isActive          Boolean                   @default(true)
+  maxSends          Int?                      // Max sends per user
+  sendOnWeekends    Boolean                   @default(true)
+  sendTimeStart     String?                   // Earliest time to send (HH:MM)
+  sendTimeEnd       String?                   // Latest time to send (HH:MM)
+  timezone          String                    @default("UTC")
+  userSegment       UserSegmentType?
+  emailSegmentId    String?                   // Custom segment
+  segmentFilters    Json?                     // Additional user filtering
+  priority          EmailPriority             @default(NORMAL)
+  stopConditions    Json?                     // Conditions to stop automation
+  metadata          Json?
+  createdBy         String
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  
+  // Relations
+  template          EmailTemplate             @relation("AutomationTemplate", fields: [templateId], references: [id])
+  emailSegment      EmailSegment?             @relation("AutomationEmailSegment", fields: [emailSegmentId], references: [id])
+  creator           User                      @relation("UserAutomationRules", fields: [createdBy], references: [id])
+  executions        EmailAutomationExecution[] @relation("RuleExecutions")
+  
+  @@map("email_automation_rules")
+}
+
+model EmailAutomationExecution {
+  id                String                @id @default(cuid())
+  ruleId            String
+  userId            String
+  scheduledAt       DateTime
+  executedAt        DateTime?
+  status            EmailExecutionStatus  @default(PENDING)
+  emailLogId        String?               @unique // If email was sent
+  errorMessage      String?
+  retryCount        Int                   @default(0)
+  maxRetries        Int                   @default(3)
+  metadata          Json?
+  
+  // Relations
+  rule              EmailAutomationRule   @relation("RuleExecutions", fields: [ruleId], references: [id])
+  user              User                  @relation("UserAutomationExecutions", fields: [userId], references: [id])
+  emailLog          EmailLog?             @relation("AutomationEmail", fields: [emailLogId], references: [id])
+  
+  @@index([ruleId, scheduledAt])
+  @@index([status, scheduledAt])
+  @@map("email_automation_executions")
+}
+
+model EmailLog {
+  id                String              @id @default(cuid())
+  campaignId        String?
+  templateId        String?
+  automationExecId  String?             // If from automation
+  recipientId       String
+  recipientEmail    String
+  subject           String
+  htmlContent       String?
+  textContent       String?
+  status            EmailStatus         @default(QUEUED)
+  priority          EmailPriority       @default(NORMAL)
+  scheduledAt       DateTime?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  openedAt          DateTime?
+  firstOpenedAt     DateTime?           // First time opened
+  lastOpenedAt      DateTime?           // Last time opened
+  openCount         Int                 @default(0)
+  clickedAt         DateTime?
+  firstClickedAt    DateTime?
+  lastClickedAt     DateTime?
+  clickCount        Int                 @default(0)
+  bouncedAt         DateTime?
+  bounceType        EmailBounceType?
+  bounceReason      String?
+  unsubscribedAt    DateTime?
+  spamReportedAt    DateTime?
+  failedAt          DateTime?
+  failureReason     String?
+  externalId        String?             // SES Message ID
+  retryCount        Int                 @default(0)
+  processingTime    Int?                // Time to process in ms
+  metadata          Json?               // Additional tracking data
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  campaign          EmailCampaign?      @relation("CampaignEmails", fields: [campaignId], references: [id])
+  template          EmailTemplate?      @relation("EmailTemplate", fields: [templateId], references: [id])
+  recipient         User                @relation("UserEmailLogs", fields: [recipientId], references: [id])
+  automationExec    EmailAutomationExecution? @relation("AutomationEmail")
+  clickEvents       EmailClickEvent[]   @relation("EmailClicks")
+  queueEntry        EmailQueue?         @relation("EmailQueue")
+  
+  @@index([recipientId, sentAt])
+  @@index([campaignId, status])
+  @@index([status, scheduledAt])
+  @@index([externalId])
+  @@map("email_logs")
+}
+
+model EmailClickEvent {
+  id                String    @id @default(cuid())
+  emailLogId        String
+  url               String
+  clickedAt         DateTime  @default(now())
+  ipAddress         String?
+  userAgent         String?
+  location          Json?     // Geolocation data if available
+  metadata          Json?
+  
+  // Relations
+  emailLog          EmailLog  @relation("EmailClicks", fields: [emailLogId], references: [id])
+  
+  @@index([emailLogId, clickedAt])
+  @@map("email_click_events")
+}
+
+model EmailPreferences {
+  id                      String                @id @default(cuid())
+  userId                  String                @unique
+  emailEnabled            Boolean               @default(true)
+  marketingEmails         Boolean               @default(true)
+  securityEmails          Boolean               @default(true) // Cannot be disabled
+  alertEmails             Boolean               @default(true)
+  welcomeSequence         Boolean               @default(true)
+  featureUpdates          Boolean               @default(true)
+  eventReminders          Boolean               @default(true)
+  weeklyDigest            Boolean               @default(false)
+  monthlyReport           Boolean               @default(false)
+  frequency               EmailFrequency        @default(IMMEDIATE)
+  timeZone                String                @default("UTC")
+  preferredTime           String?               // Preferred time to receive emails (HH:MM)
+  language                String                @default("en")
+  unsubscribeToken        String                @unique @default(cuid())
+  globalUnsubscribedAt    DateTime?
+  lastUpdated             DateTime              @updatedAt
+  createdAt               DateTime              @default(now())
+  
+  // Relations
+  user                    User                  @relation("UserEmailPreferences", fields: [userId], references: [id])
+  segmentMemberships      EmailSegmentMember[]  @relation("UserEmailSegments")
+  
+  @@map("email_preferences")
+}
+
+model EmailSegment {
+  id                String                @id @default(cuid())
+  name              String
+  description       String?
+  segmentType       EmailSegmentType      @default(DYNAMIC)
+  filterCriteria    Json                  // Dynamic segment criteria
+  isActive          Boolean               @default(true)
+  estimatedSize     Int                   @default(0)
+  lastCalculated    DateTime?             // When segment size was last calculated
+  createdBy         String
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  
+  // Relations
+  creator           User                  @relation("UserEmailSegments", fields: [createdBy], references: [id])
+  members           EmailSegmentMember[]  @relation("SegmentMembers")
+  campaigns         EmailCampaign[]       @relation("CampaignEmailSegment")
+  automationRules   EmailAutomationRule[] @relation("AutomationEmailSegment")
+  
+  @@map("email_segments")
+}
+
+model EmailSegmentMember {
+  id                String              @id @default(cuid())
+  segmentId         String
+  userId            String
+  addedAt           DateTime            @default(now())
+  isActive          Boolean             @default(true)
+  metadata          Json?               // Additional member metadata
+  
+  // Relations
+  segment           EmailSegment        @relation("SegmentMembers", fields: [segmentId], references: [id])
+  user              User                @relation("UserSegmentMemberships", fields: [userId], references: [id])
+  emailPreferences  EmailPreferences    @relation("UserEmailSegments", fields: [userId], references: [userId])
+  
+  @@unique([segmentId, userId])
+  @@map("email_segment_members")
+}
+
+model EmailCampaignAnalytics {
+  id                String              @id @default(cuid())
+  campaignId        String
+  date              DateTime            @default(now())
+  emailsSent        Int                 @default(0)
+  emailsDelivered   Int                 @default(0)
+  emailsBounced     Int                 @default(0)
+  emailsOpened      Int                 @default(0)
+  emailsClicked     Int                 @default(0)
+  emailsUnsubscribed Int                @default(0)
+  emailsSpamReported Int                @default(0)
+  uniqueOpens       Int                 @default(0)
+  uniqueClicks      Int                 @default(0)
+  deliveryRate      Float               @default(0.0) // delivered/sent
+  openRate          Float               @default(0.0) // opened/delivered
+  clickRate         Float               @default(0.0) // clicked/delivered
+  clickToOpenRate   Float               @default(0.0) // clicked/opened
+  bounceRate        Float               @default(0.0) // bounced/sent
+  unsubscribeRate   Float               @default(0.0) // unsubscribed/delivered
+  spamRate          Float               @default(0.0) // spam_reported/delivered
+  revenue           Float               @default(0.0) // if tracking revenue
+  
+  // Relations
+  campaign          EmailCampaign       @relation("CampaignAnalytics", fields: [campaignId], references: [id])
+  
+  @@unique([campaignId, date])
+  @@map("email_campaign_analytics")
+}
+
+model EmailQueue {
+  id                String              @id @default(cuid())
+  emailLogId        String              @unique
+  priority          EmailPriority       @default(NORMAL)
+  scheduledAt       DateTime
+  attempts          Int                 @default(0)
+  maxAttempts       Int                 @default(3)
+  lastAttemptAt     DateTime?
+  nextAttemptAt     DateTime?
+  status            EmailQueueStatus    @default(PENDING)
+  processingStartedAt DateTime?
+  processingCompletedAt DateTime?
+  errorMessage      String?
+  processingNode    String?             // For distributed processing
+  metadata          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  // Relations
+  emailLog          EmailLog            @relation("EmailQueue", fields: [emailLogId], references: [id])
+  
+  @@index([status, nextAttemptAt])
+  @@index([priority, scheduledAt])
+  @@map("email_queue")
+}
+
+// Email Automation Enums
+enum EmailTemplateType {
+  WELCOME
+  ONBOARDING
+  VERIFICATION
+  ALERT
+  REMINDER
+  NEWSLETTER
+  PROMOTIONAL
+  TRANSACTIONAL
+  SYSTEM
+  CUSTOM
+}
+
+enum EmailCategory {
+  SYSTEM
+  MARKETING
+  TRANSACTIONAL
+  SECURITY
+  NOTIFICATIONS
+  EDUCATION
+}
+
+enum EmailCampaignType {
+  ONE_TIME
+  DRIP_SEQUENCE
+  BEHAVIORAL
+  ANNIVERSARY
+  NEWSLETTER
+  PROMOTIONAL
+  RE_ENGAGEMENT
+  WELCOME_SERIES
+}
+
+enum EmailCampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  PAUSED
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum EmailTrigger {
+  USER_SIGNUP
+  USER_VERIFICATION
+  CHILD_ADDED
+  VENUE_VISIT
+  ALERT_GENERATED
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_EXPIRED
+  PAYMENT_FAILED
+  INACTIVITY
+  FEATURE_USAGE
+  CUSTOM_EVENT
+  TIME_BASED
+  BEHAVIORAL
+  SCHEDULED
+}
+
+enum EmailPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum EmailStatus {
+  QUEUED
+  PROCESSING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  FAILED
+  UNSUBSCRIBED
+  SPAM_REPORTED
+}
+
+enum EmailBounceType {
+  HARD
+  SOFT
+  COMPLAINT
+}
+
+enum EmailExecutionStatus {
+  PENDING
+  SCHEDULED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  SKIPPED
+}
+
+enum EmailQueueStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  RETRYING
+  CANCELLED
+}
+
+enum UserSegmentType {
+  ALL_USERS
+  NEW_USERS
+  ACTIVE_USERS
+  INACTIVE_USERS
+  PARENTS
+  VENUE_ADMINS
+  COMPANY_ADMINS
+  VERIFIED_USERS
+  UNVERIFIED_USERS
+  PREMIUM_USERS
+  FREE_USERS
+  CUSTOM
+}
+
+enum EmailSegmentType {
+  STATIC
+  DYNAMIC
+  BEHAVIORAL
+  DEMOGRAPHIC
+}
+
+enum EmailFrequency {
+  IMMEDIATE
+  DAILY_DIGEST
+  WEEKLY_DIGEST
+  MONTHLY_DIGEST
+  NEVER
+}
+
+
+
 model DiscountCampaign {
   id                    String                    @id @default(cuid())
   name                  String                    // Campaign name
@@ -5959,8 +6806,8 @@ model DiscountCampaign {
   
   // Targeting
   targetAudience        Json?                     // Audience targeting criteria
-  targetChannels        String[]                  // Marketing channels
-  targetLocations       String[]                  // Geographic targeting
+  targetChannels        Json?                  // Marketing channels
+  targetLocations       Json?                  // Geographic targeting
   
   // A/B Testing
   isAbTest              Boolean                   @default(false)
@@ -5980,7 +6827,7 @@ model DiscountCampaign {
   // Metadata
   createdBy             String                    // User ID who created campaign
   lastModifiedBy        String?                   // User ID who last modified
-  tags                  String[]                  // Campaign tags
+  tags                  Json?                  // Campaign tags
   notes                 String?                   // Internal notes
   metadata              Json?                     // Additional metadata
   
@@ -6061,4 +6908,1215 @@ model DiscountAnalytics {
   @@index([campaignId, periodStart])
   @@index([periodType, calculatedAt])
   @@map("discount_analytics")
+}
+
+// Identity & Phone Verification Enums
+
+enum VerificationLevel {
+  UNVERIFIED        // No verification completed
+  PHONE_VERIFIED    // Only phone verified
+  IDENTITY_VERIFIED // Phone + identity verified
+  FULL_VERIFIED     // Phone + identity + 2FA enabled
+}
+
+enum PhoneVerificationCodeType {
+  SMS
+  VOICE_CALL
+}
+
+enum PhoneVerificationStatus {
+  PENDING
+  SENT
+  VERIFIED
+  EXPIRED
+  FAILED
+  MAX_ATTEMPTS_REACHED
+}
+
+enum IdentityVerificationType {
+  BASIC_VERIFICATION     // Basic document verification
+  ENHANCED_VERIFICATION  // Enhanced with selfie matching
+  MANUAL_REVIEW         // Manual review by admin
+  AUTOMATED_SCREENING   // AI-powered verification
+}
+
+enum IdentityVerificationStatus {
+  PENDING
+  SUBMITTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+  REQUIRES_RESUBMISSION
+}
+
+enum DocumentType {
+  DRIVERS_LICENSE
+  PASSPORT
+  NATIONAL_ID
+  STATE_ID
+  MILITARY_ID
+  STUDENT_ID
+  BIRTH_CERTIFICATE
+  UTILITY_BILL
+  BANK_STATEMENT
+  OTHER
+}
+
+enum VerificationMethod {
+  MANUAL        // Manual review by admin
+  AUTOMATED     // AI-powered automated verification
+  HYBRID        // AI + manual review
+  THIRD_PARTY   // External verification service
+}
+
+enum TwoFactorMethod {
+  SMS
+  AUTHENTICATOR_APP
+  EMAIL
+  BACKUP_CODE
+  HARDWARE_TOKEN
+  WEBAUTHN
+  PUSH_NOTIFICATION
+}
+
+enum TwoFactorStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  EXPIRED
+  MAX_ATTEMPTS_REACHED
+}
+
+enum TwoFactorPurpose {
+  LOGIN
+  SETUP
+  DISABLE
+  SENSITIVE_ACTION
+  PASSWORD_RESET
+  ACCOUNT_RECOVERY
+}
+
+enum EmailVerificationPurpose {
+  TWO_FACTOR
+  EMAIL_CHANGE
+  ACCOUNT_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum EmailVerificationStatus {
+  PENDING
+  SENT
+  VERIFIED
+  EXPIRED
+  FAILED
+  MAX_ATTEMPTS_REACHED
+}
+
+enum PushNotificationPlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
+enum SystemNotificationType {
+  VERIFICATION_REMINDER
+  VERIFICATION_REQUIRED
+  VERIFICATION_APPROVED
+  VERIFICATION_REJECTED
+  TWO_FACTOR_SETUP
+  SECURITY_ALERT
+  COMPLIANCE_WARNING
+  ACCOUNT_LOCKED
+  SUSPICIOUS_ACTIVITY
+}
+
+enum SystemNotificationStatus {
+  UNREAD
+  READ
+  DISMISSED
+  EXPIRED
+}
+
+// AI-First Support Center & Ticketing System Models
+
+model SupportTicket {
+  id                      String                    @id @default(cuid())
+  ticketNumber            String                    @unique // Auto-generated ticket number (e.g., "SP-2025-001")
+  title                   String
+  description             String
+  userId                  String                    // User who created the ticket
+  userRole                UserRole                  // Role of the user (for routing)
+  venueId                 String?                   // Associated venue (if applicable)
+  category                SupportTicketCategory
+  subCategory             String?                   // More specific categorization
+  priority                SupportTicketPriority     @default(MEDIUM)
+  status                  SupportTicketStatus       @default(OPEN)
+  severity                SupportTicketSeverity     @default(NORMAL)
+  source                  SupportTicketSource       @default(WEB_FORM) // How ticket was created
+  
+  // AI Processing Fields
+  aiProcessed             Boolean                   @default(false)
+  aiSuggestions           Json?                     // AI-generated suggestions and responses
+  aiConfidence            Float?                    // AI confidence in suggested solution (0-1)
+  aiResponse              String?                   // AI-generated response to user
+  aiResolutionAttempted   Boolean                   @default(false)
+  aiEscalationReason      String?                   // Why AI escalated to human
+  
+  // Assignment & Escalation
+  assignedToId            String?                   // Support agent assigned to ticket
+  assignedAt              DateTime?
+  escalatedAt             DateTime?
+  escalatedBy             String?                   // Agent who escalated
+  escalationReason        String?
+  escalationLevel         Int                       @default(0) // 0=user, 1=AI, 2=L1 agent, 3=L2 agent, etc.
+  
+  // Resolution & Tracking
+  resolvedAt              DateTime?
+  resolvedBy              String?                   // Agent who resolved
+  resolution              String?                   // Resolution description
+  resolutionTime          Int?                      // Time to resolve in minutes
+  firstResponseTime       Int?                      // Time to first response in minutes
+  
+  // User Feedback
+  satisfactionRating      Int?                      // 1-5 rating
+  feedbackText            String?
+  feedbackAt              DateTime?
+  
+  // Metadata
+  tags                    Json?                     // Searchable tags
+  attachments             Json?                     // File attachments
+  relatedTicketIds        Json?                     // Related ticket IDs
+  duplicateOfId           String?                   // If this is a duplicate
+  publicTicket            Boolean                   @default(false) // Can be viewed by other users
+  
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  // Relations
+  user                    User                      @relation("UserSupportTickets", fields: [userId], references: [id])
+  venue                   Venue?                    @relation("VenueSupportTickets", fields: [venueId], references: [id])
+  assignedTo              SupportAgent?             @relation("AssignedSupportTickets", fields: [assignedToId], references: [id])
+  messages                SupportTicketMessage[]
+  timelineEntries         SupportTicketTimeline[]
+  escalations             TicketEscalation[]
+  
+  @@index([status, priority])
+  @@index([userId, status])
+  @@index([venueId, status])
+  @@index([assignedToId, status])
+  @@index([category, status])
+  @@index([createdAt, status])
+  @@map("support_tickets")
+}
+
+model SupportTicketMessage {
+  id                      String                    @id @default(cuid())
+  ticketId                String
+  senderId                String?                   // User or agent ID (null for AI)
+  senderType              MessageSenderType
+  content                 String
+  messageType             SupportMessageType        @default(TEXT)
+  isInternal              Boolean                   @default(false) // Internal agent notes
+  attachments             Json?                     // File attachments
+  aiGenerated             Boolean                   @default(false)
+  aiPrompt                String?                   // Prompt used to generate AI response
+  metadata                Json?
+  
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  // Relations
+  ticket                  SupportTicket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  @@index([ticketId, createdAt])
+  @@index([senderType, aiGenerated])
+  @@map("support_ticket_messages")
+}
+
+model SupportTicketTimeline {
+  id                      String                    @id @default(cuid())
+  ticketId                String
+  eventType               TicketEventType
+  description             String
+  performedBy             String?                   // User/agent who performed action
+  performerType           TimelinePerformerType
+  oldValue                String?                   // Previous state
+  newValue                String?                   // New state
+  metadata                Json?
+  
+  createdAt               DateTime                  @default(now())
+  
+  // Relations
+  ticket                  SupportTicket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  
+  @@index([ticketId, createdAt])
+  @@index([eventType, createdAt])
+  @@map("support_ticket_timeline")
+}
+
+model TicketEscalation {
+  id                      String                    @id @default(cuid())
+  ticketId                String
+  fromLevel               Int                       // Previous escalation level
+  toLevel                 Int                       // New escalation level
+  fromAgentId             String?                   // Agent who escalated
+  toAgentId               String?                   // Agent escalated to
+  reason                  String
+  urgencyFactors          Json?                     // Factors that triggered escalation
+  
+  createdAt               DateTime                  @default(now())
+  
+  // Relations
+  ticket                  SupportTicket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  fromAgent               SupportAgent?             @relation("EscalationFromAgent", fields: [fromAgentId], references: [id])
+  toAgent                 SupportAgent?             @relation("EscalationToAgent", fields: [toAgentId], references: [id])
+  
+  @@index([ticketId, createdAt])
+  @@map("ticket_escalations")
+}
+
+model SupportAgent {
+  id                      String                    @id @default(cuid())
+  userId                  String                    @unique // Link to User table
+  agentLevel              SupportAgentLevel         @default(L1)
+  department              SupportDepartment
+  specializations         Json?                     // Areas of expertise
+  languages               Json?                     // Supported languages
+  status                  AgentStatus               @default(OFFLINE)
+  isActive                Boolean                   @default(true)
+  maxConcurrentTickets    Int                       @default(10)
+  currentTicketLoad       Int                       @default(0)
+  
+  // Performance Metrics
+  totalTicketsHandled     Int                       @default(0)
+  avgResolutionTime       Float?                    // Average resolution time in minutes
+  avgSatisfactionRating   Float?                    // Average customer satisfaction
+  escalationRate          Float?                    // Percentage of tickets escalated
+  
+  // Working Hours & Availability
+  workingHours            Json?                     // Schedule configuration
+  timezone                String                    @default("UTC")
+  isOnBreak               Boolean                   @default(false)
+  breakStartTime          DateTime?
+  lastActiveAt            DateTime?
+  
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  // Relations
+  user                    User                      @relation("UserSupportAgent", fields: [userId], references: [id])
+  assignedTickets         SupportTicket[]           @relation("AssignedSupportTickets")
+  chatSessions            SupportChatSession[]      @relation("AgentChatSessions")
+  escalationsFrom         TicketEscalation[]        @relation("EscalationFromAgent")
+  escalationsTo           TicketEscalation[]        @relation("EscalationToAgent")
+  
+  @@index([status, isActive])
+  @@index([department, agentLevel])
+  @@map("support_agents")
+}
+
+model KnowledgeBaseArticle {
+  id                      String                    @id @default(cuid())
+  title                   String
+  content                 String                    // Rich text content
+  summary                 String?                   // Short summary for search results
+  category                KnowledgeBaseCategory
+  subCategory             String?
+  tags                    Json?                     // Searchable tags
+  
+  // SEO & Search
+  slug                    String                    @unique // URL-friendly version of title
+  searchKeywords          Json?                     // Additional search terms
+  
+  // Access Control
+  isPublic                Boolean                   @default(true)
+  requiredRole            UserRole?                 // Minimum role required to view
+  targetAudience          Json?                     // Target user types
+  
+  // Content Management
+  status                  ArticleStatus             @default(DRAFT)
+  publishedAt             DateTime?
+  lastReviewedAt          DateTime?
+  reviewedBy              String?                   // User ID who reviewed
+  version                 Int                       @default(1)
+  
+  // Engagement Metrics
+  viewCount               Int                       @default(0)
+  helpfulVotes            Int                       @default(0)
+  notHelpfulVotes         Int                       @default(0)
+  avgRating               Float?                    // Average helpfulness rating
+  
+  // AI Integration
+  aiSummary               String?                   // AI-generated summary
+  relatedArticleIds       Json?                     // AI-suggested related articles
+  commonQuestions         Json?                     // Questions this article addresses
+  
+  // SEO metadata
+  metaDescription         String?
+  metaKeywords            Json?
+  
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  // Relations
+  feedback                ArticleFeedback[]
+  
+  @@index([category, status])
+  @@index([isPublic, status])
+  @@index([publishedAt, viewCount])
+  @@map("knowledge_base_articles")
+}
+
+model ArticleFeedback {
+  id                      String                    @id @default(cuid())
+  articleId               String
+  userId                  String?                   // Anonymous feedback allowed
+  rating                  Int                       // 1-5 rating
+  comment                 String?
+  wasHelpful              Boolean
+  improvementSuggestions  String?
+  
+  createdAt               DateTime                  @default(now())
+  
+  // Relations
+  article                 KnowledgeBaseArticle      @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  
+  @@index([articleId, rating])
+  @@map("article_feedback")
+}
+
+model SupportChatSession {
+  id                      String                    @id @default(cuid())
+  sessionId               String                    @unique // Frontend session identifier
+  userId                  String                    // User in the chat
+  agentId                 String?                   // Assigned agent (null for AI-only)
+  status                  ChatSessionStatus         @default(WAITING)
+  
+  // Session Flow
+  isAIOnly                Boolean                   @default(true) // Starts with AI
+  aiHandoffAt             DateTime?                 // When AI handed off to human
+  humanTakeoverAt         DateTime?                 // When human took over
+  handoffReason           String?                   // Why handed off to human
+  
+  // Metadata
+  userAgent               String?
+  ipAddress               String?
+  referrerPage            String?                   // Page user was on when starting chat
+  initialQuery            String?                   // User's initial question
+  
+  // Timing
+  waitTime                Int?                      // Time user waited for agent (seconds)
+  sessionDuration         Int?                      // Total session time (seconds)
+  
+  // Routing
+  department              SupportDepartment?        // Which department handles this
+  priority                ChatPriority              @default(NORMAL)
+  language                String                    @default("en")
+  
+  // Completion
+  endedAt                 DateTime?
+  endedBy                 SessionEndType?           // Who ended the session
+  endReason               String?
+  
+  // Satisfaction
+  rating                  Int?                      // 1-5 rating
+  feedback                String?
+  feedbackAt              DateTime?
+  
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  // Relations
+  user                    User                      @relation("UserChatSessions", fields: [userId], references: [id])
+  agent                   SupportAgent?             @relation("AgentChatSessions", fields: [agentId], references: [id])
+  messages                ChatMessage[]
+  
+  @@index([userId, status])
+  @@index([agentId, status])
+  @@index([status, createdAt])
+  @@map("support_chat_sessions")
+}
+
+model ChatMessage {
+  id                      String                    @id @default(cuid())
+  sessionId               String
+  senderId                String?                   // User/agent ID (null for AI)
+  senderType              MessageSenderType
+  content                 String
+  messageType             ChatMessageType           @default(TEXT)
+  
+  // AI Fields
+  aiGenerated             Boolean                   @default(false)
+  aiModel                 String?                   // Model used (gpt-4, etc.)
+  aiPrompt                String?                   // Prompt that generated response
+  aiConfidence            Float?                    // AI confidence (0-1)
+  
+  // Metadata
+  attachments             Json?                     // File attachments
+  readBy                  Json?                     // Who has read this message
+  readAt                  DateTime?
+  metadata                Json?
+  
+  createdAt               DateTime                  @default(now())
+  
+  // Relations
+  session                 SupportChatSession        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@index([sessionId, createdAt])
+  @@index([senderType, aiGenerated])
+  @@map("chat_messages")
+}
+
+model SupportWorkflow {
+  id                      String                    @id @default(cuid())
+  name                    String                    @unique
+  description             String?
+  workflowType            SupportWorkflowType
+  
+  // Trigger Conditions
+  triggerConditions       Json                      // Conditions that activate this workflow
+  category                SupportTicketCategory?    // Apply to specific categories
+  priority                SupportTicketPriority?    // Apply to specific priorities
+  userRole                UserRole?                 // Apply to specific user roles
+  
+  // Workflow Steps
+  steps                   Json                      // Ordered list of workflow steps
+  
+  // AI Integration
+  aiEnabled               Boolean                   @default(true)
+  aiPromptTemplate        String?                   // Template for AI responses
+  aiEscalationRules       Json?                     // When AI should escalate
+  
+  // Timing & Escalation
+  autoEscalationTime      Int?                      // Minutes before auto-escalation
+  slaTime                 Int?                      // SLA time in minutes
+  
+  // Status
+  isActive                Boolean                   @default(true)
+  version                 Int                       @default(1)
+  
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  @@index([workflowType, isActive])
+  @@index([category, isActive])
+  @@map("support_workflows")
+}
+
+model SupportAnalytics {
+  id                      String                    @id @default(cuid())
+  date                    DateTime                  // Date for this analytics record
+  
+  // Ticket Metrics
+  ticketsCreated          Int                       @default(0)
+  ticketsResolved         Int                       @default(0)
+  ticketsClosed           Int                       @default(0)
+  avgResolutionTime       Float?                    // Average in minutes
+  avgFirstResponseTime    Float?                    // Average in minutes
+  
+  // AI Metrics
+  aiInteractions          Int                       @default(0)
+  aiResolutionsSuccessful Int                       @default(0)
+  aiEscalations           Int                       @default(0)
+  aiAccuracyRate          Float?                    // Successful AI resolutions / total AI attempts
+  
+  // Chat Metrics
+  chatSessionsStarted     Int                       @default(0)
+  chatSessionsCompleted   Int                       @default(0)
+  avgChatDuration         Float?                    // Average in minutes
+  avgChatWaitTime         Float?                    // Average wait time in minutes
+  
+  // Satisfaction Metrics
+  avgSatisfactionRating   Float?                    // Average rating 1-5
+  satisfactionResponses   Int                       @default(0)
+  npsScore                Float?                    // Net Promoter Score
+  
+  // Knowledge Base Metrics
+  kbArticleViews          Int                       @default(0)
+  kbSearchQueries         Int                       @default(0)
+  avgKbRating             Float?                    // Average article rating
+  
+  // Category Breakdown
+  categoryBreakdown       Json?                     // Tickets by category
+  priorityBreakdown       Json?                     // Tickets by priority
+  departmentBreakdown     Json?                     // Workload by department
+  
+  // Agent Performance
+  totalActiveAgents       Int                       @default(0)
+  avgTicketsPerAgent      Float?
+  agentUtilizationRate    Float?                    // Percentage of agent capacity used
+  
+  createdAt               DateTime                  @default(now())
+  
+  @@unique([date])
+  @@index([date])
+  @@map("support_analytics")
+}
+
+model AIChatConfig {
+  id                      String                    @id @default(cuid())
+  name                    String                    @unique // Configuration name
+  isActive                Boolean                   @default(true)
+  
+  // AI Model Configuration
+  aiModel                 String                    @default("gpt-4o-mini") // AI model to use
+  maxTokens               Int                       @default(1000)
+  temperature             Float                     @default(0.7)
+  
+  // Behavior Configuration
+  systemPrompt            String                    // System prompt for AI
+  welcomeMessage          String                    // Initial greeting
+  escalationPrompt        String?                   // Prompt for escalation decision
+  
+  // Escalation Rules
+  escalationKeywords      Json?                     // Keywords that trigger escalation
+  escalationConfidenceThreshold Float?              // Confidence below which to escalate
+  maxAIInteractions       Int                       @default(10) // Max AI responses before escalation
+  escalationTimeLimit     Int?                      // Time limit before escalation (minutes)
+  
+  // Integration Settings
+  kbIntegrationEnabled    Boolean                   @default(true)
+  kbSearchLimit           Int                       @default(5) // Max KB articles to search
+  ticketCreationEnabled   Boolean                   @default(true)
+  
+  // Response Configuration
+  responseTemplates       Json?                     // Pre-defined response templates
+  fallbackResponse        String?                   // Default response when AI fails
+  
+  // Filtering & Safety
+  contentFilters          Json?                     // Content filtering rules
+  sensitiveTopics         Json?                     // Topics requiring human handling
+  
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  
+  @@index([isActive])
+  @@map("ai_chat_config")
+}
+
+// Support Center Enums
+enum SupportTicketCategory {
+  TECHNICAL_ISSUE
+  ACCOUNT_BILLING
+  CHILD_SAFETY
+  VENUE_SETUP
+  FEATURE_REQUEST
+  BUG_REPORT
+  CAMERA_SUPPORT
+  FACE_RECOGNITION
+  ALERTS_NOTIFICATIONS
+  CHECK_IN_OUT
+  SUBSCRIPTION
+  PAYMENT
+  VERIFICATION
+  MOBILE_APP
+  GENERAL_INQUIRY
+  EMERGENCY
+  COMPLAINT
+  FEEDBACK
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_USER
+  WAITING_FOR_VENDOR
+  RESOLVED
+  CLOSED
+  REOPENED
+  ESCALATED
+  ON_HOLD
+}
+
+enum SupportTicketSeverity {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum SupportTicketSource {
+  WEB_FORM
+  EMAIL
+  CHAT
+  PHONE
+  AI_ESCALATION
+  MOBILE_APP
+  ADMIN_CREATED
+}
+
+enum MessageSenderType {
+  USER
+  AGENT
+  AI
+  SYSTEM
+}
+
+enum SupportMessageType {
+  TEXT
+  IMAGE
+  FILE
+  SYSTEM_UPDATE
+  STATUS_CHANGE
+}
+
+enum TicketEventType {
+  CREATED
+  ASSIGNED
+  STATUS_CHANGED
+  PRIORITY_CHANGED
+  ESCALATED
+  RESOLVED
+  CLOSED
+  REOPENED
+  COMMENT_ADDED
+  ATTACHMENT_ADDED
+}
+
+enum TimelinePerformerType {
+  USER
+  AGENT
+  AI
+  SYSTEM
+}
+
+enum SupportAgentLevel {
+  L1
+  L2
+  L3
+  SPECIALIST
+  SUPERVISOR
+  MANAGER
+}
+
+enum SupportDepartment {
+  TECHNICAL
+  BILLING
+  SAFETY
+  VENUE_SUPPORT
+  PRODUCT
+  GENERAL
+}
+
+enum AgentStatus {
+  ONLINE
+  OFFLINE
+  BUSY
+  AWAY
+  ON_BREAK
+}
+
+enum KnowledgeBaseCategory {
+  GETTING_STARTED
+  TECHNICAL_SUPPORT
+  BILLING_PAYMENTS
+  CHILD_SAFETY
+  VENUE_MANAGEMENT
+  MOBILE_APP
+  FACE_RECOGNITION
+  CAMERAS_HARDWARE
+  ALERTS_NOTIFICATIONS
+  TROUBLESHOOTING
+  API_DOCUMENTATION
+  BEST_PRACTICES
+  FAQ
+  POLICIES
+  UPDATES
+}
+
+enum ArticleStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ChatSessionStatus {
+  WAITING
+  ACTIVE
+  TRANSFERRED
+  ENDED
+  ABANDONED
+}
+
+enum ChatPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum SessionEndType {
+  USER
+  AGENT
+  SYSTEM
+  TIMEOUT
+}
+
+enum ChatMessageType {
+  TEXT
+  IMAGE
+  FILE
+  TYPING_INDICATOR
+  SYSTEM_MESSAGE
+}
+
+enum SupportWorkflowType {
+  TICKET_ROUTING
+  AUTO_RESPONSE
+  ESCALATION
+  FOLLOW_UP
+  SATISFACTION_SURVEY
+}
+
+// Family Member Management Models
+
+model FamilyInvitation {
+  id                  String                    @id @default(cuid())
+  inviterUserId       String                    // Parent sending the invitation
+  inviteeEmail        String                    // Email of person being invited
+  inviteeName         String?                   // Name of person being invited
+  familyRole          FamilyMemberRole          // Role being assigned (SPOUSE, GRANDPARENT, etc.)
+  invitationMessage   String?                   // Custom message from inviter
+  invitationToken     String                    @unique // Unique token for invitation acceptance
+  status              InvitationStatus          @default(PENDING)
+  linkedChildrenIds   Json?                     // Array of child IDs this invitation gives access to
+  permissionSet       Json                      // Permissions being granted (JSON object)
+  expiresAt           DateTime                  // Invitation expiration
+  sentAt              DateTime                  @default(now())
+  acceptedAt          DateTime?
+  declinedAt          DateTime?
+  revokedAt           DateTime?
+  revokedBy           String?                   // User who revoked the invitation
+  revokeReason        String?
+  acceptedBy          String?                   // User ID who accepted (if they already had an account)
+  remindersSent       Int                       @default(0)
+  lastReminderAt      DateTime?
+  ipAddress           String?                   // IP address where invitation was created
+  userAgent           String?                   // Browser info where invitation was created
+  acceptanceIpAddress String?                   // IP address where invitation was accepted
+  acceptanceUserAgent String?                   // Browser info where invitation was accepted
+  metadata            Json?                     // Additional invitation data
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  
+  inviter             User                      @relation("UserSentInvitations", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  invitee             User?                     @relation("UserReceivedInvitations", fields: [acceptedBy], references: [id])
+  
+  @@index([inviterUserId, status])
+  @@index([inviteeEmail, status])
+  @@index([invitationToken])
+  @@index([expiresAt, status])
+  @@map("family_invitations")
+}
+
+model FamilyMember {
+  id                    String                  @id @default(cuid())
+  familyOwnerId         String                  // Primary parent/family owner
+  memberUserId          String                  // User ID of the family member
+  familyRole            FamilyMemberRole        // Role in the family
+  displayName           String?                 // Custom display name for this family member
+  relationship          String?                 // Free-text relationship description
+  status                FamilyMemberStatus      @default(ACTIVE)
+  joinedAt              DateTime                @default(now())
+  lastActiveAt          DateTime?
+  
+  // Permission Management
+  canViewAllChildren    Boolean                 @default(false) // Can see all children in family
+  canEditChildren       Boolean                 @default(false) // Can edit child profiles
+  canCheckInOut         Boolean                 @default(false) // Can check children in/out
+  canViewPhotos         Boolean                 @default(true)  // Can view photos
+  canViewVideos         Boolean                 @default(true)  // Can view videos
+  canPurchaseMedia      Boolean                 @default(false) // Can purchase photos/videos
+  canReceiveAlerts      Boolean                 @default(true)  // Can receive safety alerts
+  canViewLocation       Boolean                 @default(true)  // Can view child location
+  canViewReports        Boolean                 @default(false) // Can view safety reports
+  canManageFamily       Boolean                 @default(false) // Can invite/manage other family members
+  canMakePayments       Boolean                 @default(false) // Can make payments/purchases
+  
+  // Access Restrictions
+  photoAccess           MediaAccessLevel        @default(FULL)  // Photo access level
+  videoAccess           MediaAccessLevel        @default(FULL)  // Video access level
+  alertTypes            Json?                   // Array of alert types they can receive
+  allowedVenues         Json?                   // Array of venue IDs they can access
+  timeRestrictions      Json?                   // Time-based access restrictions
+  emergencyContact      Boolean                 @default(false) // Is an emergency contact
+  emergencyContactOrder Int?                    // Order in emergency contact list
+  
+  // Blocking and Restrictions
+  isBlocked             Boolean                 @default(false) // Is this family member blocked
+  blockedAt             DateTime?
+  blockedBy             String?                 // User who blocked them
+  blockReason           String?                 // Reason for blocking
+  blockedFromChildren   Json?                   // Array of child IDs they're blocked from
+  
+  // Notification Preferences
+  notificationChannels  Json?                   // Preferred notification channels
+  quietHoursStart       String?                 // HH:MM format
+  quietHoursEnd         String?                 // HH:MM format
+  notificationFrequency NotificationFrequency   @default(REAL_TIME)
+  
+  // Metadata
+  invitationId          String?                 // Original invitation that created this membership
+  notes                 String?                 // Private notes about this family member
+  customPermissions     Json?                   // Custom permission overrides
+  lastPermissionUpdate  DateTime?
+  permissionUpdatedBy   String?
+  metadata              Json?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  familyOwner           User                    @relation("UserFamilyMemberships", fields: [familyOwnerId], references: [id], onDelete: Cascade)
+  memberUser            User                    @relation("UserFamilyMembers", fields: [memberUserId], references: [id], onDelete: Cascade)
+  permissions           FamilyPermission[]
+  childAccess           ChildAccess[]
+  
+  @@unique([familyOwnerId, memberUserId])
+  @@index([familyOwnerId, status])
+  @@index([memberUserId, status])
+  @@index([familyRole, status])
+  @@map("family_members")
+}
+
+model FamilyPermission {
+  id                  String                @id @default(cuid())
+  familyMemberId      String                // Family member this permission applies to
+  grantedBy           String                // User who granted this permission
+  receivedBy          String                // User who received this permission
+  permissionType      PermissionType        // Type of permission
+  resourceType        ResourceType          // What resource this permission applies to
+  resourceId          String?               // Specific resource ID (child ID, venue ID, etc.)
+  permissionLevel     PermissionLevel       // Level of access granted
+  
+  // Permission Details
+  canRead             Boolean               @default(false)
+  canWrite            Boolean               @default(false)
+  canDelete           Boolean               @default(false)
+  canShare            Boolean               @default(false)
+  canDownload         Boolean               @default(false)
+  
+  // Time and Context Restrictions
+  isActive            Boolean               @default(true)
+  activatedAt         DateTime              @default(now())
+  deactivatedAt       DateTime?
+  deactivatedBy       String?
+  expiresAt           DateTime?             // Permission expiration
+  
+  // Access Conditions
+  timeRestrictions    Json?                 // Time-based restrictions
+  locationRestrictions Json?               // Location-based restrictions
+  contextRestrictions Json?                // Other contextual restrictions
+  
+  // Usage Tracking
+  usageCount          Int                   @default(0)
+  lastUsedAt          DateTime?
+  usageLimit          Int?                  // Maximum usage count
+  
+  // Audit Information
+  grantReason         String?               // Reason for granting permission
+  revokeReason        String?               // Reason for revoking permission
+  auditLog            Json?                 // Detailed audit information
+  metadata            Json?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  
+  familyMember        FamilyMember          @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  grantor             User                  @relation("UserGrantedPermissions", fields: [grantedBy], references: [id])
+  recipient           User                  @relation("UserReceivedPermissions", fields: [receivedBy], references: [id])
+  
+  @@index([familyMemberId, permissionType])
+  @@index([resourceType, resourceId])
+  @@index([isActive, expiresAt])
+  @@map("family_permissions")
+}
+
+model ChildAccess {
+  id                    String                @id @default(cuid())
+  childId               String                // Child this access applies to
+  familyMemberId        String                // Family member being granted access
+  grantedBy             String                // User who granted access (usually parent)
+  accessedBy            String                // User who has access
+  accessLevel           ChildAccessLevel      // Level of access to this child
+  
+  // Specific Permissions for this Child
+  canViewProfile        Boolean               @default(true)   // Can view child profile
+  canEditProfile        Boolean               @default(false)  // Can edit child profile
+  canViewLocation       Boolean               @default(true)   // Can view child location
+  canTrackLocation      Boolean               @default(true)   // Can track child movements
+  canViewPhotos         Boolean               @default(true)   // Can view child photos
+  canViewVideos         Boolean               @default(true)   // Can view child videos
+  canDownloadMedia      Boolean               @default(false)  // Can download photos/videos
+  canPurchaseMedia      Boolean               @default(false)  // Can purchase photos/videos
+  canReceiveAlerts      Boolean               @default(true)   // Can receive alerts about this child
+  canCheckInOut         Boolean               @default(false)  // Can check child in/out
+  canAuthorizePickup    Boolean               @default(false)  // Can authorize pickup
+  canViewReports        Boolean               @default(false)  // Can view safety reports
+  canViewAnalytics      Boolean               @default(false)  // Can view analytics
+  canManageEmergencyContacts Boolean          @default(false)  // Can manage emergency contacts
+  
+  // Alert Configuration
+  alertTypes            Json?                 // Types of alerts to receive for this child
+  emergencyAlerts       Boolean               @default(true)   // Receive emergency alerts
+  routineAlerts         Boolean               @default(true)   // Receive routine alerts
+  photoAlerts           Boolean               @default(true)   // Receive photo notifications
+  
+  // Access Restrictions
+  isBlocked             Boolean               @default(false)  // Is access to this child blocked
+  blockedAt             DateTime?
+  blockedBy             String?               // User who blocked access
+  blockReason           String?               // Reason for blocking
+  
+  // Time and Context Restrictions
+  timeRestrictions      Json?                 // Time-based access restrictions
+  venueRestrictions     Json?                 // Venue-based restrictions
+  activityRestrictions  Json?                 // Activity-based restrictions
+  
+  // Temporary Access
+  isTemporary           Boolean               @default(false)  // Is this temporary access
+  temporaryStart        DateTime?             // Start of temporary access
+  temporaryEnd          DateTime?             // End of temporary access
+  temporaryReason       String?               // Reason for temporary access
+  
+  // Usage Tracking
+  lastAccessedAt        DateTime?
+  accessCount           Int                   @default(0)
+  photoViewCount        Int                   @default(0)
+  alertCount            Int                   @default(0)
+  
+  // Audit and Compliance
+  grantReason           String?               // Reason for granting access
+  revokeReason          String?               // Reason for revoking access
+  legalDocuments        Json?                 // Associated legal documents
+  consentGiven          Boolean               @default(false)  // Explicit consent given
+  consentDate           DateTime?
+  auditLog              Json?                 // Detailed audit information
+  
+  // Status and Lifecycle
+  status                ChildAccessStatus     @default(ACTIVE)
+  activatedAt           DateTime              @default(now())
+  deactivatedAt         DateTime?
+  expiresAt             DateTime?             // Access expiration
+  
+  metadata              Json?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  
+  child                 Child                 @relation("ChildFamilyMemberAccess", fields: [childId], references: [id], onDelete: Cascade)
+  familyMember          FamilyMember          @relation(fields: [familyMemberId], references: [id], onDelete: Cascade)
+  grantor               User                  @relation("UserChildAccessGrants", fields: [grantedBy], references: [id])
+  accessor              User                  @relation("UserChildAccessReceived", fields: [accessedBy], references: [id])
+  
+  @@unique([childId, familyMemberId])
+  @@index([childId, status])
+  @@index([familyMemberId, status])
+  @@index([grantedBy, status])
+  @@index([isBlocked, status])
+  @@map("child_access")
+}
+
+model FamilyActivityLog {
+  id                  String                @id @default(cuid())
+  familyOwnerId       String                // Primary family owner
+  actorId             String                // User who performed the action
+  targetId            String?               // Target user (for family member actions)
+  actionType          FamilyActionType      // Type of action performed
+  resourceType        FamilyResourceType    // Type of resource affected
+  resourceId          String?               // ID of affected resource
+  
+  // Action Details
+  actionDescription   String                // Human-readable description
+  actionData          Json?                 // Additional action data
+  previousState       Json?                 // Previous state before action
+  newState            Json?                 // New state after action
+  
+  // Context Information
+  ipAddress           String?               // IP address where action occurred
+  userAgent           String?               // Browser/device info
+  sessionId           String?               // Session identifier
+  deviceInfo          Json?                 // Additional device information
+  
+  // Impact Assessment
+  affectedUsers       Json?                 // Array of affected user IDs
+  affectedChildren    Json?                 // Array of affected child IDs
+  impactLevel         ImpactLevel           @default(LOW)
+  
+  // Status and Resolution
+  status              ActionStatus          @default(COMPLETED)
+  errorMessage        String?               // Error message if action failed
+  rollbackRequired    Boolean               @default(false)
+  rollbackCompleted   Boolean               @default(false)
+  rollbackAt          DateTime?
+  
+  // Audit and Compliance
+  complianceFlags     Json?                 // Compliance-related flags
+  reviewRequired      Boolean               @default(false)
+  reviewedBy          String?               // Admin who reviewed the action
+  reviewedAt          DateTime?
+  reviewNotes         String?
+  
+  metadata            Json?
+  timestamp           DateTime              @default(now())
+  
+  @@index([familyOwnerId, timestamp])
+  @@index([actorId, actionType, timestamp])
+  @@index([resourceType, resourceId])
+  @@index([impactLevel, status])
+  @@map("family_activity_logs")
+}
+
+// Family Member Management Enums
+
+enum FamilyMemberRole {
+  SPOUSE                // Spouse/partner - full access similar to parent
+  GRANDPARENT          // Grandparent - view access, some interaction
+  SIBLING              // Older sibling - limited access
+  RELATIVE             // Other relative - customizable access
+  FRIEND               // Family friend - limited view access
+  NANNY                // Nanny/caregiver - care-related access, no purchases
+  BABYSITTER           // Babysitter - temporary care access
+  TEACHER              // Teacher/educator - educational context access
+  GUARDIAN             // Legal guardian - full access
+  EMERGENCY_CONTACT    // Emergency contact only - minimal access
+  CUSTOM               // Custom role with fully customizable permissions
+}
+
+enum InvitationStatus {
+  PENDING              // Invitation sent, awaiting response
+  ACCEPTED             // Invitation accepted
+  DECLINED             // Invitation declined
+  EXPIRED              // Invitation expired
+  REVOKED              // Invitation revoked by sender
+  CANCELLED            // Invitation cancelled
+}
+
+enum FamilyMemberStatus {
+  ACTIVE               // Active family member
+  INACTIVE             // Temporarily inactive
+  SUSPENDED            // Suspended by family owner
+  BLOCKED              // Blocked from access
+  PENDING_VERIFICATION // Awaiting identity verification
+  REMOVED              // Removed from family
+}
+
+enum PermissionType {
+  VIEW_CHILD           // Permission to view child information
+  EDIT_CHILD           // Permission to edit child profile
+  TRACK_LOCATION       // Permission to track child location
+  VIEW_MEDIA           // Permission to view photos/videos
+  DOWNLOAD_MEDIA       // Permission to download photos/videos
+  PURCHASE_MEDIA       // Permission to purchase photos/videos
+  RECEIVE_ALERTS       // Permission to receive alerts
+  CHECK_IN_OUT         // Permission to check child in/out
+  AUTHORIZE_PICKUP     // Permission to authorize pickup
+  VIEW_REPORTS         // Permission to view reports
+  MANAGE_FAMILY        // Permission to manage family members
+  MAKE_PAYMENTS        // Permission to make payments
+  EMERGENCY_ACCESS     // Emergency access permissions
+  CUSTOM_PERMISSION    // Custom permission type
+}
+
+enum ResourceType {
+  CHILD                // Child resource
+  PHOTO                // Photo resource
+  VIDEO                // Video resource
+  REPORT               // Report resource
+  ALERT                // Alert resource
+  VENUE                // Venue resource
+  FAMILY               // Family resource
+  PAYMENT              // Payment resource
+  EMERGENCY_CONTACT    // Emergency contact resource
+}
+
+enum PermissionLevel {
+  NONE                 // No access
+  READ                 // Read-only access
+  WRITE                // Read and write access
+  ADMIN                // Full administrative access
+  EMERGENCY            // Emergency-only access
+  CUSTOM               // Custom permission level
+}
+
+enum ChildAccessLevel {
+  FULL                 // Full access to child information
+  BASIC                // Basic access (name, photo, location)
+  EMERGENCY_ONLY       // Emergency access only
+  RESTRICTED           // Restricted access with limitations
+  BLOCKED              // No access (blocked)
+  CUSTOM               // Custom access level
+}
+
+enum ChildAccessStatus {
+  ACTIVE               // Access is active
+  INACTIVE             // Access is inactive
+  SUSPENDED            // Access is suspended
+  BLOCKED              // Access is blocked
+  EXPIRED              // Access has expired
+  PENDING              // Access is pending approval
+}
+
+enum MediaAccessLevel {
+  FULL                 // Full media access
+  THUMBNAILS_ONLY      // Thumbnails only
+  NO_ACCESS            // No media access
+  APPROVED_ONLY        // Only pre-approved media
+  RECENT_ONLY          // Only recent media (last 30 days)
+}
+
+enum NotificationFrequency {
+  REAL_TIME            // Immediate notifications
+  HOURLY               // Hourly digest
+  DAILY                // Daily digest
+  WEEKLY               // Weekly digest
+  EMERGENCY_ONLY       // Emergency notifications only
+  DISABLED             // No notifications
+}
+
+enum FamilyActionType {
+  INVITE_MEMBER        // Invited a family member
+  ACCEPT_INVITATION    // Accepted an invitation
+  DECLINE_INVITATION   // Declined an invitation
+  REVOKE_INVITATION    // Revoked an invitation
+  REMOVE_MEMBER        // Removed a family member
+  BLOCK_MEMBER         // Blocked a family member
+  UNBLOCK_MEMBER       // Unblocked a family member
+  UPDATE_PERMISSIONS   // Updated member permissions
+  GRANT_CHILD_ACCESS   // Granted access to a child
+  REVOKE_CHILD_ACCESS  // Revoked access to a child
+  CHANGE_ROLE          // Changed member role
+  UPDATE_PROFILE       // Updated member profile
+  EMERGENCY_OVERRIDE   // Emergency override action
+  PERMISSION_VIOLATION // Permission violation detected
+}
+
+enum FamilyResourceType {
+  FAMILY_MEMBER        // Family member resource
+  CHILD_ACCESS         // Child access resource
+  PERMISSION           // Permission resource
+  INVITATION           // Invitation resource
+  ROLE                 // Role resource
+  SETTING              // Setting resource
+}
+
+enum ImpactLevel {
+  LOW                  // Low impact action
+  MEDIUM               // Medium impact action
+  HIGH                 // High impact action
+  CRITICAL             // Critical impact action
+}
+
+enum ActionStatus {
+  PENDING              // Action is pending
+  COMPLETED            // Action completed successfully
+  FAILED               // Action failed
+  CANCELLED            // Action was cancelled
+  ROLLED_BACK          // Action was rolled back
 }

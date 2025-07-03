@@ -2,7 +2,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Users, Clock, Camera, AlertTriangle, Activity, TrendingUp } from "lucide-react";
+import { Users, Clock, Camera, AlertTriangle, Activity, TrendingUp, Monitor, Play, Eye } from "lucide-react";
+import Link from "next/link";
 
 export default function VenueAdminDashboard() {
   const [stats, setStats] = useState({
@@ -120,6 +121,71 @@ export default function VenueAdminDashboard() {
               </p>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Demo System Section */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-blue-600 rounded-lg">
+              <Monitor className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">mySafePlay™ Demo Center</h2>
+              <p className="text-gray-600">Interactive demonstration of safety monitoring capabilities</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span className="text-sm text-green-600 font-medium">LIVE DEMO</span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center space-x-2 mb-2">
+              <Camera className="h-5 w-5 text-blue-600" />
+              <span className="font-medium text-gray-900">Live Camera Feeds</span>
+            </div>
+            <p className="text-sm text-gray-600">Real-time detection with privacy-safe avatars</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center space-x-2 mb-2">
+              <Eye className="h-5 w-5 text-green-600" />
+              <span className="font-medium text-gray-900">Zone Tracking</span>
+            </div>
+            <p className="text-sm text-gray-600">Interactive venue map with occupancy data</p>
+          </div>
+          <div className="bg-white rounded-lg p-4 border border-blue-100">
+            <div className="flex items-center space-x-2 mb-2">
+              <AlertTriangle className="h-5 w-5 text-orange-600" />
+              <span className="font-medium text-gray-900">Smart Alerts</span>
+            </div>
+            <p className="text-sm text-gray-600">Automated safety notifications system</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-3">
+          <Link
+            href="/venue-admin/demo"
+            className="btn-primary flex items-center space-x-2"
+          >
+            <Play className="h-4 w-4" />
+            <span>Launch Full Demo Center</span>
+          </Link>
+          <Link
+            href="/venue-admin/tracking"
+            className="btn-secondary flex items-center space-x-2"
+          >
+            <Activity className="h-4 w-4" />
+            <span>Demo Mode in Live Tracking</span>
+          </Link>
+        </div>
+        
+        <div className="mt-4 text-xs text-gray-500 bg-white rounded px-3 py-2 border border-blue-100">
+          <strong>Note:</strong> Demo uses generic avatars and simulated data to showcase safety monitoring capabilities 
+          while maintaining privacy standards.
         </div>
       </div>
 

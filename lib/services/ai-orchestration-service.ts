@@ -258,7 +258,7 @@ export class AIOrchestrationService {
       return { 
         data: ageEstimation, 
         alerts, 
-        recommendations: [...recommendations, ...analysisRecord.recommendations] 
+        recommendations: [...recommendations, ...(Array.isArray(analysisRecord.recommendations) ? analysisRecord.recommendations : [])] 
       };
     } catch (error) {
       console.error('Error in age estimation processing:', error);

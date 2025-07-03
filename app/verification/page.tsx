@@ -1,0 +1,421 @@
+
+"use client";
+
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Shield, 
+  CheckCircle, 
+  AlertCircle, 
+  RefreshCw,
+  ArrowLeft 
+} from "lucide-react";
+import { PhoneVerification } from "@/components/verification/phone-verification";
+import { IdentityVerification } from "@/components/verification/identity-verification";
+import { TwoFactorSetup } from "@/components/verification/two-factor-setup";
+import { VerificationStatus } from "@/components/verification/verification-status";
+import AutomatedIdentityVerification from "@/components/verification/automated-identity-verification";
+import EnhancedTwoFactorSetup from "@/components/verification/enhanced-two-factor-setup";
+import { EnhancedVerificationFlow } from "@/components/verification/enhanced-verification-flow";
+import { useToast } from "@/components/ui/use-toast";
+import Link from "next/link";
+
+interface VerificationStatusData {
+  phoneVerified: boolean;
+  phoneVerifiedAt?: string;
+  identityVerified: boolean;
+  identityVerifiedAt?: string;
+  twoFactorEnabled: boolean;
+  verificationLevel: string;
+  verificationNotes?: string;
+  phone?: string;
+  nextSteps: Array<{
+    type: string;
+    title: string;
+    description: string;
+    priority: string;
+  }>;
+}
+
+export default function VerificationPage() {
+  const { data: session, status } = useSession();
+  const [verificationData, setVerificationData] = useState<VerificationStatusData | null>(null);
+  const [enhancedData, setEnhancedData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
+  const [useEnhancedFeatures, setUseEnhancedFeatures] = useState(true);
+  const [useAutomatedVerification, setUseAutomatedVerification] = useState(true);
+  const [verificationMethod, setVerificationMethod] = useState<'enhanced' | 'automated' | 'manual'>('enhanced');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (status === "loading") return;
+    if (!session) {
+      redirect("/auth/signin");
+    }
+    fetchVerificationStatus();
+  }, [session, status]);
+
+  const fetchVerificationStatus = async () => {
+    try {
+      setError('');
+      
+      // Try enhanced verification status first
+      if (useEnhancedFeatures) {
+        try {
+          const enhancedResponse = await fetch('/api/verification/enhanced-status');
+          if (enhancedResponse.ok) {
+            const enhancedData = await enhancedResponse.json();
+            setEnhancedData(enhancedData);
+            setVerificationData(enhancedData.verificationStatus || enhancedData);
+            return;
+          }
+        } catch (enhancedError) {
+          console.log('Enhanced verification not available, falling back to basic');
+          setUseEnhancedFeatures(false);
+        }
+      }
+
+      // Fallback to basic verification status
+      const response = await fetch('/api/verification/status');
+      const data = await response.json();
+
+      if (data.success) {
+        setVerificationData(data);
+      } else {
+        setError(data.error || 'Failed to load verification status');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchVerificationStatus();
+  };
+
+  const handleVerificationComplete = () => {
+    // Refresh data when any verification is completed
+    fetchVerificationStatus();
+    toast({
+      title: "Verification updated",
+      description: "Your verification status has been updated.",
+    });
+  };
+
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-96 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return null; // Will redirect
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4 max-w-4xl">
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Link href="/parent" className="text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" />
+              </Link>
+              <h1 className="text-2xl font-bold">Account Verification</h1>
+            </div>
+            <p className="text-muted-foreground">
+              Secure your account with phone verification, identity verification, and two-factor authentication.
+            </p>
+          </div>
+          
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {verificationData && (
+          <>
+            {/* Verification Status Overview */}
+            <VerificationStatus
+              phoneVerified={verificationData.phoneVerified}
+              identityVerified={verificationData.identityVerified}
+              twoFactorEnabled={verificationData.twoFactorEnabled}
+              verificationLevel={verificationData.verificationLevel}
+              nextSteps={verificationData.nextSteps}
+            />
+
+            <Separator />
+
+            {/* Verification Steps */}
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Verification Steps</h2>
+                {useEnhancedFeatures && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                    Enhanced Features Available
+                  </Badge>
+                )}
+              </div>
+              
+              {/* Phone Verification */}
+              <div>
+                <PhoneVerification
+                  currentPhone={verificationData.phone}
+                  isVerified={verificationData.phoneVerified}
+                  onVerificationComplete={handleVerificationComplete}
+                />
+              </div>
+
+              {/* Identity Verification */}
+              <div>
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="flex items-center gap-2">
+                          <Shield className="h-5 w-5 text-blue-600" />
+                          Identity Verification
+                          {verificationData.identityVerified && (
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          )}
+                        </CardTitle>
+                        <CardDescription>
+                          Verify your identity with document analysis, address verification, and photo comparison
+                        </CardDescription>
+                      </div>
+                      
+                      {/* Verification Method Selector */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex gap-1">
+                          <Button
+                            variant={verificationMethod === 'enhanced' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setVerificationMethod('enhanced')}
+                            className="text-xs"
+                          >
+                            Enhanced
+                          </Button>
+                          <Button
+                            variant={verificationMethod === 'automated' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setVerificationMethod('automated')}
+                            className="text-xs"
+                          >
+                            AI Auto
+                          </Button>
+                          <Button
+                            variant={verificationMethod === 'manual' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setVerificationMethod('manual')}
+                            className="text-xs"
+                          >
+                            Manual
+                          </Button>
+                        </div>
+                        
+                        {/* Method description */}
+                        <div className="text-right">
+                          {verificationMethod === 'enhanced' && (
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700 text-xs">
+                              Address + Photo + AI Analysis
+                            </Badge>
+                          )}
+                          {verificationMethod === 'automated' && (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
+                              AI Document Analysis
+                            </Badge>
+                          )}
+                          {verificationMethod === 'manual' && (
+                            <Badge variant="outline" className="bg-gray-50 text-gray-700 text-xs">
+                              Manual Review
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent>
+                    {/* Enhanced Verification (Phase 1.6) */}
+                    {verificationMethod === 'enhanced' && (
+                      <div className="space-y-4">
+                        <div className="p-4 bg-blue-50 rounded-lg">
+                          <h3 className="font-medium text-blue-800 mb-2">🚀 Enhanced Verification (Phase 1.6)</h3>
+                          <p className="text-sm text-blue-700 mb-3">
+                            Our most advanced verification process including:
+                          </p>
+                          <ul className="text-sm text-blue-600 space-y-1">
+                            <li>• Automated document analysis with AWS Textract</li>
+                            <li>• Address extraction and validation with Google Places</li>
+                            <li>• Face comparison between document photo and selfie</li>
+                            <li>• Comprehensive scoring algorithm</li>
+                            <li>• Real-time address autocomplete (USA & Canada)</li>
+                          </ul>
+                        </div>
+                        
+                        <EnhancedVerificationFlow
+                          onComplete={(result) => {
+                            handleVerificationComplete();
+                            toast({
+                              title: result.autoApproved ? "Verification Approved!" : 
+                                     result.autoRejected ? "Verification Rejected" : 
+                                     "Verification Submitted",
+                              description: result.reason,
+                              variant: result.autoApproved ? "default" : 
+                                      result.autoRejected ? "destructive" : "default"
+                            });
+                          }}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Automated Verification */}
+                    {verificationMethod === 'automated' && (
+                      <div className="space-y-4">
+                        <div className="p-4 bg-green-50 rounded-lg">
+                          <h3 className="font-medium text-green-800 mb-2">🤖 AI-Powered Verification</h3>
+                          <p className="text-sm text-green-700">
+                            Faster verification with automatic document analysis using AWS Textract
+                          </p>
+                        </div>
+                        <AutomatedIdentityVerification onVerificationComplete={handleVerificationComplete} />
+                      </div>
+                    )}
+                    
+                    {/* Manual Verification */}
+                    {verificationMethod === 'manual' && (
+                      <div className="space-y-4">
+                        <div className="p-4 bg-gray-50 rounded-lg">
+                          <h3 className="font-medium text-gray-800 mb-2">📋 Manual Verification</h3>
+                          <p className="text-sm text-gray-700">
+                            Traditional verification process with manual document review
+                          </p>
+                        </div>
+                        <IdentityVerification
+                          isVerified={verificationData.identityVerified}
+                          onVerificationSubmitted={handleVerificationComplete}
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Two-Factor Authentication */}
+              <div>
+                {useEnhancedFeatures ? (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Shield className="h-5 w-5" />
+                        Enhanced Two-Factor Authentication
+                      </CardTitle>
+                      <CardDescription>
+                        Multiple 2FA options including hardware keys, email, and push notifications
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <EnhancedTwoFactorSetup onSetupComplete={handleVerificationComplete} />
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <TwoFactorSetup
+                    isEnabled={verificationData.twoFactorEnabled}
+                    phoneVerified={verificationData.phoneVerified}
+                    currentPhone={verificationData.phone}
+                    onSetupComplete={handleVerificationComplete}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Admin Notes */}
+            {verificationData.verificationNotes && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5" />
+                    Verification Notes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    {verificationData.verificationNotes}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Security Tips */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Security Tips
+                </CardTitle>
+                <CardDescription>
+                  Keep your account secure with these best practices
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-sm">Account Security</h3>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• Use a strong, unique password</li>
+                      <li>• Enable two-factor authentication</li>
+                      <li>• Keep your contact information updated</li>
+                      <li>• Review account activity regularly</li>
+                    </ul>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-sm">Data Protection</h3>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• Never share your login credentials</li>
+                      <li>• Log out from shared devices</li>
+                      <li>• Report suspicious activity immediately</li>
+                      <li>• Keep your verification documents private</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

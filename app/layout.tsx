@@ -9,7 +9,7 @@ import { NO_INDEX_META_TAGS } from "@/lib/security-headers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SafePlay™ - Beta Environment",
+  title: "mySafePlay™ - Beta Environment",
   description: "Secure staging environment for authorized stakeholders - Real-time child tracking and safety with automated memory capture",
   robots: NO_INDEX_META_TAGS.robots,
   other: {

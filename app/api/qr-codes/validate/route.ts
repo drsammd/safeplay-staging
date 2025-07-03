@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
 
       // Get linked children information
       const linkedChildren = await prisma.child.findMany({
-        where: { id: { in: parentQRCode.linkedChildren } },
+        where: { id: { in: Array.isArray(parentQRCode.linkedChildren) ? parentQRCode.linkedChildren as string[] : [] } },
         select: {
           id: true,
           firstName: true,

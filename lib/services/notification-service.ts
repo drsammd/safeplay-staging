@@ -344,6 +344,34 @@ export class NotificationService {
   }
 
   /**
+   * Trigger email automation for alert events
+   */
+  static async triggerAlertEmailAutomation(
+    alert: any,
+    recipients: Array<{ userId: string; recipientType: any }>
+  ): Promise<void> {
+    try {
+      // Import dynamically to avoid circular dependencies
+      const { emailAutomationInit } = await import('@/lib/services/email-automation-init');
+      
+      // Trigger email automation for each parent recipient
+      for (const recipient of recipients) {
+        if (recipient.recipientType === 'PARENT' || recipient.recipientType === 'USER') {
+          await emailAutomationInit.triggerAlertEmail(recipient.userId, {
+            type: alert.type,
+            message: alert.description,
+            childName: alert.child ? `${alert.child.firstName} ${alert.child.lastName}` : undefined,
+            venueName: alert.venue?.name,
+            severity: alert.severity
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error triggering alert email automation:', error);
+    }
+  }
+
+  /**
    * Bulk send notifications for an alert
    */
   static async sendAlertNotifications(
@@ -424,6 +452,14 @@ export class NotificationService {
           errors.push(`${channel}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
+    }
+
+    // Trigger email automation for alert notifications
+    try {
+      await this.triggerAlertEmailAutomation(alert, recipients);
+    } catch (error) {
+      console.error('Error triggering email automation for alert:', error);
+      // Don't fail the whole function if email automation fails
     }
 
     return {

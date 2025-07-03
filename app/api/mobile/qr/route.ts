@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'QR code has expired' }, { status: 400 });
     }
 
-    if (!qrCodeData.allowedRoles.includes(session.user.role as any)) {
+    if (!Array.isArray(qrCodeData.allowedRoles) || !qrCodeData.allowedRoles.includes(session.user.role as any)) {
       return NextResponse.json({ error: 'Not authorized to use this QR code' }, { status: 403 });
     }
 

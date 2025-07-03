@@ -359,7 +359,7 @@ export default function RevenueAnalytics() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({ name, value }) => `${name}: $${value.toFixed(0)}`}
+                      label={({ name, value }) => `${name}: $${value?.toFixed(0) || '0'}`}
                     >
                       {getRevenueBreakdown().map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

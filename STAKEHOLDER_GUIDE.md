@@ -1,5 +1,5 @@
 
-# SafePlay™ Beta Environment - Stakeholder Access Guide
+# mySafePlay™ Beta Environment - Stakeholder Access Guide
 
 ## 🔐 Accessing the Staging Environment
 
@@ -10,7 +10,7 @@
 1. Navigate to https://mysafeplay.ai
 2. Enter the stakeholder password: `SafePlay2025Beta!`
 3. Check "Remember me for 30 days" for extended access
-4. Click "Access SafePlay™"
+4. Click "Access mySafePlay™"
 
 ## 🛡️ Security Information
 

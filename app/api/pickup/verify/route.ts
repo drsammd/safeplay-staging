@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
       const parentQR = await prisma.parentQRCode.findFirst({
         where: { qrCode: parentQRCode, isActive: true },
       });
-      if (parentQR && parentQR.linkedChildren.includes(childId)) {
+      if (parentQR && Array.isArray(parentQR.linkedChildren) && parentQR.linkedChildren.includes(childId)) {
         qrCodeVerified = true;
         verificationScore += 30;
       }

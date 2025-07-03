@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { apiErrorHandler, withErrorHandling, ErrorType } from "@/lib/error-handler";
+import { emailAutomationEngine } from "@/lib/services/email-automation-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -161,6 +162,22 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
     return newUser;
   });
+
+  // Trigger 7-Day Onboarding Sequence
+  try {
+    await emailAutomationEngine.processOnboardingTrigger(user.id, {
+      signupDate: new Date().toISOString(),
+      userRole: role,
+      userName: name,
+      userEmail: email,
+      ipAddress,
+      userAgent
+    });
+    console.log(`✅ 7-day onboarding sequence triggered for user: ${email}`);
+  } catch (error) {
+    console.error(`❌ Failed to trigger onboarding sequence for user ${email}:`, error);
+    // Don't fail the signup if email automation fails
+  }
 
   // Remove password from response
   const { password: _, ...userWithoutPassword } = user;

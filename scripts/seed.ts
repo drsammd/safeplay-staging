@@ -536,6 +536,25 @@ async function main() {
   await Promise.all(analyticsData);
   console.log('📊 Created analytics data');
 
+  // Initialize Email Automation System
+  try {
+    console.log('📧 Initializing Email Automation System...');
+    const { emailAutomationInit } = await import('../lib/services/email-automation-init');
+    
+    const initResult = await emailAutomationInit.initializeEmailAutomation(companyAdmin.id);
+    
+    if (initResult.success) {
+      console.log(`✅ Email Automation System initialized successfully!`);
+      console.log(`   📧 Templates created: ${initResult.templatesCreated}`);
+      console.log(`   🤖 Automation rules created: ${initResult.rulesCreated}`);
+    } else {
+      console.log('⚠️ Email Automation System initialization completed with warnings:');
+      initResult.errors.forEach(error => console.log(`   - ${error}`));
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize Email Automation System:', error);
+  }
+
   console.log('✅ Database seeded successfully!');
   console.log('\n🔑 Demo Account Credentials:');
   console.log('Company Admin: admin@safeplay.com / password123');

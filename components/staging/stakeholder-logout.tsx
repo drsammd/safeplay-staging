@@ -73,7 +73,7 @@ export function StakeholderLogout({
             <AlertDialogTitle>Exit Beta Environment</AlertDialogTitle>
           </div>
           <AlertDialogDescription>
-            Are you sure you want to exit the SafePlay™ beta environment? 
+            Are you sure you want to exit the mySafePlay™ beta environment? 
             You'll need to re-enter your stakeholder credentials to access the application again.
           </AlertDialogDescription>
         </AlertDialogHeader>
