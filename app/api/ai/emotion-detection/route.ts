@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     const imageArrayBuffer = await imageFile.arrayBuffer();
     const imageBuffer = Buffer.from(imageArrayBuffer);
 
-    // Perform enhanced facial analysis for emotion detection
-    const analysis = await enhancedRekognitionService.performEnhancedFacialAnalysis(imageBuffer);
+    // Perform face detection for emotion analysis
+    const analysis = await enhancedRekognitionService.detectFaces(imageBuffer);
 
     if (!analysis.success) {
       return NextResponse.json({
@@ -37,15 +37,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Extract emotion analysis from each detected face
-    const emotionResults = analysis.faces.map(face => ({
+    const emotionResults = (analysis.faces || []).map(face => ({
       boundingBox: face.BoundingBox,
       confidence: face.Confidence,
-      emotionAnalysis: face.EmotionAnalysis,
+      emotions: face.Emotions?.map((emotion: any) => ({
+        type: emotion.Type,
+        confidence: emotion.Confidence
+      })) || [],
     }));
 
     return NextResponse.json({
       success: true,
-      faceCount: analysis.faceCount,
+      faceCount: (analysis.faces || []).length,
       emotions: emotionResults,
     });
   } catch (error: any) {
