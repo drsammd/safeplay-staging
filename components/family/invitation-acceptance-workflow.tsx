@@ -506,7 +506,7 @@ export default function InvitationAcceptanceWorkflow({
                 <Checkbox
                   id="createAccount"
                   checked={accountForm.createAccount}
-                  onCheckedChange={(checked) => setAccountForm(prev => ({ ...prev, createAccount: checked as boolean }))}
+                  onCheckedChange={(checked) => setAccountForm(prev => ({ ...prev, createAccount: Boolean(checked) }))}
                 />
                 <Label htmlFor="createAccount">Create a new SafePlay account</Label>
               </div>
@@ -576,7 +576,7 @@ export default function InvitationAcceptanceWorkflow({
           <div className="flex space-x-4">
             <Button 
               onClick={handleAcceptInvitation}
-              disabled={isLoading || (token && accountForm.createAccount && (!accountForm.name || !accountForm.password || !accountForm.acceptTerms || accountForm.password !== accountForm.confirmPassword))}
+              disabled={isLoading || (token && !!accountForm.createAccount && (!accountForm.name || !accountForm.password || !accountForm.acceptTerms || accountForm.password !== accountForm.confirmPassword))}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
               {isLoading ? (
