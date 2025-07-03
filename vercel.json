@@ -1,20 +1,7 @@
-
 {
-  "buildCommand": "npm run prisma:generate && npm run build",
-  "installCommand": "npm install --legacy-peer-deps",
   "framework": "nextjs",
   "env": {
-    "ENABLE_EXPERIMENTAL_COREPACK": "0",
-    "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
-    "NEXT_OUTPUT_MODE": "",
-    "NEXT_DIST_DIR": ".next"
-  },
-  "functions": {
-    "app/api/**/*.ts": {
-      "runtime": "nodejs18.x"
-    }
-  },
-  "regions": ["iad1"],
-  "cleanUrls": true,
-  "trailingSlash": false
+    "NEXT_PRIVATE_DISABLE_EXPERIMENTAL_TRACE": "true",
+    "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+  }
 }
