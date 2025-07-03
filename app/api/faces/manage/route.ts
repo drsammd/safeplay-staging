@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { rekognitionService, s3Service } from "@/lib/aws";
+import { enhancedRekognitionService, s3Service } from "@/lib/aws";
 
 export const dynamic = "force-dynamic";
 
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Get AWS collection info
-    const awsCollectionInfo = await rekognitionService.getCollectionInfo(
+    const awsCollectionInfo = await enhancedRekognitionService.getCollectionInfo(
       faceCollection.awsCollectionId
     );
 
@@ -172,7 +172,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remove face from AWS Rekognition collection
-    const removeResult = await rekognitionService.removeFace(
+    const removeResult = await enhancedRekognitionService.deleteFace(
       faceRecord.collection.awsCollectionId,
       faceRecord.awsFaceId
     );

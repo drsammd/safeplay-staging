@@ -3,11 +3,21 @@
 export * from './config';
 export * from './types';
 export * from './s3-service';
-export * from './rekognition-service';
+
+// Export rekognition service types and classes (excluding conflicting interfaces)
+export type { 
+  DetectionResult, 
+  TaggingResult, 
+  FacialAnalysisResult
+} from './rekognition-service';
+
+export { 
+  EnhancedRekognitionService 
+} from './rekognition-service';
 
 // Re-export services as named exports
 export { s3Service } from './s3-service';
-export { rekognitionService, enhancedRekognitionService } from './rekognition-service';
+export { enhancedRekognitionService } from './rekognition-service';
 
 // Re-export configuration utilities
 export { validateAWSConfig, isAWSAvailable, getAWSConfigStatus, isDevelopmentMode } from './config';

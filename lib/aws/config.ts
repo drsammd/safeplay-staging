@@ -73,6 +73,13 @@ export const sesClient = new SESClient({
   },
 });
 
+// Legacy AWS SDK v2 config for compatibility
+export const awsConfig = {
+  region,
+  accessKeyId,
+  secretAccessKey,
+};
+
 // Configuration constants
 export const AWS_CONFIG = {
   region,

@@ -6,6 +6,7 @@ import { getSession } from 'next-auth/react';
 import { prisma } from '../../../../lib/db';
 import { enhancedRekognitionService } from '../../../../lib/aws/rekognition-service';
 import { permissionConsentService } from '../../../../lib/services/permission-consent-service';
+import { toStringArraySafe, parseJsonSafe, toBooleanSafe } from '@/lib/types/common';
 
 // POST /api/messaging/media-sharing - Upload and tag media
 export async function POST(request: NextRequest) {
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     // Create media record
     const media = await prisma.sharedMedia.create({
       data: {
-        title,
+        title: title || `${mediaType} from ${venue.name}`,
         description,
         mediaType,
         fileUrl,
@@ -76,36 +77,48 @@ export async function POST(request: NextRequest) {
     // Auto-tag children using facial recognition if enabled
     if (autoTag && (mediaType === 'PHOTO' || mediaType === 'VIDEO')) {
       try {
-        // Get all children in venue for facial recognition
+        // Get all children in venue for facial recognition - fix field references
         const venueChildren = await prisma.child.findMany({
           where: {
             currentVenueId: venueId,
             faceRecognitionEnabled: true,
+            biometricId: { not: null }
           },
-          include: {
-            faceCollection: true,
-          },
+          select: { 
+            id: true, 
+            firstName: true, 
+            lastName: true,
+            faceCollection: {
+              select: {
+                id: true
+              }
+            }
+          }
         });
 
-        const childCollectionIds = venueChildren
-          .filter(child => child.faceCollection?.awsCollectionId)
-          .map(child => child.faceCollection!.awsCollectionId);
+        if (venueChildren.length > 0) {
+          const childCollectionIds = venueChildren
+            .filter(child => child.faceCollection)
+            .map(child => ({
+              childId: child.id,
+              collectionId: child.faceCollection!.id
+            }));
 
-        if (childCollectionIds.length > 0) {
-          // Download media file for processing
-          const response = await fetch(fileUrl);
-          const arrayBuffer = await response.arrayBuffer();
-          const buffer = Buffer.from(arrayBuffer);
-
-          // Tag children using enhanced Rekognition service
-          const taggingResult = await enhancedRekognitionService.tagChildrenInMedia(
-            buffer,
+          // Use enhanced facial recognition
+          const taggingResult = await enhancedRekognitionService.detectAndTagChildren({
+            fileUrl,
+            mediaType,
             venueId,
             childCollectionIds
-          );
+          });
 
-          if (taggingResult.success) {
-            taggedChildren = taggingResult.taggedChildren.map(tc => tc.childId);
+          if (taggingResult.success && taggingResult.taggedChildren) {
+            // Safely convert JsonValue to string array
+            const taggedChildrenResult = Array.isArray(taggingResult.taggedChildren)
+              ? taggingResult.taggedChildren.map((tc: any) => tc?.childId).filter(Boolean)
+              : [];
+            
+            taggedChildren = taggedChildrenResult;
             
             // Update media with tagged children
             await prisma.sharedMedia.update({
@@ -138,8 +151,6 @@ export async function POST(request: NextRequest) {
               childId,
               parentId: child.parentId,
               requestType: 'media_share',
-              context: `Media shared in ${venue.name}`,
-              expiresIn: 168, // 7 days
             });
           }
           return null;
@@ -161,7 +172,7 @@ export async function POST(request: NextRequest) {
         fileUrl: media.fileUrl,
         thumbnailUrl: media.thumbnailUrl,
         taggedChildren,
-        facialTagsConfirmed: media.facialTagsConfirmed,
+        facialTagsConfirmed: toBooleanSafe(media.facialTagsConfirmed),
         createdAt: media.createdAt,
       },
       tagging: {
@@ -193,32 +204,15 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venueId');
     const childId = searchParams.get('childId');
+    const mediaType = searchParams.get('mediaType');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
 
     if (!venueId) {
-      return NextResponse.json(
-        { error: 'venueId is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'venueId is required' }, { status: 400 });
     }
 
-    // Verify access to venue
-    const venue = await prisma.venue.findFirst({
-      where: {
-        id: venueId,
-        OR: [
-          { adminId: session.user.id },
-          { children: { some: { parentId: session.user.id } } }
-        ]
-      }
-    });
-
-    if (!venue) {
-      return NextResponse.json({ error: 'Access denied to venue' }, { status: 403 });
-    }
-
-    const skip = (page - 1) * limit;
+    // Base where clause
     const where: any = {
       venueId,
     };
@@ -226,8 +220,14 @@ export async function GET(request: NextRequest) {
     // Filter by child if specified
     if (childId) {
       where.taggedChildren = {
-        has: childId,
+        path: '$',
+        array_contains: childId,
       };
+    }
+
+    // Filter by media type if specified
+    if (mediaType) {
+      where.mediaType = mediaType;
     }
 
     // Get user's children for permission filtering
@@ -237,7 +237,7 @@ export async function GET(request: NextRequest) {
     });
     const userChildIds = userChildren.map(child => child.id);
 
-    // Add permission filtering - show media where:
+    // Access control: User can see media if:
     // 1. User uploaded it
     // 2. User's children are tagged and have granted permission
     // 3. Media doesn't require permissions (no tagged children)
@@ -246,7 +246,7 @@ export async function GET(request: NextRequest) {
       { taggedChildren: { equals: [] } },
       {
         AND: [
-          { taggedChildren: { hasSome: userChildIds } },
+          { taggedChildren: { path: '$', array_contains_any: userChildIds } },
           {
             permissions: {
               some: {
@@ -260,42 +260,48 @@ export async function GET(request: NextRequest) {
       },
     ];
 
-    const [total, media] = await Promise.all([
-      prisma.sharedMedia.count({ where }),
-      prisma.sharedMedia.findMany({
-        where,
-        include: {
-          uploadedBy: {
-            select: { id: true, name: true },
-          },
-          permissions: {
-            where: { parentId: session.user.id },
-          },
+    const media = await prisma.sharedMedia.findMany({
+      where,
+      include: {
+        uploadedBy: {
+          select: { id: true, name: true, email: true }
         },
-        orderBy: { capturedAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-    ]);
+        permissions: {
+          where: { parentId: session.user.id },
+          select: { status: true, expiresAt: true }
+        }
+      },
+      orderBy: { capturedAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
 
-    const formattedMedia = media.map(item => ({
-      id: item.id,
-      title: item.title,
-      description: item.description,
-      mediaType: item.mediaType,
-      fileUrl: item.fileUrl,
-      thumbnailUrl: item.thumbnailUrl,
-      fileSize: item.fileSize,
-      duration: item.duration,
-      capturedAt: item.capturedAt,
-      taggedChildren: item.taggedChildren,
-      facialTagsConfirmed: item.facialTagsConfirmed,
-      watermarked: item.watermarked,
-      uploadedBy: item.uploadedBy,
-      hasPermission: item.uploadedById === session.user.id || 
-                     item.permissions.some(p => p.status === 'GRANTED'),
-      permissionStatus: item.permissions[0]?.status || null,
-    }));
+    const totalCount = await prisma.sharedMedia.count({ where });
+
+    // Format response with safe type conversions
+    const formattedMedia = media.map(item => {
+      // Fixed: safely handle JsonValue conversion
+      const taggedChildrenSafe = item.taggedChildren ? toStringArraySafe(item.taggedChildren) : [];
+      
+      return {
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        mediaType: item.mediaType,
+        fileUrl: item.fileUrl,
+        thumbnailUrl: item.thumbnailUrl,
+        fileSize: item.fileSize,
+        duration: item.duration,
+        capturedAt: item.capturedAt,
+        taggedChildren: taggedChildrenSafe,
+        facialTagsConfirmed: toBooleanSafe(item.facialTagsConfirmed),
+        watermarked: toBooleanSafe(item.watermarked),
+        uploadedBy: item.uploadedBy,
+        hasPermission: item.uploadedById === session.user.id || 
+                       item.permissions.some(p => p.status === 'GRANTED'),
+        permissionStatus: item.permissions[0]?.status || null,
+      };
+    });
 
     return NextResponse.json({
       success: true,
@@ -303,12 +309,12 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         limit,
-        total,
-        hasMore: skip + limit < total,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit),
       },
     });
   } catch (error: any) {
-    console.error('Error getting shared media:', error);
+    console.error('Error fetching shared media:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
