@@ -150,14 +150,22 @@ export class EnhancedRekognitionService {
   }
 
   // Add missing method: performEnhancedFacialAnalysis
-  async performEnhancedFacialAnalysis(imageUrl: string): Promise<FacialAnalysisResult> {
+  async performEnhancedFacialAnalysis(imageInput: string | Buffer): Promise<FacialAnalysisResult> {
     try {
-      const response = await fetch(imageUrl);
-      const imageBuffer = await response.arrayBuffer();
+      let imageBuffer: Buffer;
+      
+      if (typeof imageInput === 'string') {
+        // Download image and convert to buffer
+        const response = await fetch(imageInput);
+        imageBuffer = Buffer.from(await response.arrayBuffer());
+      } else {
+        // Already a buffer
+        imageBuffer = imageInput;
+      }
 
       const params = {
         Image: {
-          Bytes: Buffer.from(imageBuffer)
+          Bytes: imageBuffer
         },
         Attributes: ['ALL']
       };
@@ -205,11 +213,11 @@ export class EnhancedRekognitionService {
 
   // Add missing method: analyzeAgeCompliance
   async analyzeAgeCompliance(
-    imageUrl: string, 
-    requiredAge: number = 13
+    imageInput: string | Buffer, 
+    ageConstraints: { minAge?: number; maxAge?: number } | number = 13
   ): Promise<AgeComplianceResult> {
     try {
-      const analysisResult = await this.performEnhancedFacialAnalysis(imageUrl);
+      const analysisResult = await this.performEnhancedFacialAnalysis(imageInput);
       
       if (!analysisResult.success || !analysisResult.analysis?.ageRange) {
         return {
@@ -220,7 +228,29 @@ export class EnhancedRekognitionService {
 
       const ageRange = analysisResult.analysis.ageRange;
       const estimatedAge = (ageRange.low + ageRange.high) / 2;
-      const compliant = estimatedAge >= requiredAge;
+      
+      // Handle both object and number formats for age constraints
+      let minAge: number | undefined;
+      let maxAge: number | undefined;
+      let requiredAge: number | undefined;
+      
+      if (typeof ageConstraints === 'number') {
+        requiredAge = ageConstraints;
+        minAge = ageConstraints;
+      } else {
+        minAge = ageConstraints.minAge;
+        maxAge = ageConstraints.maxAge;
+        requiredAge = minAge; // Use minAge as requiredAge for backward compatibility
+      }
+      
+      // Check compliance based on constraints
+      let compliant = true;
+      if (minAge !== undefined && estimatedAge < minAge) {
+        compliant = false;
+      }
+      if (maxAge !== undefined && estimatedAge > maxAge) {
+        compliant = false;
+      }
 
       return {
         success: true,
