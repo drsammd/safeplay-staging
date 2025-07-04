@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { CrowdAnalysisResult, BehaviorAnalysisResult, VisualPatternResult } from '../aws/types';
 

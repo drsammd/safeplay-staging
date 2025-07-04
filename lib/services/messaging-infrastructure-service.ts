@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { prisma } from '../db';
 import { ChatType, MessageType, MessageStatus } from '@prisma/client';

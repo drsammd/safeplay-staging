@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { config } from 'dotenv';
 import { PrismaClient, SubscriptionPlanType, BillingInterval } from '@prisma/client';

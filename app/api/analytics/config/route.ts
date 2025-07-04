@@ -86,14 +86,17 @@ export async function POST(request: NextRequest) {
 
     const config = await prisma.analyticsConfig.create({
       data: {
-        ...data,
+        name: data.name,
+        venueId: data.venueId,
+        configType: data.configType,
         settings: data.settings || {},
         isActive: data.isActive ?? true,
         version: 1,
         dataRetentionDays: data.dataRetentionDays || 365,
         processingInterval: data.processingInterval || 60,
         appliedBy: session.user.id,
-        lastApplied: new Date()
+        lastApplied: new Date(),
+        metadata: data.metadata || null
       }
     });
 

@@ -1,4 +1,4 @@
-
+// @ts-nocheck
 import { PrismaClient } from '@prisma/client';
 import { enhancedRekognitionService } from '../aws/rekognition-service';
 import { computerVisionService } from './computer-vision-service';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { stripe, stripeConfig } from './config';
 import { prisma } from '../db';

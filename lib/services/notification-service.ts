@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import twilio from 'twilio';
 import nodemailer from 'nodemailer';

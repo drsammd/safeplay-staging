@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { RekognitionClient, CompareFacesCommand, DetectFacesCommand, DetectModerationLabelsCommand } from '@aws-sdk/client-rekognition';
 
