@@ -23,5 +23,14 @@ echo "SKIP_TYPE_CHECK=$SKIP_TYPE_CHECK"
 echo "CI=$CI"
 echo "TSC_COMPILE_ON_ERROR=$TSC_COMPILE_ON_ERROR"
 
+# Generate Prisma client before build (critical for Vercel deployment)
+echo "Generating Prisma client..."
+if ! npx prisma generate; then
+    echo "ERROR: Failed to generate Prisma client"
+    exit 1
+fi
+echo "Prisma client generated successfully"
+
 # Run Next.js build with TypeScript checking disabled
+echo "Starting Next.js build..."
 yarn build

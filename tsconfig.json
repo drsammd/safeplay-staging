@@ -9,6 +9,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
     "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
@@ -30,6 +31,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
+    "composite": false,
+    "tsBuildInfoFile": ".next/cache/tsbuildinfo",
+    "useDefineForClassFields": false,
+    "preserveWatchOutput": true,
     "plugins": [
       {
         "name": "next"
@@ -52,9 +57,22 @@
     ".next",
     "__tests__",
     "e2e",
+    "playwright-install.js",
+    "playwright.config.ts",
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
-    "**/*.spec.tsx"
-  ]
+    "**/*.spec.tsx",
+    "**/*.config.js",
+    "**/*.config.ts",
+    "scripts/**/*",
+    "docs/**/*",
+    "public/**/*"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
 }
