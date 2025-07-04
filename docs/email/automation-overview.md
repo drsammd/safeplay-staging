@@ -447,7 +447,7 @@ const getCampaignAnalytics = async (campaignId: string, dateRange?: {
 # Email Service Configuration
 EMAIL_SERVICE_PROVIDER=sendgrid  # or 'ses', 'mailgun'
 EMAIL_API_KEY=your_api_key
-EMAIL_FROM_ADDRESS=noreply@safeplay.com
+EMAIL_FROM_ADDRESS=noreply@mysafeplay.ai
 EMAIL_FROM_NAME=mySafePlay™(TM)
 
 # Queue Configuration

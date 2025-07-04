@@ -33,7 +33,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     );
   }
 
-  const { email, password, name, role, agreeToTerms, agreeToPrivacy } = validation.data;
+  const { email: rawEmail, password, name, role, agreeToTerms, agreeToPrivacy } = validation.data;
+  
+  // Normalize email to lowercase for consistency
+  const email = rawEmail.toLowerCase().trim();
 
   // Check if user already exists
   const existingUser = await prisma.user.findUnique({

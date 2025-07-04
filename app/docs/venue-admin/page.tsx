@@ -754,7 +754,7 @@ export default function VenueAdminManual() {
                     <ul className="text-sm text-blue-800 space-y-1">
                       <li>• Emergency Hotline: 1-800-SAFE-911</li>
                       <li>• Technical Support: 1-800-SAFEPLAY</li>
-                      <li>• Security Issues: security@safeplay.com</li>
+                      <li>• Security Issues: security@mysafeplay.ai</li>
                     </ul>
                   </div>
                   <div className="bg-green-50 p-4 rounded-lg">
@@ -1111,7 +1111,7 @@ export default function VenueAdminManual() {
                       <ExternalLink className="h-4 w-4 text-blue-600" />
                       <Link href="/contact" className="text-blue-600 hover:underline">Submit Support Ticket</Link>
                     </li>
-                    <li>📧 Email: venue-support@safeplay.com</li>
+                    <li>📧 Email: venue-support@mysafeplay.ai</li>
                     <li>📞 Phone: 1-800-VENUE-HELP</li>
                     <li>💬 Live Chat: Available in venue admin dashboard</li>
                   </ul>

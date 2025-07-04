@@ -11,28 +11,28 @@ const prisma = new PrismaClient();
 // Critical accounts that MUST exist for deployment
 const CRITICAL_ACCOUNTS = [
   {
-    email: 'admin@safeplay.com',
+    email: 'admin@mysafeplay.ai',
     password: 'password123',
     name: 'Sarah Mitchell',
     role: 'COMPANY_ADMIN' as const,
     phone: '+1 (555) 001-0001',
   },
   {
-    email: 'john@doe.com',
+    email: 'john@mysafeplay.ai',
     password: 'johndoe123',
     name: 'John Doe',
     role: 'PARENT' as const,
     phone: '+1 (555) 001-0002',
   },
   {
-    email: 'venue@safeplay.com',
+    email: 'venue@mysafeplay.ai',
     password: 'password123',
     name: 'John Smith',
     role: 'VENUE_ADMIN' as const,
     phone: '+1 (555) 002-0001',
   },
   {
-    email: 'parent@safeplay.com',
+    email: 'parent@mysafeplay.ai',
     password: 'password123',
     name: 'Emily Johnson',
     role: 'PARENT' as const,
@@ -167,10 +167,10 @@ async function main() {
     console.log('\n✅ DEPLOYMENT SETUP COMPLETED SUCCESSFULLY!');
     console.log('\n🔑 VERIFIED DEMO CREDENTIALS:');
     console.log('=' .repeat(60));
-    console.log('Company Admin: admin@safeplay.com / password123');
-    console.log('Venue Admin: venue@safeplay.com / password123');
-    console.log('Parent: parent@safeplay.com / password123');
-    console.log('Demo Parent: john@doe.com / johndoe123');
+    console.log('Company Admin: admin@mysafeplay.ai / password123');
+    console.log('Venue Admin: venue@mysafeplay.ai / password123');
+    console.log('Parent: parent@mysafeplay.ai / password123');
+    console.log('Demo Parent: john@mysafeplay.ai / johndoe123');
     console.log('=' .repeat(60));
 
   } catch (error) {

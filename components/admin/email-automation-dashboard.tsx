@@ -361,7 +361,7 @@ export default function EmailAutomationDashboard() {
     }
   };
 
-  const testWeeklyCampaign = async (templateName: string, testEmail: string = 'admin@safeplay.com') => {
+  const testWeeklyCampaign = async (templateName: string, testEmail: string = 'admin@mysafeplay.ai') => {
     try {
       setProcessingQueue(true);
       const response = await fetch('/api/email-automation/weekly-campaigns/test', {

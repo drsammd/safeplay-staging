@@ -65,7 +65,7 @@ async function runFinalTest() {
     const csrfData = JSON.parse(csrfResponse.data);
     
     const loginData = new URLSearchParams({
-      email: 'venue@safeplay.com',
+      email: 'venue@mysafeplay.ai',
       password: 'password123',
       csrfToken: csrfData.csrfToken,
       callbackUrl: `http://localhost:${PORT}/venue-admin/floor-plans`,

@@ -296,7 +296,7 @@ export default function TermsOfServicePage() {
                   <div className="flex items-center">
                     <Mail className="h-5 w-5 text-blue-600 mr-3" />
                     <span className="font-medium">Email:</span>
-                    <a href="mailto:legal@safeplay.com" className="text-blue-600 hover:text-blue-800 ml-2">legal@safeplay.com</a>
+                    <a href="mailto:legal@mysafeplay.ai" className="text-blue-600 hover:text-blue-800 ml-2">legal@mysafeplay.ai</a>
                   </div>
                   <div className="flex items-center">
                     <Phone className="h-5 w-5 text-blue-600 mr-3" />

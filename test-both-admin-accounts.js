@@ -6,7 +6,7 @@ async function testAdminAccounts() {
   
   const accounts = [
     { email: 'john@doe.com', password: 'johndoe123', name: 'John (Modified Admin)' },
-    { email: 'admin@safeplay.com', password: 'password123', name: 'Original Admin' }
+    { email: 'admin@mysafeplay.ai', password: 'password123', name: 'Original Admin' }
   ];
   
   for (const account of accounts) {

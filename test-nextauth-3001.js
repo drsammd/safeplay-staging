@@ -44,7 +44,7 @@ async function testNextAuthFlow() {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        email: 'admin@safeplay.com',
+        email: 'admin@mysafeplay.ai',
         password: 'password123',
         csrfToken: csrfToken,
         callbackUrl: 'http://localhost:3001/admin',

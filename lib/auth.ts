@@ -23,8 +23,11 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          // Normalize email to lowercase for case-insensitive lookup
+          const normalizedEmail = credentials.email.toLowerCase().trim();
+          
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: { email: normalizedEmail }
           });
 
           if (!user) {

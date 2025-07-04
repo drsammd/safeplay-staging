@@ -759,7 +759,7 @@ export default function CompanyAdminManual() {
                       <ExternalLink className="h-4 w-4 text-blue-600" />
                       <Link href="/contact" className="text-blue-600 hover:underline">Submit Support Ticket</Link>
                     </li>
-                    <li>📧 Email: admin-support@safeplay.com</li>
+                    <li>📧 Email: admin-support@mysafeplay.ai</li>
                     <li>📞 Phone: 1-800-SAFEPLAY (1-800-723-3752)</li>
                     <li>💬 Live Chat: Available 24/7 in admin dashboard</li>
                   </ul>
@@ -769,8 +769,8 @@ export default function CompanyAdminManual() {
                   <h4 className="font-semibold mb-2">Emergency Contacts</h4>
                   <ul className="space-y-1 text-sm">
                     <li>🚨 Emergency Hotline: 1-800-SAFE-911</li>
-                    <li>🔒 Security Incidents: security@safeplay.com</li>
-                    <li>⚖️ Legal/Compliance: legal@safeplay.com</li>
+                    <li>🔒 Security Incidents: security@mysafeplay.ai</li>
+                    <li>⚖️ Legal/Compliance: legal@mysafeplay.ai</li>
                   </ul>
                 </div>
               </div>

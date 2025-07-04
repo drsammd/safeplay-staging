@@ -54,7 +54,7 @@ function seedFloorPlansAndCameras() {
                     return [4 /*yield*/, prisma.venue.findFirst({
                             where: {
                                 admin: {
-                                    email: 'venue@safeplay.com'
+                                    email: 'venue@mysafeplay.ai'
                                 }
                             }
                         })];
@@ -66,7 +66,7 @@ function seedFloorPlansAndCameras() {
                     }
                     console.log("Found venue: ".concat(venue.name));
                     return [4 /*yield*/, prisma.user.findUnique({
-                            where: { email: 'venue@safeplay.com' }
+                            where: { email: 'venue@mysafeplay.ai' }
                         })];
                 case 3:
                     venueAdmin = _a.sent();
@@ -462,7 +462,7 @@ function seedFloorPlansAndCameras() {
                     console.log("- ".concat(cameraEvents.length, " Camera Events"));
                     console.log("- ".concat(recommendations.length, " Camera Recommendations"));
                     console.log('\n🎯 Test the system by:');
-                    console.log('1. Login as venue@safeplay.com / venue123');
+                    console.log('1. Login as venue@mysafeplay.ai / venue123');
                     console.log('2. Navigate to "Floor Plans & Cameras" in the venue admin dashboard');
                     console.log('3. View the sample floor plan and interact with cameras');
                     console.log('4. Try placing new cameras and viewing coverage analysis');

@@ -22,7 +22,7 @@ async function testAdminLogin() {
         'Cookie': `next-auth.csrf-token=${csrfData.csrfToken}`
       },
       body: new URLSearchParams({
-        email: 'admin@safeplay.com',
+        email: 'admin@mysafeplay.ai',
         password: 'password123',
         csrfToken: csrfData.csrfToken,
         callbackUrl: `${baseUrl}/admin`,

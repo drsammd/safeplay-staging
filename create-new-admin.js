@@ -14,7 +14,7 @@ async function createNewAdmin() {
     
     const newAdmin = await prisma.user.create({
       data: {
-        email: 'admin2@safeplay.com',
+        email: 'admin2@mysafeplay.ai',
         password: hashedPassword,
         name: 'Admin Two',
         role: 'COMPANY_ADMIN'
@@ -57,10 +57,10 @@ async function createNewAdmin() {
     });
     
     console.log('\n🎯 Test Accounts:');
-    console.log('1. admin2@safeplay.com / admin123');
+    console.log('1. admin2@mysafeplay.ai / admin123');
     console.log('2. test@admin.com / test123');
     console.log('3. john@doe.com / johndoe123 (modified to admin)');
-    console.log('4. admin@safeplay.com / password123 (original)');
+    console.log('4. admin@mysafeplay.ai / password123 (original)');
     
     console.log('\n📝 Next Steps:');
     console.log('1. Try logging in manually through browser with each account');

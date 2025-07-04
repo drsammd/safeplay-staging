@@ -317,7 +317,7 @@ export default function PrivacyPolicyPage() {
               </ul>
 
               <p>
-                <strong>5.4 Data Protection Officer:</strong> We have appointed a Data Protection Officer who can be contacted at <a href="mailto:dpo@safeplay.com" className="text-blue-600 hover:text-blue-800">dpo@safeplay.com</a> for GDPR-related inquiries.
+                <strong>5.4 Data Protection Officer:</strong> We have appointed a Data Protection Officer who can be contacted at <a href="mailto:dpo@mysafeplay.ai" className="text-blue-600 hover:text-blue-800">dpo@mysafeplay.ai</a> for GDPR-related inquiries.
               </p>
             </div>
           </section>
@@ -542,7 +542,7 @@ export default function PrivacyPolicyPage() {
               </ul>
 
               <p>
-                <strong>10.4 Exercising Your Rights:</strong> To exercise these rights, contact us at <a href="mailto:privacy@safeplay.com" className="text-blue-600 hover:text-blue-800">privacy@safeplay.com</a> or through your account settings. We will respond to requests within 30 days and may require identity verification for security purposes.
+                <strong>10.4 Exercising Your Rights:</strong> To exercise these rights, contact us at <a href="mailto:privacy@mysafeplay.ai" className="text-blue-600 hover:text-blue-800">privacy@mysafeplay.ai</a> or through your account settings. We will respond to requests within 30 days and may require identity verification for security purposes.
               </p>
             </div>
           </section>
@@ -623,7 +623,7 @@ export default function PrivacyPolicyPage() {
                     <div className="space-y-2">
                       <div className="flex items-center">
                         <Mail className="h-4 w-4 text-blue-600 mr-3" />
-                        <a href="mailto:privacy@safeplay.com" className="text-blue-600 hover:text-blue-800">privacy@safeplay.com</a>
+                        <a href="mailto:privacy@mysafeplay.ai" className="text-blue-600 hover:text-blue-800">privacy@mysafeplay.ai</a>
                       </div>
                       <div className="flex items-center">
                         <Phone className="h-4 w-4 text-blue-600 mr-3" />
@@ -636,7 +636,7 @@ export default function PrivacyPolicyPage() {
                     <h4 className="font-semibold text-gray-900 mb-2">Data Protection Officer (EU Residents)</h4>
                     <div className="flex items-center">
                       <Mail className="h-4 w-4 text-blue-600 mr-3" />
-                      <a href="mailto:dpo@safeplay.com" className="text-blue-600 hover:text-blue-800">dpo@safeplay.com</a>
+                      <a href="mailto:dpo@mysafeplay.ai" className="text-blue-600 hover:text-blue-800">dpo@mysafeplay.ai</a>
                     </div>
                   </div>
 
@@ -657,7 +657,7 @@ export default function PrivacyPolicyPage() {
                       SafePlay EU Privacy Services<br />
                       GDPR Representative<br />
                       Dublin, Ireland<br />
-                      <a href="mailto:eu-privacy@safeplay.com" className="text-blue-600 hover:text-blue-800">eu-privacy@safeplay.com</a>
+                      <a href="mailto:eu-privacy@mysafeplay.ai" className="text-blue-600 hover:text-blue-800">eu-privacy@mysafeplay.ai</a>
                     </p>
                   </div>
                 </div>

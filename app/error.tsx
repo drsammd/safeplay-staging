@@ -50,7 +50,7 @@ Error Details:
 Please provide any additional context about what you were doing when this error occurred.
     `);
     
-    window.open(`mailto:support@safeplay.com?subject=${subject}&body=${body}`);
+    window.open(`mailto:support@mysafeplay.ai?subject=${subject}&body=${body}`);
   };
 
   return (
@@ -167,7 +167,7 @@ Please provide any additional context about what you were doing when this error 
               </p>
               <div className="flex flex-col sm:flex-row gap-2 justify-center">
                 <Button variant="outline" asChild>
-                  <a href="mailto:support@safeplay.com">
+                  <a href="mailto:support@mysafeplay.ai">
                     <Mail className="h-4 w-4 mr-2" />
                     Email Support
                   </a>

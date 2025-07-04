@@ -12,14 +12,14 @@ async function seedFamilyManagement() {
   try {
     // Create test parent user if doesn't exist
     let parentUser = await prisma.user.findUnique({
-      where: { email: 'parent@safeplay.com' }
+      where: { email: 'parent@mysafeplay.ai' }
     })
 
     if (!parentUser) {
       const hashedPassword = await bcrypt.hash('password123', 12)
       parentUser = await prisma.user.create({
         data: {
-          email: 'parent@safeplay.com',
+          email: 'parent@mysafeplay.ai',
           name: 'Sarah Johnson',
           password: hashedPassword,
           role: 'PARENT',

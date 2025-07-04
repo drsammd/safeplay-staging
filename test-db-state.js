@@ -8,7 +8,7 @@ async function testDB() {
     
     // First, check if venue admin exists
     const venueAdmin = await prisma.user.findFirst({
-      where: { email: 'venue@safeplay.com' }
+      where: { email: 'venue@mysafeplay.ai' }
     });
     
     if (!venueAdmin) {

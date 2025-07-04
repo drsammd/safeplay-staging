@@ -40,7 +40,7 @@ export default function UnauthorizedPage() {
         </div>
         
         <div className="text-sm text-gray-500">
-          <p>Need help? Contact support at support@safeplay.com</p>
+          <p>Need help? Contact support at support@mysafeplay.ai</p>
         </div>
       </div>
     </div>

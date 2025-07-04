@@ -27,7 +27,7 @@ async function debugSession() {
   const prisma = new PrismaClient();
   try {
     const user = await prisma.user.findUnique({
-      where: { email: 'venue@safeplay.com' },
+      where: { email: 'venue@mysafeplay.ai' },
       select: { id: true, email: true, name: true, role: true }
     });
     console.log('\nDatabase user:', JSON.stringify(user, null, 2));
