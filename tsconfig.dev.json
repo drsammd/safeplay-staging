@@ -1,0 +1,46 @@
+
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "noEmit": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".next/cache/tsbuildinfo-dev",
+    "isolatedModules": true,
+    "preserveWatchOutput": true,
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableSolutionSearching": true,
+    "disableReferencedProjectLoad": true
+  },
+  "exclude": [
+    "node_modules",
+    ".next",
+    "__tests__",
+    "e2e",
+    "playwright-install.js",
+    "playwright.config.ts",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/*.config.js",
+    "**/*.config.ts",
+    "scripts/**/*",
+    "docs/**/*",
+    "public/**/*",
+    "build.sh",
+    "*.log",
+    "*.aux",
+    "*.out",
+    "*.tex"
+  ],
+  "ts-node": {
+    "transpileOnly": true,
+    "skipProject": true,
+    "compilerOptions": {
+      "module": "commonjs",
+      "skipLibCheck": true
+    }
+  }
+}
