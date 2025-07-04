@@ -34,3 +34,15 @@ echo "Prisma client generated successfully"
 # Run Next.js build with TypeScript checking disabled
 echo "Starting Next.js build..."
 yarn build
+
+# Run database seeding for deployment if DATABASE_URL is available
+if [ ! -z "$DATABASE_URL" ]; then
+    echo "Running deployment database seeding..."
+    if npx tsx scripts/deployment-seed.ts; then
+        echo "✅ Database seeding completed successfully"
+    else
+        echo "⚠️  Database seeding failed - continuing deployment (seeding can be done manually via API)"
+    fi
+else
+    echo "⚠️  DATABASE_URL not found - skipping automatic seeding (can be done manually via API)"
+fi
