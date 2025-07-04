@@ -118,7 +118,8 @@ export async function POST(request: NextRequest) {
       // Create new record
       performance = await prisma.cameraPerformance.create({
         data: {
-          ...data,
+          cameraId: data.cameraId,
+          venueId: data.venueId,
           date: new Date(data.date),
           lastCalibration: data.lastCalibration ? new Date(data.lastCalibration) : undefined,
           accuracyRate,
@@ -139,7 +140,8 @@ export async function POST(request: NextRequest) {
           errorCount: data.errorCount || 0,
           utilizationRate: data.utilizationRate || 0,
           criticalEvents: data.criticalEvents || 0,
-          responseTime: data.responseTime || 0
+          responseTime: data.responseTime || 0,
+          metadata: data.metadata
         }
       });
     }
