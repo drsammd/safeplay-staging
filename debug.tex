@@ -1,0 +1,286 @@
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{eso-pic}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{parskip}
+\usepackage{listings}
+\usepackage{fancyvrb}
+\usepackage{framed}
+\usepackage{hyperref}
+
+% Page geometry
+\geometry{margin=1in}
+
+% Watermark setup
+\AddToShipoutPicture{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[rotate=45,scale=3,text opacity=0.08,gray] at (current page.center) {CONFIDENTIAL};
+  \end{tikzpicture}%
+}
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textbf{mySafePlay\texttrademark{} Documentation}}
+\fancyhead[R]{\textbf{CONFIDENTIAL}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% Code block styling
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{gray!10},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{green!60!black},
+  stringstyle=\color{red}
+}
+
+% Hyperlink colors
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  urlcolor=blue,
+  citecolor=blue
+}
+
+% Title formatting
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begin{center}
+    {\LARGE\bfseries \@title}\\[0.5em]
+    {\large mySafePlay\texttrademark{} Application Documentation}\\[0.3em]
+    {\normalsize \textcolor{red}{\textbf{CONFIDENTIAL}}}\\[1em]
+    {\normalsize Generated: \today}
+  \end{center}
+  \vspace{1em}
+}
+\makeatother
+
+\begin{document}
+\hypertarget{mysafeplaytm-application-documentation}{%
+\section{mySafePlay(TM) Application
+Documentation}\label{mysafeplaytm-application-documentation}}
+
+Welcome to the comprehensive documentation for the mySafePlay(TM)
+application. This documentation covers all features, APIs, and systems
+implemented in the application.
+
+\hypertarget{documentation-structure}{%
+\subsection{* Documentation Structure}\label{documentation-structure}}
+
+\hypertarget{security-authentication}{%
+\subsubsection{🔐 Security \&
+Authentication}\label{security-authentication}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\href{./security/authentication.md}{Authentication \& Identity
+  Verification}} - Complete guide to user authentication, identity
+  verification, and security features
+\item
+  \textbf{\href{./security/two-factor-auth.md}{Two-Factor
+  Authentication}} - Implementation and setup of 2FA systems
+\item
+  \textbf{\href{./security/document-verification.md}{Document
+  Verification}} - AI-powered document verification using AWS
+  Rekognition
+\end{itemize}
+
+\hypertarget{email-automation-system}{%
+\subsubsection{📧 Email Automation
+System}\label{email-automation-system}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\href{./email/automation-overview.md}{Email Automation
+  Overview}} - Complete email automation system documentation
+\item
+  \textbf{\href{./email/onboarding-sequence.md}{Onboarding Email
+  Sequence}} - 7-day automated onboarding email campaign
+\item
+  \textbf{\href{./email/weekly-campaigns.md}{Weekly Safety Tips}} -
+  Automated weekly safety tips campaign
+\item
+  \textbf{\href{./email/templates-and-queues.md}{Email Templates \&
+  Queue Management}} - Template service and queue management system
+\end{itemize}
+
+\hypertarget{ai-first-support-center}{%
+\subsubsection{🎧 AI-First Support
+Center}\label{ai-first-support-center}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\href{./support/overview.md}{Support System Overview}} -
+  Complete AI-first support center documentation
+\item
+  \textbf{\href{./support/ticketing-system.md}{Ticketing System}} -
+  Comprehensive ticketing system with priority levels
+\item
+  \textbf{\href{./support/ai-chat.md}{AI Chat Integration}} - AI-powered
+  chatbot and escalation workflows
+\item
+  \textbf{\href{./support/knowledge-base.md}{Knowledge Base}} -
+  Searchable knowledge base system
+\item
+  \textbf{\href{./support/analytics.md}{Support Analytics}} - Support
+  metrics and reporting system
+\end{itemize}
+
+\hypertarget{demo-simulation-system}{%
+\subsubsection{🎮 Demo \& Simulation
+System}\label{demo-simulation-system}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\href{./demo/overview.md}{Demo System Overview}} - Mock camera
+  simulation and demo features
+\item
+  \textbf{\href{./demo/venue-features.md}{Venue Demo Features}} -
+  Real-time activity simulation and demo alerts
+\item
+  \textbf{\href{./demo/configuration.md}{Demo Configuration}} - Setup
+  and configuration guide for demo mode
+\end{itemize}
+
+\hypertarget{api-documentation}{%
+\subsubsection{🔌 API Documentation}\label{api-documentation}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\href{./api/overview.md}{API Overview}} - Complete API
+  reference and endpoints
+\item
+  \textbf{\href{./api/authentication.md}{Authentication APIs}} -
+  Authentication and verification endpoints
+\item
+  \textbf{\href{./api/email-automation.md}{Email Automation APIs}} -
+  Email system API endpoints
+\item
+  \textbf{\href{./api/support-system.md}{Support System APIs}} - Support
+  center and ticketing APIs
+\end{itemize}
+
+\hypertarget{database-schema}{%
+\subsubsection{🗄* Database \& Schema}\label{database-schema}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\href{./database/schema.md}{Database Schema}} - Complete
+  database schema documentation
+\item
+  \textbf{\href{./database/models.md}{Data Models}} - Detailed data
+  model relationships
+\item
+  \textbf{\href{./database/migrations.md}{Migration Guide}} - Database
+  migration and update procedures
+\end{itemize}
+
+\hypertarget{deployment-configuration}{%
+\subsubsection{* Deployment \&
+Configuration}\label{deployment-configuration}}
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{\href{./deployment/deployment-guide.md}{Deployment Guide}} -
+  Complete deployment instructions
+\item
+  \textbf{\href{./deployment/environment-config.md}{Environment
+  Configuration}} - Environment variables and configuration
+\item
+  \textbf{\href{./deployment/aws-integration.md}{AWS Integration}} - AWS
+  services setup and configuration
+\end{itemize}
+
+\hypertarget{quick-start}{%
+\subsection{* Quick Start}\label{quick-start}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{For Developers}: Start with \href{./api/overview.md}{API
+  Overview} and \href{./database/schema.md}{Database Schema}
+\item
+  \textbf{For Administrators}: Begin with
+  \href{./deployment/deployment-guide.md}{Deployment Guide}
+\item
+  \textbf{For Support Teams}: Review
+  \href{./support/overview.md}{Support System Overview}
+\item
+  \textbf{For Marketing Teams}: Check
+  \href{./email/automation-overview.md}{Email Automation Overview}
+\end{enumerate}
+
+\hypertarget{recent-updates}{%
+\subsection{🔄 Recent Updates}\label{recent-updates}}
+
+This documentation covers the following major feature additions:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Phase 2}: Email Automation System with 7-day onboarding and
+  weekly campaigns
+\item
+  \textbf{Phase 3}: AI-First Support Center with comprehensive ticketing
+  system
+\item
+  \textbf{Enhanced Identity Verification}: AI-powered document
+  verification with AWS Rekognition
+\item
+  \textbf{Expanded 2FA Options}: SMS, Email, and Authenticator app
+  support
+\item
+  \textbf{Demo System}: Mock camera simulation and venue demo features
+\item
+  \textbf{Technical Improvements}: Database extensions, API
+  enhancements, and AWS integrations
+\end{itemize}
+
+\hypertarget{support}{%
+\subsection{📞 Support}\label{support}}
+
+For questions about this documentation or the mySafePlay(TM)
+application:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Technical Issues}: Use the \href{./support/ai-chat.md}{AI
+  Support Chat} system
+\item
+  \textbf{Documentation Updates}: Submit tickets through the
+  \href{./support/ticketing-system.md}{Ticketing System}
+\item
+  \textbf{Emergency Issues}: Contact the support team directly
+\end{itemize}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\emph{Last Updated: July 2025} \emph{Version: 3.0 (Post-Phase 3
+Implementation)}
+\end{document}
