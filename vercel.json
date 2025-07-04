@@ -4,13 +4,24 @@
     "NEXT_PRIVATE_DISABLE_EXPERIMENTAL_TRACE": "true",
     "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
     "SKIP_TYPE_CHECK": "true",
-    "CI": "false"
+    "CI": "false",
+    "TSC_NONPOLLING_WATCHER": "true",
+    "TSC_COMPILE_ON_ERROR": "true",
+    "NEXT_PRIVATE_SKIP_TYPE_CHECK": "true",
+    "DISABLE_ESLINT_PLUGIN": "true",
+    "TS_NODE_TRANSPILE_ONLY": "true"
   },
   "buildCommand": "./build.sh",
   "build": {
     "env": {
       "SKIP_TYPE_CHECK": "true",
-      "NEXT_TELEMETRY_DISABLED": "1"
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "TSC_NONPOLLING_WATCHER": "true",
+      "TSC_COMPILE_ON_ERROR": "true",
+      "NEXT_PRIVATE_SKIP_TYPE_CHECK": "true",
+      "DISABLE_ESLINT_PLUGIN": "true",
+      "TS_NODE_TRANSPILE_ONLY": "true",
+      "NODE_OPTIONS": "--max-old-space-size=4096"
     }
   }
 }
