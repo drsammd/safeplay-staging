@@ -357,7 +357,7 @@ function calculateTrendScore(analyses: any): number {
 }
 
 function calculateDataQuality(analyses: any): number {
-  const totalAnalyses = Object.values(analyses).reduce((sum: number, arr: any) => sum + (arr?.length || 0), 0);
+  const totalAnalyses: number = Object.values(analyses).reduce((sum: number, arr: any) => sum + (arr?.length || 0), 0) as number;
   
   if (totalAnalyses === 0) return 0.3; // Low quality with no data
   if (totalAnalyses < 10) return 0.6; // Medium quality with some data
