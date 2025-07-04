@@ -24,7 +24,7 @@ async function checkDatabase() {
     
     console.log('\n=== Checking Admin User ===');
     const adminUser = await prisma.user.findUnique({
-      where: { email: 'admin@safeplay.com' }
+      where: { email: 'admin@mysafeplay.ai' }
     });
     
     if (adminUser) {

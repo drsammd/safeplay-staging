@@ -11,7 +11,7 @@ async function testAuth() {
     // Test credentials
     const testCreds = [
       { email: 'john@doe.com', password: 'johndoe123', expectedRole: 'COMPANY_ADMIN' },
-      { email: 'parent@safeplay.com', password: 'password123', expectedRole: 'PARENT' }
+      { email: 'parent@mysafeplay.ai', password: 'password123', expectedRole: 'PARENT' }
     ];
 
     for (const { email, password, expectedRole } of testCreds) {

@@ -178,7 +178,7 @@ export default function QuickReferenceGuides() {
                 </div>
                 <div>
                   <p className="font-semibold text-red-900">Security Issues</p>
-                  <p className="text-red-800">📧 security@safeplay.com</p>
+                  <p className="text-red-800">📧 security@mysafeplay.ai</p>
                 </div>
               </div>
             </CardContent>
@@ -320,9 +320,9 @@ export default function QuickReferenceGuides() {
               <div className="space-y-2 text-sm">
                 <p><strong>Emergency:</strong> 1-800-SAFE-911</p>
                 <p><strong>Technical:</strong> 1-800-SAFEPLAY</p>
-                <p><strong>Security:</strong> security@safeplay.com</p>
-                <p><strong>Legal:</strong> legal@safeplay.com</p>
-                <p><strong>Billing:</strong> billing@safeplay.com</p>
+                <p><strong>Security:</strong> security@mysafeplay.ai</p>
+                <p><strong>Legal:</strong> legal@mysafeplay.ai</p>
+                <p><strong>Billing:</strong> billing@mysafeplay.ai</p>
               </div>
             </CardContent>
           </Card>
@@ -503,7 +503,7 @@ export default function QuickReferenceGuides() {
                 <p><strong>Venue Direct:</strong> [Your venue's number]</p>
                 <p><strong>Support:</strong> 1-800-SAFEPLAY</p>
                 <p><strong>Mobile Emergency:</strong> Emergency button in app</p>
-                <p><strong>General:</strong> parents@safeplay.com</p>
+                <p><strong>General:</strong> parents@mysafeplay.ai</p>
               </div>
             </CardContent>
           </Card>

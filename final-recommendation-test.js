@@ -12,7 +12,7 @@ async function runComprehensiveTest() {
     // Step 1: Verify user authentication data
     console.log('\n1️⃣ VERIFYING USER AUTHENTICATION');
     const venueAdmin = await prisma.user.findUnique({
-      where: { email: 'venue@safeplay.com' }
+      where: { email: 'venue@mysafeplay.ai' }
     });
     
     if (!venueAdmin) {

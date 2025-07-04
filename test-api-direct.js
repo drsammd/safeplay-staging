@@ -12,8 +12,8 @@ async function testAPILogic() {
   try {
     // Simulate user session (venue admin)
     const sessionUser = {
-      id: 'cmcgdufgv0004rre9d9vcrri2', // venue@safeplay.com user ID
-      email: 'venue@safeplay.com',
+      id: 'cmcgdufgv0004rre9d9vcrri2', // venue@mysafeplay.ai user ID
+      email: 'venue@mysafeplay.ai',
       role: 'VENUE_ADMIN'
     };
     

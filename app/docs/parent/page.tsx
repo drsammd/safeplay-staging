@@ -1336,7 +1336,7 @@ export default function ParentManual() {
                       <ExternalLink className="h-4 w-4 text-blue-600" />
                       <Link href="/contact" className="text-blue-600 hover:underline">Submit Support Request</Link>
                     </li>
-                    <li>📧 Email: parents@safeplay.com</li>
+                    <li>📧 Email: parents@mysafeplay.ai</li>
                     <li>📞 Phone: 1-800-SAFEPLAY (1-800-723-3752)</li>
                     <li>💬 Live Chat: Available in parent dashboard</li>
                     <li>📱 Mobile: Help section in mobile interface</li>
@@ -1347,8 +1347,8 @@ export default function ParentManual() {
                   <h4 className="font-semibold mb-2">Emergency Contacts</h4>
                   <ul className="space-y-1 text-sm">
                     <li>🚨 Emergency Hotline: 1-800-SAFE-911</li>
-                    <li>🔒 Security Issues: security@safeplay.com</li>
-                    <li>⚖️ Privacy Concerns: privacy@safeplay.com</li>
+                    <li>🔒 Security Issues: security@mysafeplay.ai</li>
+                    <li>⚖️ Privacy Concerns: privacy@mysafeplay.ai</li>
                     <li>🏥 Medical Emergency: Call 911 first</li>
                   </ul>
                 </div>

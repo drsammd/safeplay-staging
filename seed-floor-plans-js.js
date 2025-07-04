@@ -12,7 +12,7 @@ async function seedFloorPlansAndCameras() {
     const venue = await prisma.venue.findFirst({
       where: {
         admin: {
-          email: 'venue@safeplay.com'
+          email: 'venue@mysafeplay.ai'
         }
       }
     });
@@ -26,7 +26,7 @@ async function seedFloorPlansAndCameras() {
 
     // Get the venue admin user
     const venueAdmin = await prisma.user.findUnique({
-      where: { email: 'venue@safeplay.com' }
+      where: { email: 'venue@mysafeplay.ai' }
     });
 
     if (!venueAdmin) {

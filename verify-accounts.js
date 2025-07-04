@@ -19,10 +19,10 @@ async function verifyAccounts() {
 
     // Test credentials for key accounts
     const testAccounts = [
-      { email: 'admin@safeplay.com', password: 'password123', expectedRole: 'COMPANY_ADMIN' },
+      { email: 'admin@mysafeplay.ai', password: 'password123', expectedRole: 'COMPANY_ADMIN' },
       { email: 'john@doe.com', password: 'johndoe123', expectedRole: 'PARENT' },
-      { email: 'venue@safeplay.com', password: 'password123', expectedRole: 'VENUE_ADMIN' },
-      { email: 'parent@safeplay.com', password: 'password123', expectedRole: 'PARENT' }
+      { email: 'venue@mysafeplay.ai', password: 'password123', expectedRole: 'VENUE_ADMIN' },
+      { email: 'parent@mysafeplay.ai', password: 'password123', expectedRole: 'PARENT' }
     ];
 
     console.log('🔑 CREDENTIAL VERIFICATION RESULTS:');

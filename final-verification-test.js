@@ -18,19 +18,19 @@ async function finalVerificationTest() {
         description: 'John Doe (Fixed Demo Account)'
       },
       {
-        email: 'parent@safeplay.com', 
+        email: 'parent@mysafeplay.ai', 
         expectedRole: 'PARENT',
         expectedAccess: '/parent',
         description: 'Emily Johnson (Parent)'
       },
       {
-        email: 'admin@safeplay.com',
+        email: 'admin@mysafeplay.ai',
         expectedRole: 'COMPANY_ADMIN', 
         expectedAccess: '/admin',
         description: 'Sarah Mitchell (Company Admin)'
       },
       {
-        email: 'venue@safeplay.com',
+        email: 'venue@mysafeplay.ai',
         expectedRole: 'VENUE_ADMIN',
         expectedAccess: '/venue-admin', 
         description: 'John Smith (Venue Admin)'
@@ -96,9 +96,9 @@ async function finalVerificationTest() {
       console.log('\n📋 MANUAL TESTING CHECKLIST:');
       console.log('1. ✅ john@doe.com should redirect to /parent after login');
       console.log('2. ✅ john@doe.com should be denied access to /admin');
-      console.log('3. ✅ parent@safeplay.com should still work (redirect to /parent)');
-      console.log('4. ✅ admin@safeplay.com should access /admin');
-      console.log('5. ✅ venue@safeplay.com should access /venue-admin');
+      console.log('3. ✅ parent@mysafeplay.ai should still work (redirect to /parent)');
+      console.log('4. ✅ admin@mysafeplay.ai should access /admin');
+      console.log('5. ✅ venue@mysafeplay.ai should access /venue-admin');
       
     } else {
       console.log('❌ SOME ROLE ASSIGNMENTS ARE INCORRECT');

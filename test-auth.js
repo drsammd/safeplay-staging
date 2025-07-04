@@ -11,7 +11,7 @@ async function testAdminAuth() {
     
     // Test 1: Find admin user
     const adminUser = await prisma.user.findUnique({
-      where: { email: 'admin@safeplay.com' }
+      where: { email: 'admin@mysafeplay.ai' }
     });
     
     if (!adminUser) {
@@ -52,7 +52,7 @@ async function testAdminAuth() {
         // Reset admin password
         const newHash = await bcrypt.hash('password123', 12);
         await prisma.user.update({
-          where: { email: 'admin@safeplay.com' },
+          where: { email: 'admin@mysafeplay.ai' },
           data: { password: newHash }
         });
         console.log('✅ Admin password reset to: password123');

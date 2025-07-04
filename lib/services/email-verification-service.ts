@@ -248,7 +248,7 @@ export class EmailVerificationService {
       const htmlContent = this.generateEmailTemplate(code, purpose);
 
       await this.transporter.sendMail({
-        from: process.env.SMTP_FROM || 'noreply@safeplay.com',
+        from: process.env.SMTP_FROM || 'noreply@mysafeplay.ai',
         to: email,
         subject,
         text: message,

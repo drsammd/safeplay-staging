@@ -28,7 +28,7 @@ async function main() {
   // Create Company Admin
   const companyAdmin = await prisma.user.create({
     data: {
-      email: 'admin@safeplay.com',
+      email: 'admin@mysafeplay.ai',
       password: hashedPassword,
       name: 'Sarah Mitchell',
       role: 'COMPANY_ADMIN',
@@ -39,7 +39,7 @@ async function main() {
   // Create John Doe demo account
   const johnDoe = await prisma.user.create({
     data: {
-      email: 'john@doe.com',
+      email: 'john@mysafeplay.ai',
       password: hashedJohnPassword,
       name: 'John Doe',
       role: 'PARENT',
@@ -53,7 +53,7 @@ async function main() {
   const venueAdmins = await Promise.all([
     prisma.user.create({
       data: {
-        email: 'venue@safeplay.com',
+        email: 'venue@mysafeplay.ai',
         password: hashedPassword,
         name: 'John Smith',
         role: 'VENUE_ADMIN',
@@ -86,7 +86,7 @@ async function main() {
   const parents = await Promise.all([
     prisma.user.create({
       data: {
-        email: 'parent@safeplay.com',
+        email: 'parent@mysafeplay.ai',
         password: hashedPassword,
         name: 'Emily Johnson',
         role: 'PARENT',
@@ -558,10 +558,10 @@ async function main() {
 
   console.log('✅ Database seeded successfully!');
   console.log('\n🔑 Demo Account Credentials:');
-  console.log('Company Admin: admin@safeplay.com / password123');
-  console.log('Venue Admin: venue@safeplay.com / password123');
-  console.log('Parent: parent@safeplay.com / password123');
-  console.log('John Doe (Parent): john@doe.com / johndoe123');
+  console.log('Company Admin: admin@mysafeplay.ai / password123');
+  console.log('Venue Admin: venue@mysafeplay.ai / password123');
+  console.log('Parent: parent@mysafeplay.ai / password123');
+  console.log('John Doe (Parent): john@mysafeplay.ai / johndoe123');
   console.log('\n🎯 Most accounts use password: password123');
   console.log('🎯 John Doe account uses password: johndoe123');
 }

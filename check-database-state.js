@@ -45,10 +45,10 @@ async function checkDatabaseState() {
     
     // Check for the specific problematic admin
     const specificAdmin = await prisma.user.findUnique({
-      where: { email: 'admin@safeplay.com' }
+      where: { email: 'admin@mysafeplay.ai' }
     });
     
-    console.log('🎯 Specific Admin (admin@safeplay.com):');
+    console.log('🎯 Specific Admin (admin@mysafeplay.ai):');
     if (specificAdmin) {
       console.log(`  - ID: ${specificAdmin.id}`);
       console.log(`  - Role: ${specificAdmin.role}`);

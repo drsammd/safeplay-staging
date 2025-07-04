@@ -66,7 +66,7 @@ async function testCompleteFlow() {
     // Step 2: Login attempt
     console.log('📝 Step 2: Attempting admin login...');
     const loginData = new URLSearchParams({
-      email: 'admin@safeplay.com',
+      email: 'admin@mysafeplay.ai',
       password: 'password123',
       csrfToken: csrfData.csrfToken,
       callbackUrl: baseUrl + '/admin',

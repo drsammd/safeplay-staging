@@ -23,7 +23,7 @@ async function testAdminLogin() {
         'Referer': `${baseURL}/auth/signin`
       },
       body: new URLSearchParams({
-        email: 'admin@safeplay.com',
+        email: 'admin@mysafeplay.ai',
         password: 'password123',
         csrfToken: csrfToken,
         callbackUrl: `${baseURL}/admin`,

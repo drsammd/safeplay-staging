@@ -69,7 +69,7 @@ async function testFixedAuth() {
     // Step 2: Login
     console.log('\n2. Logging in...');
     const loginData = new URLSearchParams({
-      email: 'venue@safeplay.com',
+      email: 'venue@mysafeplay.ai',
       password: 'password123',
       csrfToken: csrfToken,
       callbackUrl: `http://localhost:${PORT}/venue-admin/floor-plans`,

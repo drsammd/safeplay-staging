@@ -16,7 +16,7 @@ async function seedFloorPlansAndCameras() {
     const venue = await prisma.venue.findFirst({
       where: {
         admin: {
-          email: 'venue@safeplay.com'
+          email: 'venue@mysafeplay.ai'
         }
       }
     });
@@ -30,7 +30,7 @@ async function seedFloorPlansAndCameras() {
 
     // Get the venue admin user
     const venueAdmin = await prisma.user.findUnique({
-      where: { email: 'venue@safeplay.com' }
+      where: { email: 'venue@mysafeplay.ai' }
     });
 
     if (!venueAdmin) {
@@ -437,7 +437,7 @@ async function seedFloorPlansAndCameras() {
     console.log(`- ${recommendations.length} Camera Recommendations`);
     
     console.log('\n🎯 Test the system by:');
-    console.log('1. Login as venue@safeplay.com / venue123');
+    console.log('1. Login as venue@mysafeplay.ai / venue123');
     console.log('2. Navigate to "Floor Plans & Cameras" in the venue admin dashboard');
     console.log('3. View the sample floor plan and interact with cameras');
     console.log('4. Try placing new cameras and viewing coverage analysis');

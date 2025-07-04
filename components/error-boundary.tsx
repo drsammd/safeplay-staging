@@ -206,9 +206,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                     Need help? Contact our support team:
                   </p>
                   <Button variant="link" size="sm" asChild>
-                    <a href="mailto:support@safeplay.com">
+                    <a href="mailto:support@mysafeplay.ai">
                       <Mail className="h-4 w-4 mr-2" />
-                      support@safeplay.com
+                      support@mysafeplay.ai
                     </a>
                   </Button>
                 </div>

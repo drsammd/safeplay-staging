@@ -51,7 +51,7 @@ async function testRoleAssignment() {
     console.log('\n🎯 Next Steps:');
     console.log('1. Try logging in with john@doe.com / johndoe123');
     console.log('2. Check if john can access /admin dashboard');
-    console.log('3. If successful, the issue is with the specific admin@safeplay.com account');
+    console.log('3. If successful, the issue is with the specific admin@mysafeplay.ai account');
     console.log('4. If unsuccessful, the issue is with the admin role functionality');
     
   } catch (error) {

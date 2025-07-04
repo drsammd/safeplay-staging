@@ -3,9 +3,9 @@ require('dotenv').config();
 
 const testAccounts = [
   { name: 'New Test Admin', email: 'test@admin.com', password: 'test123' },
-  { name: 'New Admin2', email: 'admin2@safeplay.com', password: 'admin123' },
+  { name: 'New Admin2', email: 'admin2@mysafeplay.ai', password: 'admin123' },
   { name: 'Modified John', email: 'john@doe.com', password: 'johndoe123' },
-  { name: 'Original Admin', email: 'admin@safeplay.com', password: 'password123' }
+  { name: 'Original Admin', email: 'admin@mysafeplay.ai', password: 'password123' }
 ];
 
 async function testAllAdminAccounts() {

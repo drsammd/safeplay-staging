@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
 const DEPLOYMENT_DATA = {
   users: [
     {
-      email: 'admin@safeplay.com',
+      email: 'admin@mysafeplay.ai',
       password: 'password123',
       name: 'Sarah Mitchell',
       role: 'COMPANY_ADMIN' as const,
@@ -26,14 +26,14 @@ const DEPLOYMENT_DATA = {
       phone: '+1 (555) 001-0002',
     },
     {
-      email: 'venue@safeplay.com',
+      email: 'venue@mysafeplay.ai',
       password: 'password123',
       name: 'John Smith',
       role: 'VENUE_ADMIN' as const,
       phone: '+1 (555) 002-0001',
     },
     {
-      email: 'parent@safeplay.com',
+      email: 'parent@mysafeplay.ai',
       password: 'password123',
       name: 'Emily Johnson',
       role: 'PARENT' as const,
@@ -90,7 +90,7 @@ async function checkDatabaseState() {
     
     // Check if admin exists
     const admin = await prisma.user.findUnique({
-      where: { email: 'admin@safeplay.com' }
+      where: { email: 'admin@mysafeplay.ai' }
     });
     
     console.log(`Admin account: ${admin ? 'EXISTS' : 'MISSING'}`);
@@ -241,7 +241,7 @@ async function verifyDeploymentData() {
     
     // Verify admin specifically
     const admin = await prisma.user.findUnique({
-      where: { email: 'admin@safeplay.com' }
+      where: { email: 'admin@mysafeplay.ai' }
     });
     
     return admin && admin.role === 'COMPANY_ADMIN';
@@ -309,7 +309,7 @@ async function main() {
     console.log('\n🎉 DEPLOYMENT PREPARATION COMPLETED SUCCESSFULLY!');
     console.log('\n🔑 ADMIN CREDENTIALS FOR DEPLOYMENT:');
     console.log('=' .repeat(50));
-    console.log('Email: admin@safeplay.com');
+    console.log('Email: admin@mysafeplay.ai');
     console.log('Password: password123');
     console.log('Role: COMPANY_ADMIN');
     console.log('Access URL: /admin');

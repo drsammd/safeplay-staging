@@ -395,7 +395,7 @@ export default function FAQPage() {
                   What are my rights under GDPR?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  If you're in the European Union, GDPR gives you enhanced rights regarding your family's data: Right of Access (view all collected data), Right to Rectification (correct inaccurate information), Right to Erasure ("right to be forgotten"), Right to Data Portability (receive your data in a machine-readable format), Right to Restrict Processing (limit how we use your data), and Right to Object (opt out of certain processing activities). For children under 16, we require explicit parental consent and provide additional protections. Contact our Data Protection Officer at dpo@safeplay.com to exercise these rights.
+                  If you're in the European Union, GDPR gives you enhanced rights regarding your family's data: Right of Access (view all collected data), Right to Rectification (correct inaccurate information), Right to Erasure ("right to be forgotten"), Right to Data Portability (receive your data in a machine-readable format), Right to Restrict Processing (limit how we use your data), and Right to Object (opt out of certain processing activities). For children under 16, we require explicit parental consent and provide additional protections. Contact our Data Protection Officer at dpo@mysafeplay.ai to exercise these rights.
                 </AccordionContent>
               </AccordionItem>
 
@@ -413,7 +413,7 @@ export default function FAQPage() {
                   Can I delete my child's data from SafePlay?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  Yes, absolutely. You have complete control over your child's data and can request deletion at any time. You can delete specific photos/videos, remove biometric templates, delete location history, close your child's account entirely, or request a complete data purge. Most deletions are processed immediately, with some taking up to 30 days for complete removal from backup systems. We'll provide confirmation when deletion is complete. Contact privacy@safeplay.com or use your account settings to request data deletion.
+                  Yes, absolutely. You have complete control over your child's data and can request deletion at any time. You can delete specific photos/videos, remove biometric templates, delete location history, close your child's account entirely, or request a complete data purge. Most deletions are processed immediately, with some taking up to 30 days for complete removal from backup systems. We'll provide confirmation when deletion is complete. Contact privacy@mysafeplay.ai or use your account settings to request data deletion.
                 </AccordionContent>
               </AccordionItem>
 
@@ -422,7 +422,7 @@ export default function FAQPage() {
                   How do I exercise my privacy rights?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  You can exercise your privacy rights in several ways: Use your account settings for basic data management, email privacy@safeplay.com for complex requests, call 1-800-SAFEPLAY for urgent privacy concerns, or mail written requests to our Privacy Department. We respond to most requests within 30 days and may require identity verification for security. All privacy requests are handled by our dedicated privacy team and are free of charge.
+                  You can exercise your privacy rights in several ways: Use your account settings for basic data management, email privacy@mysafeplay.ai for complex requests, call 1-800-SAFEPLAY for urgent privacy concerns, or mail written requests to our Privacy Department. We respond to most requests within 30 days and may require identity verification for security. All privacy requests are handled by our dedicated privacy team and are free of charge.
                 </AccordionContent>
               </AccordionItem>
 
@@ -431,7 +431,7 @@ export default function FAQPage() {
                   Who can I contact about privacy concerns?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  For privacy-related questions or concerns, contact our Privacy Officer at privacy@safeplay.com or call 1-800-SAFEPLAY. EU residents can contact our Data Protection Officer at dpo@safeplay.com. For general questions, use our customer support chat or email support@safeplay.com. Our privacy team is available Monday-Friday, 9 AM-6 PM EST, with emergency privacy support available 24/7 for urgent concerns involving child safety or data breaches.
+                  For privacy-related questions or concerns, contact our Privacy Officer at privacy@mysafeplay.ai or call 1-800-SAFEPLAY. EU residents can contact our Data Protection Officer at dpo@mysafeplay.ai. For general questions, use our customer support chat or email support@mysafeplay.ai. Our privacy team is available Monday-Friday, 9 AM-6 PM EST, with emergency privacy support available 24/7 for urgent concerns involving child safety or data breaches.
                 </AccordionContent>
               </AccordionItem>
             </div>

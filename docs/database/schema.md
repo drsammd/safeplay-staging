@@ -841,7 +841,7 @@ async function seedDatabase() {
   // Create admin user
   const admin = await prisma.user.create({
     data: {
-      email: 'admin@safeplay.com',
+      email: 'admin@mysafeplay.ai',
       name: 'System Administrator',
       role: 'SYSTEM_ADMIN',
       password: await hashPassword('secure-password'),

@@ -9,7 +9,7 @@ async function checkPasswords() {
     const users = await prisma.user.findMany({
       where: {
         email: {
-          in: ['john@doe.com', 'parent@safeplay.com']
+          in: ['john@doe.com', 'parent@mysafeplay.ai']
         }
       },
       select: {

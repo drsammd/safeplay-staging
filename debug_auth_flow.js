@@ -82,7 +82,7 @@ async function testLoginFlow() {
     // Step 3: Attempt login
     console.log('\n3. Attempting login...');
     const loginData = new URLSearchParams({
-      email: 'venue@safeplay.com',
+      email: 'venue@mysafeplay.ai',
       password: 'password123',
       csrfToken: csrfToken,
       callbackUrl: 'http://localhost:3000/venue-admin/floor-plans',
