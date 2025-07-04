@@ -3,14 +3,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Shield, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, Mail } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function StagingAuthPage() {
   const [password, setPassword] = useState("");
@@ -60,166 +52,273 @@ export default function StagingAuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      {/* Security Headers Notice */}
-      <head>
-        <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
-        <meta name="googlebot" content="noindex, nofollow" />
-        <meta httpEquiv="X-Robots-Tag" content="noindex, nofollow" />
-      </head>
-      
-      <div className="w-full max-w-md">
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f0f9ff 0%, #ffffff 50%, #f0f4ff 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '1rem'
+    }}>
+      <div style={{ width: '100%', maxWidth: '400px' }}>
         {/* Logo and Branding */}
-        <div className="text-center mb-8">
-          <div className="mx-auto mb-6 w-32 h-32 bg-white rounded-full shadow-lg flex items-center justify-center">
-            <Image
-              src="/logos/safeplay_combined_logo5.png"
-              alt="SafePlay"
-              width={80}
-              height={80}
-              className="h-16 w-auto"
-            />
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{
+            margin: '0 auto 1.5rem',
+            width: '128px',
+            height: '128px',
+            background: '#ffffff',
+            borderRadius: '50%',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              background: '#3b82f6',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              fontSize: '24px',
+              fontWeight: 'bold'
+            }}>
+              🛡️
+            </div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">mySafePlay™</h1>
-          <p className="text-gray-600">Stakeholder Access Portal</p>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
+            mySafePlay™
+          </h1>
+          <p style={{ color: '#6b7280' }}>Stakeholder Access Portal</p>
         </div>
 
         {/* Main Authentication Card */}
-        <Card className="shadow-xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardHeader className="text-center space-y-2">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Shield className="h-8 w-8 text-blue-600" />
+        <div style={{
+          background: 'rgba(255,255,255,0.9)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '12px',
+          boxShadow: '0 25px 50px rgba(0,0,0,0.1)',
+          padding: '2rem',
+          border: 'none'
+        }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{
+              margin: '0 auto 1rem',
+              width: '64px',
+              height: '64px',
+              background: '#dbeafe',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <span style={{ fontSize: '24px' }}>🔒</span>
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
               Beta Environment Access
-            </CardTitle>
-            <CardDescription className="text-gray-600">
+            </h2>
+            <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
               This is a secure staging environment for authorized stakeholders only.
               Please enter your access credentials to continue.
-            </CardDescription>
-          </CardHeader>
+            </p>
+          </div>
 
-          <CardContent className="space-y-6">
-            {/* Security Notice */}
-            <Alert className="border-amber-200 bg-amber-50">
-              <Lock className="h-4 w-4 text-amber-600" />
-              <AlertDescription className="text-amber-800 text-sm">
-                <strong>Confidential:</strong> This environment contains pre-release features. 
-                Please do not share access credentials or discuss features publicly.
-              </AlertDescription>
-            </Alert>
+          {/* Security Notice */}
+          <div style={{
+            border: '1px solid #fbbf24',
+            background: '#fffbeb',
+            borderRadius: '8px',
+            padding: '1rem',
+            marginBottom: '1.5rem'
+          }}>
+            <p style={{ color: '#92400e', fontSize: '0.875rem' }}>
+              <strong>Confidential:</strong> This environment contains pre-release features. 
+              Please do not share access credentials or discuss features publicly.
+            </p>
+          </div>
 
-            {/* Error Display */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+          {/* Error Display */}
+          {error && (
+            <div style={{
+              border: '1px solid #ef4444',
+              background: '#fef2f2',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <p style={{ color: '#dc2626', fontSize: '0.875rem' }}>{error}</p>
+            </div>
+          )}
 
-            {/* Rate Limit Warning */}
-            {attempts >= 3 && (
-              <Alert className="border-red-200 bg-red-50">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <AlertDescription className="text-red-800 text-sm">
-                  Multiple failed attempts detected. Please verify your credentials.
-                </AlertDescription>
-              </Alert>
-            )}
+          {/* Rate Limit Warning */}
+          {attempts >= 3 && (
+            <div style={{
+              border: '1px solid #ef4444',
+              background: '#fef2f2',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '1.5rem'
+            }}>
+              <p style={{ color: '#dc2626', fontSize: '0.875rem' }}>
+                Multiple failed attempts detected. Please verify your credentials.
+              </p>
+            </div>
+          )}
 
-            {/* Password Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                  Access Password
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter stakeholder password"
-                    className="pr-10 h-12 text-lg"
-                    required
-                    disabled={isLoading}
-                    autoComplete="current-password"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isLoading}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Remember Me */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="remember"
-                  checked={rememberMe}
-                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+          {/* Password Form */}
+          <form onSubmit={handleSubmit} style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label htmlFor="password" style={{ 
+                display: 'block',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                color: '#374151',
+                marginBottom: '0.5rem'
+              }}>
+                Access Password
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter stakeholder password"
+                  style={{
+                    width: '100%',
+                    height: '48px',
+                    fontSize: '1rem',
+                    padding: '0 3rem 0 1rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    background: '#ffffff'
+                  }}
+                  required
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
-                <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
-                  Remember me for 30 days
-                </Label>
-              </div>
-
-              {/* Submit Button */}
-              <Button
-                type="submit"
-                className="w-full h-12 text-lg font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg"
-                disabled={isLoading || !password.trim()}
-              >
-                {isLoading ? (
-                  <div className="flex items-center space-x-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>Authenticating...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle2 className="h-5 w-5" />
-                    <span>Access mySafePlay™</span>
-                  </div>
-                )}
-              </Button>
-            </form>
-
-            {/* Help Section */}
-            <div className="pt-4 border-t border-gray-200">
-              <div className="text-center space-y-2">
-                <p className="text-sm text-gray-600">
-                  Need access credentials?
-                </p>
-                <div className="flex items-center justify-center space-x-2 text-sm text-blue-600">
-                  <Mail className="h-4 w-4" />
-                  <span>Contact your project manager</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#9ca3af'
+                  }}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+
+            {/* Remember Me */}
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <input
+                id="remember"
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                disabled={isLoading}
+                style={{ marginRight: '0.5rem' }}
+              />
+              <label htmlFor="remember" style={{ fontSize: '0.875rem', color: '#6b7280', cursor: 'pointer' }}>
+                Remember me for 30 days
+              </label>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading || !password.trim()}
+              style={{
+                width: '100%',
+                height: '48px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                background: isLoading || !password.trim() 
+                  ? '#9ca3af' 
+                  : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: isLoading || !password.trim() ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              {isLoading ? (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #ffffff',
+                    borderTop: '2px solid transparent',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    marginRight: '0.5rem'
+                  }} />
+                  <span>Authenticating...</span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <span style={{ marginRight: '0.5rem' }}>✅</span>
+                  <span>Access mySafePlay™</span>
+                </div>
+              )}
+            </button>
+          </form>
+
+          {/* Help Section */}
+          <div style={{ 
+            paddingTop: '1rem',
+            borderTop: '1px solid #e5e7eb',
+            textAlign: 'center'
+          }}>
+            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+              Need access credentials?
+            </p>
+            <div style={{ 
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.875rem',
+              color: '#3b82f6'
+            }}>
+              <span style={{ marginRight: '0.5rem' }}>📧</span>
+              <span>Contact your project manager</span>
+            </div>
+          </div>
+        </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center">
-          <p className="text-xs text-gray-500">
+        <div style={{ marginTop: '2rem', textAlign: 'center' }}>
+          <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
             © 2025 mySafePlay™. Secure Beta Environment v1.0
           </p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p style={{ fontSize: '0.75rem', color: '#d1d5db', marginTop: '0.25rem' }}>
             Protected by enterprise-grade security measures
           </p>
         </div>
       </div>
+      
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
