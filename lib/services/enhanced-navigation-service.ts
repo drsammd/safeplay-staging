@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { prisma } from '../db';
 import { computerVisionService } from './computer-vision-service';

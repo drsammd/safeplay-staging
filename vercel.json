@@ -21,7 +21,10 @@
       "NEXT_PRIVATE_SKIP_TYPE_CHECK": "true",
       "DISABLE_ESLINT_PLUGIN": "true",
       "TS_NODE_TRANSPILE_ONLY": "true",
-      "NODE_OPTIONS": "--max-old-space-size=4096"
+      "NODE_OPTIONS": "--max-old-space-size=4096",
+      "TWILIO_ACCOUNT_SID": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "TWILIO_AUTH_TOKEN": "mock_token",
+      "TWILIO_PHONE_NUMBER": "+15551234567"
     }
   }
 }

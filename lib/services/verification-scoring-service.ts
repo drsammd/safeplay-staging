@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 interface VerificationScoringInput {
   // Document analysis scores

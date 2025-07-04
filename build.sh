@@ -13,6 +13,11 @@ export DISABLE_ESLINT_PLUGIN=true
 export TS_NODE_TRANSPILE_ONLY=true
 export NODE_OPTIONS="--max-old-space-size=4096"
 
+# Mock Twilio configuration for build process
+export TWILIO_ACCOUNT_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+export TWILIO_AUTH_TOKEN="mock_token"
+export TWILIO_PHONE_NUMBER="+15551234567"
+
 echo "Environment variables set:"
 echo "SKIP_TYPE_CHECK=$SKIP_TYPE_CHECK"
 echo "CI=$CI"

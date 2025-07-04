@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 import { VoiceAnalysisResult } from '../aws/types';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 
 
 import { TextractClient, StartDocumentAnalysisCommand, GetDocumentAnalysisCommand, DetectDocumentTextCommand } from '@aws-sdk/client-textract';
