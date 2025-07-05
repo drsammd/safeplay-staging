@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-    provider = "sqlite"
+    provider = "postgresql"
     url      = env("DATABASE_URL")
 }
 
@@ -6576,7 +6576,7 @@ model EmailSegmentMember {
   // Relations
   segment           EmailSegment        @relation("SegmentMembers", fields: [segmentId], references: [id])
   user              User                @relation("UserSegmentMemberships", fields: [userId], references: [id])
-  emailPreferences  EmailPreferences    @relation("UserEmailSegments", fields: [userId], references: [userId])
+  emailPreferences  EmailPreferences    @relation("UserEmailSegments", fields: [userId], references: [userId], map: "email_segment_members_preferences_fkey")
   
   @@unique([segmentId, userId])
   @@map("email_segment_members")
