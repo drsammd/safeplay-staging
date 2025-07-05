@@ -57,6 +57,13 @@ function stakeholderAuthMiddleware(request: NextRequest) {
     return addSecurityHeaders(response);
   }
 
+  // Allow debug endpoints for diagnostics (no auth required)
+  if (pathname.startsWith('/api/debug/')) {
+    console.log("🔧 Stakeholder Auth: Allowing debug endpoint access:", pathname);
+    const response = NextResponse.next();
+    return addSecurityHeaders(response);
+  }
+
   // Check stakeholder session for all other routes
   if (!isValidStakeholderSession(request)) {
     console.log("❌ Stakeholder Auth: DENYING access - no valid session, redirecting to staging auth");
@@ -150,7 +157,8 @@ const combinedMiddleware = withAuth(
           pathname === "/faq" ||
           pathname === "/testimonials" ||
           pathname === "/staging-auth" ||
-          pathname.startsWith("/api/staging-auth")
+          pathname.startsWith("/api/staging-auth") ||
+          pathname.startsWith("/api/debug/")
         ) {
           return true;
         }
