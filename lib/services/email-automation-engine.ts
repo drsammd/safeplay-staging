@@ -1161,7 +1161,7 @@ export class EmailAutomationEngine {
           trigger: EmailTrigger.SCHEDULED,
           isActive: true,
           triggerConditions: {
-            path: 'campaignType',
+            path: ['campaignType'],
             equals: 'weekly_safety_tips'
           }
         },
@@ -1300,7 +1300,7 @@ export class EmailAutomationEngine {
           },
           rule: {
             triggerConditions: {
-              path: 'campaignType',
+              path: ['campaignType'],
               equals: 'weekly_safety_tips'
             }
           }
