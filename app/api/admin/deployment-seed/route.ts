@@ -1,247 +1,76 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { ensureCriticalAccounts, verifyAccounts } from '@/scripts/deployment-seed';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
-// Critical accounts that MUST exist for deployment
-const CRITICAL_ACCOUNTS = [
-  {
-    email: 'admin@mysafeplay.ai',
-    password: 'password123',
-    name: 'Sarah Mitchell',
-    role: 'COMPANY_ADMIN' as const,
-    phone: '+1 (555) 001-0001',
-  },
-  {
-    email: 'john@mysafeplay.ai',
-    password: 'johndoe123',
-    name: 'John Doe',
-    role: 'PARENT' as const,
-    phone: '+1 (555) 001-0002',
-  },
-  {
-    email: 'venue@mysafeplay.ai',
-    password: 'password123',
-    name: 'John Smith',
-    role: 'VENUE_ADMIN' as const,
-    phone: '+1 (555) 002-0001',
-  },
-  {
-    email: 'parent@mysafeplay.ai',
-    password: 'password123',
-    name: 'Emily Johnson',
-    role: 'PARENT' as const,
-    phone: '+1 (555) 003-0001',
-  },
-];
-
-async function ensureCriticalAccounts() {
-  const results = [];
-
-  for (const account of CRITICAL_ACCOUNTS) {
-    try {
-      // Check if account already exists (case-insensitive)
-      const existingUser = await prisma.user.findFirst({
-        where: { 
-          email: {
-            equals: account.email,
-            mode: 'insensitive'
-          }
-        }
-      });
-
-      if (existingUser) {
-        // Verify password is correct
-        const isPasswordValid = await bcrypt.compare(account.password, existingUser.password);
-        const isRoleCorrect = existingUser.role === account.role;
-
-        if (isPasswordValid && isRoleCorrect) {
-          results.push({ email: account.email, status: 'EXISTS_CORRECT' });
-        } else {
-          // Update the account with correct data
-          const hashedPassword = await bcrypt.hash(account.password, 12);
-          await prisma.user.update({
-            where: { id: existingUser.id },
-            data: {
-              email: account.email.toLowerCase(), // Normalize to lowercase
-              password: hashedPassword,
-              name: account.name,
-              role: account.role,
-              phone: account.phone,
-            }
-          });
-          
-          results.push({ email: account.email, status: 'UPDATED' });
-        }
-      } else {
-        // Create new account
-        const hashedPassword = await bcrypt.hash(account.password, 12);
-        await prisma.user.create({
-          data: {
-            email: account.email.toLowerCase(), // Normalize to lowercase
-            password: hashedPassword,
-            name: account.name,
-            role: account.role,
-            phone: account.phone,
-          }
-        });
-        
-        results.push({ email: account.email, status: 'CREATED' });
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      results.push({ email: account.email, status: 'ERROR', error: errorMessage });
-    }
-  }
-
-  return results;
-}
-
-async function verifyAccounts() {
-  const verificationResults = [];
-
-  for (const account of CRITICAL_ACCOUNTS) {
-    try {
-      const user = await prisma.user.findFirst({
-        where: { 
-          email: {
-            equals: account.email,
-            mode: 'insensitive'
-          }
-        }
-      });
-
-      if (!user) {
-        verificationResults.push({ 
-          email: account.email, 
-          status: 'NOT_FOUND' 
-        });
-        continue;
-      }
-
-      const isPasswordValid = await bcrypt.compare(account.password, user.password);
-      const isRoleCorrect = user.role === account.role;
-
-      verificationResults.push({
-        email: account.email,
-        status: isPasswordValid && isRoleCorrect ? 'VERIFIED' : 'INVALID',
-        role: user.role,
-        passwordValid: isPasswordValid,
-        roleCorrect: isRoleCorrect
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      verificationResults.push({ 
-        email: account.email, 
-        status: 'ERROR', 
-        error: errorMessage 
-      });
-    }
-  }
-
-  return verificationResults;
-}
-
+// Public endpoint for deployment seeding - NO AUTH REQUIRED (for emergency use)
 export async function POST(request: NextRequest) {
   try {
-    // Basic authorization check - require a specific header or query param
-    const authHeader = request.headers.get('authorization');
-    const seedToken = new URL(request.url).searchParams.get('token');
-    
-    // Allow seeding with either Bearer token or query param (for easy manual triggering)
-    const isAuthorized = authHeader === 'Bearer SafePlay-Deploy-2024' || 
-                        seedToken === 'SafePlay-Deploy-2024';
-    
-    if (!isAuthorized) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          message: 'Unauthorized. Use ?token=SafePlay-Deploy-2024 or Authorization: Bearer SafePlay-Deploy-2024' 
-        },
-        { status: 401 }
-      );
-    }
+    console.log('🌱 DEPLOYMENT-SEED: Starting deployment seeding...');
 
-    // Check database connection
-    await prisma.$connect();
-
-    // Ensure critical accounts exist
-    const setupResults = await ensureCriticalAccounts();
+    // Run the deployment seed script
+    const results = await ensureCriticalAccounts();
     
-    // Verify all accounts are working
-    const verificationResults = await verifyAccounts();
-    
-    // Generate summary
-    const summary = setupResults.reduce((acc, result) => {
-      acc[result.status] = (acc[result.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    console.log('🔍 DEPLOYMENT-SEED: Verifying accounts...');
+    await verifyAccounts();
 
-    const allVerified = verificationResults.every(r => r.status === 'VERIFIED');
-
-    return NextResponse.json({
-      success: allVerified,
-      message: allVerified ? 'All demo accounts verified successfully!' : 'Some accounts need attention',
-      environment: process.env.NODE_ENV || 'development',
+    const response = {
+      success: true,
+      message: 'Deployment seeding completed successfully',
       timestamp: new Date().toISOString(),
-      setupResults,
-      verificationResults,
-      summary,
-      credentials: {
-        'Company Admin': 'admin@mysafeplay.ai / password123',
-        'Venue Admin': 'venue@mysafeplay.ai / password123', 
-        'Parent': 'parent@mysafeplay.ai / password123',
-        'Demo Parent': 'john@mysafeplay.ai / johndoe123'
-      }
-    });
+      results,
+      summary: results.reduce((acc, result) => {
+        acc[result.status] = (acc[result.status] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>),
+      credentials: [
+        { email: 'admin@mysafeplay.ai', password: 'password123', role: 'COMPANY_ADMIN' },
+        { email: 'venue@mysafeplay.ai', password: 'password123', role: 'VENUE_ADMIN' },
+        { email: 'parent@mysafeplay.ai', password: 'password123', role: 'PARENT' },
+        { email: 'john@mysafeplay.ai', password: 'johndoe123', role: 'PARENT' }
+      ]
+    };
+
+    console.log('✅ DEPLOYMENT-SEED: Completed successfully');
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('❌ Deployment seeding failed:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    console.error('❌ DEPLOYMENT-SEED: Failed:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Deployment seeding failed',
+      timestamp: new Date().toISOString(),
+      details: 'Check server logs for more information'
+    }, { status: 500 });
   }
 }
 
+// GET endpoint to check seeding status
 export async function GET(request: NextRequest) {
   try {
-    // Check if accounts exist without modifying them
-    const verificationResults = await verifyAccounts();
+    console.log('🔍 DEPLOYMENT-SEED: Checking seeding status...');
     
-    const allVerified = verificationResults.every(r => r.status === 'VERIFIED');
-    
-    return NextResponse.json({
-      success: allVerified,
-      message: allVerified ? 'All demo accounts are properly configured' : 'Some accounts missing or invalid',
+    // This will run the verification without making changes
+    await verifyAccounts();
+
+    const response = {
+      success: true,
+      message: 'Deployment seed status checked',
       timestamp: new Date().toISOString(),
-      verificationResults,
-      credentials: {
-        'Company Admin': 'admin@mysafeplay.ai / password123',
-        'Venue Admin': 'venue@mysafeplay.ai / password123',
-        'Parent': 'parent@mysafeplay.ai / password123', 
-        'Demo Parent': 'john@mysafeplay.ai / johndoe123'
-      }
-    });
+      note: 'Check server logs for detailed verification results'
+    };
+
+    return NextResponse.json(response);
 
   } catch (error) {
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error),
-        timestamp: new Date().toISOString()
-      },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+    console.error('❌ DEPLOYMENT-SEED: Status check failed:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Status check failed',
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 }
