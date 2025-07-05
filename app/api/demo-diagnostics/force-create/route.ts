@@ -59,7 +59,7 @@ export async function POST(request: Request) {
             password: hashedPassword,
             phoneVerified: true, // Make demo accounts fully verified
             identityVerified: true,
-            verificationLevel: 'VERIFIED',
+            verificationLevel: 'IDENTITY_VERIFIED',
             twoFactorEnabled: false, // Disable 2FA for easy testing
             createdAt: new Date(),
             updatedAt: new Date()
