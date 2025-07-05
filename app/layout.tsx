@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BetaBanner } from "@/components/staging/beta-banner";
 import { NO_INDEX_META_TAGS } from "@/lib/security-headers";
+import Providers from "@/components/providers/session-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -39,16 +40,18 @@ export default function RootLayout({
       </head>
       <body>
         <ErrorBoundary level="global">
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem={false}
-            disableTransitionOnChange
-          >
-            <BetaBanner />
-            {children}
-            <Toaster />
-          </ThemeProvider>
+          <Providers>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem={false}
+              disableTransitionOnChange
+            >
+              <BetaBanner />
+              {children}
+              <Toaster />
+            </ThemeProvider>
+          </Providers>
         </ErrorBoundary>
       </body>
     </html>
