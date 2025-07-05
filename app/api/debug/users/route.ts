@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
         role: true,
         phone: true,
         createdAt: true,
-        emailVerified: true,
         phoneVerified: true,
+        identityVerified: true,
         twoFactorEnabled: true,
       },
       orderBy: { createdAt: 'desc' }
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
         name: user.name,
         created: user.createdAt,
         verified: {
-          email: user.emailVerified,
+          identity: user.identityVerified,
           phone: user.phoneVerified,
           twoFactor: user.twoFactorEnabled
         }
