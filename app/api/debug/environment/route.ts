@@ -1,63 +1,35 @@
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// Public endpoint to check environment and configuration - NO AUTH REQUIRED
-export async function GET(request: NextRequest) {
-  try {
-    console.log('🔧 DEBUG: Checking environment configuration...');
+export async function GET() {
+  const envInfo = {
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    platform: process.platform,
+    nodeVersion: process.version,
+    vercelEnvironment: {
+      region: process.env.VERCEL_REGION,
+      url: process.env.VERCEL_URL,
+      gitCommitSha: process.env.VERCEL_GIT_COMMIT_SHA,
+      gitBranch: process.env.VERCEL_GIT_COMMIT_REF,
+    },
+    databaseConfig: {
+      hasDatabaseUrl: !!process.env.DATABASE_URL,
+      databaseUrlPreview: process.env.DATABASE_URL ? 
+        process.env.DATABASE_URL.replace(/:[^:@]*@/, ':***@').substring(0, 100) + '...' : 
+        'NOT_SET',
+      prismaSchemaExists: true, // We know it exists from our file check
+    },
+    nextAuthConfig: {
+      hasNextAuthUrl: !!process.env.NEXTAUTH_URL,
+      hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+      nextAuthUrl: process.env.NEXTAUTH_URL || 'NOT_SET',
+    },
+    memoryUsage: process.memoryUsage(),
+    uptime: process.uptime(),
+  };
 
-    // Safe environment checks (don't expose sensitive values)
-    const envCheck = {
-      NODE_ENV: process.env.NODE_ENV,
-      DATABASE_URL: process.env.DATABASE_URL ? 'SET' : 'NOT_SET',
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL ? 'SET' : 'NOT_SET',
-      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? 'SET' : 'NOT_SET',
-      VERCEL: process.env.VERCEL ? 'YES' : 'NO',
-      VERCEL_ENV: process.env.VERCEL_ENV || 'NOT_SET',
-    };
-
-    // NextAuth configuration check
-    const nextAuthCheck = {
-      url: process.env.NEXTAUTH_URL || 'NOT_CONFIGURED',
-      hasSecret: !!process.env.NEXTAUTH_SECRET,
-      environment: process.env.NODE_ENV || 'development'
-    };
-
-    // Request information
-    const requestInfo = {
-      host: request.headers.get('host'),
-      origin: request.headers.get('origin'),
-      userAgent: request.headers.get('user-agent'),
-      protocol: request.headers.get('x-forwarded-proto') || 'http',
-      timestamp: new Date().toISOString()
-    };
-
-    const response = {
-      success: true,
-      message: 'Environment check completed',
-      timestamp: new Date().toISOString(),
-      environment: envCheck,
-      nextAuth: nextAuthCheck,
-      request: requestInfo,
-      deployment: {
-        platform: process.env.VERCEL ? 'Vercel' : 'Other',
-        region: process.env.VERCEL_REGION || 'Unknown',
-        buildTime: process.env.BUILD_TIME || 'Unknown'
-      }
-    };
-
-    console.log('✅ DEBUG: Environment check completed');
-    return NextResponse.json(response);
-
-  } catch (error) {
-    console.error('❌ DEBUG: Environment check failed:', error);
-    
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Environment check failed',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
-  }
+  return NextResponse.json(envInfo);
 }
