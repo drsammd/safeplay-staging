@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const weeklyRules = await prisma.emailAutomationRule.findMany({
       where: {
         triggerConditions: {
-          path: 'campaignType',
+          path: ['campaignType'],
           equals: 'weekly_safety_tips'
         }
       },
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       where: {
         rule: {
           triggerConditions: {
-            path: 'campaignType',
+            path: ['campaignType'],
             equals: 'weekly_safety_tips'
           }
         },
