@@ -10,7 +10,7 @@
     "NEXT_PRIVATE_SKIP_TYPE_CHECK": "true",
     "DISABLE_ESLINT_PLUGIN": "true",
     "TS_NODE_TRANSPILE_ONLY": "true",
-    "DATABASE_URL": "postgresql://role_1dd1bd960:xOr82lb3C5aOJs72LQ7gZ_zhlDyfKYBI@db-1dd1bd960.db001.hosteddb.reai.io:5432/1dd1bd960"
+    "DATABASE_URL": "postgresql://role_15b691fdfa:nUQ86wNPGz2c5NGnJ3PWlwKTTmXJTdhD@db-15b691fdfa.db001.hosteddb.reai.io:5432/15b691fdfa"
   },
   "buildCommand": "./build.sh",
   "build": {
@@ -23,7 +23,7 @@
       "DISABLE_ESLINT_PLUGIN": "true",
       "TS_NODE_TRANSPILE_ONLY": "true",
       "NODE_OPTIONS": "--max-old-space-size=4096",
-      "DATABASE_URL": "postgresql://role_1dd1bd960:xOr82lb3C5aOJs72LQ7gZ_zhlDyfKYBI@db-1dd1bd960.db001.hosteddb.reai.io:5432/1dd1bd960",
+      "DATABASE_URL": "postgresql://role_15b691fdfa:nUQ86wNPGz2c5NGnJ3PWlwKTTmXJTdhD@db-15b691fdfa.db001.hosteddb.reai.io:5432/15b691fdfa",
       "TWILIO_ACCOUNT_SID": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "TWILIO_AUTH_TOKEN": "mock_token",
       "TWILIO_PHONE_NUMBER": "+15551234567"

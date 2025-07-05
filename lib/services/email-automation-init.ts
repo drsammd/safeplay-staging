@@ -90,7 +90,7 @@ export class EmailAutomationInitService {
         const existingWeeklyCampaigns = await prisma.emailAutomationRule.count({
           where: {
             triggerConditions: {
-              path: 'campaignType',
+              path: ['campaignType'],
               equals: 'weekly_safety_tips'
             }
           }
@@ -101,7 +101,7 @@ export class EmailAutomationInitService {
           const weeklyCampaignsCreated = await prisma.emailAutomationRule.count({
             where: {
               triggerConditions: {
-                path: 'campaignType',
+                path: ['campaignType'],
                 equals: 'weekly_safety_tips'
               }
             }
