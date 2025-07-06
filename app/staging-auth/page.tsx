@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -305,7 +304,7 @@ export default function StagingAuthPage() {
         {/* Footer */}
         <div style={{ marginTop: '2rem', textAlign: 'center' }}>
           <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-            © 2025 mySafePlay™. Secure Beta Environment v1.0
+            © 2025 mySafePlay™. Secure Beta Environment v0.5.1
           </p>
           <p style={{ fontSize: '0.75rem', color: '#d1d5db', marginTop: '0.25rem' }}>
             Protected by enterprise-grade security measures
