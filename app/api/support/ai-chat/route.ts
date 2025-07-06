@@ -28,14 +28,14 @@ async function getAIChatConfig() {
     // Create default configuration
     config = await db.aIChatConfig.create({
       data: {
-        name: 'Default SafePlay Support AI',
+        name: 'Default mySafePlay<sup>™</sup> Support AI',
         isActive: true,
         aiModel: 'gpt-4o-mini',
         maxTokens: 1000,
         temperature: 0.7,
-        systemPrompt: `You are SafePlay AI, an intelligent support assistant for SafePlay, a comprehensive child safety and venue management platform. 
+        systemPrompt: `You are mySafePlay<sup>™</sup> AI, an intelligent support assistant for mySafePlay<sup>™</sup>, a comprehensive child safety and venue management platform. 
 
-SafePlay provides:
+mySafePlay<sup>™</sup> provides:
 - Child tracking and safety monitoring in entertainment venues
 - Face recognition technology for child identification  
 - Real-time alerts and notifications for parents
@@ -45,7 +45,7 @@ SafePlay provides:
 - Emergency response protocols
 
 Your role:
-- Provide helpful, accurate information about SafePlay features
+- Provide helpful, accurate information about mySafePlay<sup>™</sup> features
 - Search knowledge base for relevant articles
 - Guide users to appropriate solutions
 - Escalate complex issues to human agents
@@ -53,7 +53,7 @@ Your role:
 - Focus on child safety and peace of mind
 
 Always prioritize child safety concerns and escalate emergency situations immediately.`,
-        welcomeMessage: 'Hi! I\'m SafePlay AI, your intelligent support assistant. I\'m here to help you with any questions about child safety, venue management, or using the SafePlay platform. How can I assist you today?',
+        welcomeMessage: 'Hi! I\'m mySafePlay<sup>™</sup> AI, your intelligent support assistant. I\'m here to help you with any questions about child safety, venue management, or using the mySafePlay<sup>™</sup> platform. How can I assist you today?',
         escalationPrompt: `Should this conversation be escalated to a human agent? Consider escalating if:
 - User expresses frustration or dissatisfaction
 - Technical issue requires complex troubleshooting

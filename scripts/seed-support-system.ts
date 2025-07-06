@@ -8,17 +8,17 @@ async function seedSupportSystem() {
   try {
     // Create AI chat configuration
     const aiConfig = await db.aIChatConfig.upsert({
-      where: { name: 'Default SafePlay Support AI' },
+      where: { name: 'Default mySafePlay<sup>™</sup> Support AI' },
       update: {},
       create: {
-        name: 'Default SafePlay Support AI',
+        name: 'Default mySafePlay<sup>™</sup> Support AI',
         isActive: true,
         aiModel: 'gpt-4o-mini',
         maxTokens: 1000,
         temperature: 0.7,
-        systemPrompt: `You are SafePlay AI, an intelligent support assistant for SafePlay, a comprehensive child safety and venue management platform.
+        systemPrompt: `You are mySafePlay<sup>™</sup> AI, an intelligent support assistant for mySafePlay<sup>™</sup>, a comprehensive child safety and venue management platform.
 
-SafePlay provides:
+mySafePlay<sup>™</sup> provides:
 - Child tracking and safety monitoring in entertainment venues
 - Face recognition technology for child identification  
 - Real-time alerts and notifications for parents
@@ -28,7 +28,7 @@ SafePlay provides:
 - Emergency response protocols
 
 Your role:
-- Provide helpful, accurate information about SafePlay features
+- Provide helpful, accurate information about mySafePlay<sup>™</sup> features
 - Search knowledge base for relevant articles
 - Guide users to appropriate solutions
 - Escalate complex issues to human agents
@@ -36,7 +36,7 @@ Your role:
 - Focus on child safety and peace of mind
 
 Always prioritize child safety concerns and escalate emergency situations immediately.`,
-        welcomeMessage: 'Hi! I\'m SafePlay AI, your intelligent support assistant. I\'m here to help you with any questions about child safety, venue management, or using the SafePlay platform. How can I assist you today?',
+        welcomeMessage: 'Hi! I\'m mySafePlay<sup>™</sup> AI, your intelligent support assistant. I\'m here to help you with any questions about child safety, venue management, or using the mySafePlay<sup>™</sup> platform. How can I assist you today?',
         escalationPrompt: `Should this conversation be escalated to a human agent? Consider escalating if:
 - User expresses frustration or dissatisfaction
 - Technical issue requires complex troubleshooting
@@ -70,14 +70,14 @@ Respond with "ESCALATE" if yes, or "CONTINUE" if AI can handle it.`,
     // Create knowledge base articles
     const articles = [
       {
-        title: 'Getting Started with SafePlay',
-        content: `# Getting Started with SafePlay
+        title: 'Getting Started with mySafePlay<sup>™</sup>',
+        content: `# Getting Started with mySafePlay<sup>™</sup>
 
-SafePlay is your comprehensive child safety and venue management platform. This guide will help you get started quickly.
+mySafePlay<sup>™</sup> is your comprehensive child safety and venue management platform. This guide will help you get started quickly.
 
 ## For Parents
 
-1. **Download the Mobile App**: Get the SafePlay parent app from your app store
+1. **Download the Mobile App**: Get the mySafePlay<sup>™</sup> parent app from your app store
 2. **Create Your Account**: Sign up with your email and verify your account
 3. **Add Your Children**: Register your children's profiles with photos for face recognition
 4. **Connect with Venues**: Find and connect with your favorite family entertainment venues
@@ -87,7 +87,7 @@ SafePlay is your comprehensive child safety and venue management platform. This 
 1. **Set Up Your Venue Profile**: Complete your venue information and contact details
 2. **Install Camera Systems**: Follow our camera installation guide
 3. **Configure Safety Zones**: Set up play areas and safety zones on your floor plan
-4. **Train Your Staff**: Ensure your team understands the SafePlay system
+4. **Train Your Staff**: Ensure your team understands the mySafePlay<sup>™</sup> system
 
 ## Key Features
 
@@ -98,7 +98,7 @@ SafePlay is your comprehensive child safety and venue management platform. This 
 - **Emergency Protocols**: Comprehensive safety and emergency response systems
 
 Need help? Contact our support team or use the AI chat assistant for instant help.`,
-        summary: 'Complete guide to getting started with SafePlay for both parents and venue administrators.',
+        summary: 'Complete guide to getting started with mySafePlay<sup>™</sup> for both parents and venue administrators.',
         category: 'GETTING_STARTED',
         slug: 'getting-started-with-safeplay',
         tags: JSON.stringify(['setup', 'onboarding', 'parents', 'venues', 'getting started']),
@@ -106,14 +106,14 @@ Need help? Contact our support team or use the AI chat assistant for instant hel
         isPublic: true,
         status: 'PUBLISHED',
         publishedAt: new Date(),
-        metaDescription: 'Learn how to get started with SafePlay child safety platform for parents and venues',
+        metaDescription: 'Learn how to get started with mySafePlay<sup>™</sup> child safety platform for parents and venues',
         metaKeywords: JSON.stringify(['safeplay', 'child safety', 'getting started', 'setup'])
       },
       {
         title: 'Setting Up Face Recognition',
         content: `# Setting Up Face Recognition
 
-Face recognition is a core feature of SafePlay that helps identify and track your child safely within entertainment venues.
+Face recognition is a core feature of mySafePlay<sup>™</sup> that helps identify and track your child safely within entertainment venues.
 
 ## For Parents
 
@@ -171,7 +171,7 @@ Need technical support? Contact our camera support team for specialized help.`,
         title: 'Emergency Procedures and Safety Protocols',
         content: `# Emergency Procedures and Safety Protocols
 
-SafePlay includes comprehensive emergency response features to ensure child safety in all situations.
+mySafePlay<sup>™</sup> includes comprehensive emergency response features to ensure child safety in all situations.
 
 ## Emergency Alert Types
 
@@ -211,7 +211,7 @@ SafePlay includes comprehensive emergency response features to ensure child safe
 
 ### Staff Training Requirements
 - Monthly emergency drills
-- SafePlay system emergency procedures
+- mySafePlay<sup>™</sup> system emergency procedures
 - Communication protocols
 - Child safety best practices
 
@@ -230,7 +230,7 @@ SafePlay includes comprehensive emergency response features to ensure child safe
 - Venue safety hazard assessment
 
 ### Incident Documentation
-- All incidents must be documented in SafePlay
+- All incidents must be documented in mySafePlay<sup>™</sup>
 - Photos and witness statements when appropriate
 - Follow-up communication with parents
 - Review and improvement recommendations
@@ -244,14 +244,14 @@ Remember: Child safety is our top priority. When in doubt, always err on the sid
         isPublic: true,
         status: 'PUBLISHED',
         publishedAt: new Date(),
-        metaDescription: 'Learn about emergency procedures and safety protocols in SafePlay',
+        metaDescription: 'Learn about emergency procedures and safety protocols in mySafePlay<sup>™</sup>',
         metaKeywords: JSON.stringify(['emergency procedures', 'child safety', 'safety protocols', 'alerts'])
       },
       {
         title: 'Mobile App Setup and Features',
         content: `# Mobile App Setup and Features
 
-The SafePlay mobile app puts child safety and venue information at your fingertips.
+The mySafePlay<sup>™</sup> mobile app puts child safety and venue information at your fingertips.
 
 ## Download and Installation
 
@@ -346,8 +346,8 @@ The SafePlay mobile app puts child safety and venue information at your fingerti
 - Email support team
 - Phone support for emergencies
 
-The mobile app is your primary interface with SafePlay. Keep it updated and configured properly for the best experience.`,
-        summary: 'Complete guide to setting up and using the SafePlay mobile app for parents.',
+The mobile app is your primary interface with mySafePlay<sup>™</sup>. Keep it updated and configured properly for the best experience.`,
+        summary: 'Complete guide to setting up and using the mySafePlay<sup>™</sup> mobile app for parents.',
         category: 'MOBILE_APP',
         slug: 'mobile-app-setup-features',
         tags: JSON.stringify(['mobile app', 'setup', 'features', 'tracking', 'photos', 'notifications']),
@@ -355,14 +355,14 @@ The mobile app is your primary interface with SafePlay. Keep it updated and conf
         isPublic: true,
         status: 'PUBLISHED',
         publishedAt: new Date(),
-        metaDescription: 'Learn how to set up and use the SafePlay mobile app for child safety monitoring',
+        metaDescription: 'Learn how to set up and use the mySafePlay<sup>™</sup> mobile app for child safety monitoring',
         metaKeywords: JSON.stringify(['mobile app', 'child safety', 'real-time tracking', 'notifications'])
       },
       {
         title: 'Billing and Subscription Management',
         content: `# Billing and Subscription Management
 
-Manage your SafePlay subscription, billing, and payment methods easily through your account.
+Manage your mySafePlay<sup>™</sup> subscription, billing, and payment methods easily through your account.
 
 ## Subscription Plans
 
@@ -466,7 +466,7 @@ Manage your SafePlay subscription, billing, and payment methods easily through y
 - Early adopter pricing for new features
 
 Need help with billing? Contact our billing support team for personalized assistance.`,
-        summary: 'Complete guide to managing SafePlay subscriptions, billing, and payment methods.',
+        summary: 'Complete guide to managing mySafePlay<sup>™</sup> subscriptions, billing, and payment methods.',
         category: 'BILLING_PAYMENTS',
         slug: 'billing-subscription-management',
         tags: JSON.stringify(['billing', 'subscription', 'payment', 'refund', 'plans', 'pricing']),
@@ -474,7 +474,7 @@ Need help with billing? Contact our billing support team for personalized assist
         isPublic: true,
         status: 'PUBLISHED',
         publishedAt: new Date(),
-        metaDescription: 'Learn how to manage your SafePlay subscription, billing, and payments',
+        metaDescription: 'Learn how to manage your mySafePlay<sup>™</sup> subscription, billing, and payments',
         metaKeywords: JSON.stringify(['billing', 'subscription management', 'payment methods', 'refunds'])
       }
     ]

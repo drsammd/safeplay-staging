@@ -19,7 +19,7 @@ export default function FAQPage() {
             <Link href="/" className="flex items-center">
               <Image 
                 src="/logos/safeplay_combined_logo.png" 
-                alt="SafePlay - Biometric Child Safety Platform" 
+                alt="mySafePlay<sup>™</sup> - Biometric Child Safety Platform" 
                 width={120} 
                 height={40}
                 className="h-10 w-auto"
@@ -51,7 +51,7 @@ export default function FAQPage() {
             Frequently Asked Questions
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Get answers to common questions about SafePlay's biometric child safety technology, 
+            Get answers to common questions about mySafePlay<sup>™</sup>'s biometric child safety technology, 
             pricing, and implementation.
           </p>
         </div>
@@ -64,10 +64,10 @@ export default function FAQPage() {
               
               <AccordionItem value="what-is-safeplay" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  What is SafePlay and how does it work?
+                  What is mySafePlay<sup>™</sup> and how does it work?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay is a comprehensive biometric child safety platform that uses advanced AI and facial recognition technology to protect children in play venues. Our system provides real-time location tracking, instant safety alerts, emotion detection, and automatic photo capture. Features include QR code check-in/out, permission-based photo sharing between families, parent-to-parent communication, AI friendship detection, and enhanced navigation to help you find your child. We ensure complete privacy and security while creating a connected community of families.
+                  mySafePlay<sup>™</sup> is a comprehensive biometric child safety platform that uses advanced AI and facial recognition technology to protect children in play venues. Our system provides real-time location tracking, instant safety alerts, emotion detection, and automatic photo capture. Features include QR code check-in/out, permission-based photo sharing between families, parent-to-parent communication, AI friendship detection, and enhanced navigation to help you find your child. We ensure complete privacy and security while creating a connected community of families.
                 </AccordionContent>
               </AccordionItem>
 
@@ -82,10 +82,10 @@ export default function FAQPage() {
 
               <AccordionItem value="age-range" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  What age range does SafePlay support?
+                  What age range does mySafePlay<sup>™</sup> support?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay is designed for children aged 2-16 years. Our facial recognition technology is optimized to work accurately with children's faces as they grow and change. The system learns and adapts to recognize children even as they age, ensuring consistent protection throughout their childhood.
+                  mySafePlay<sup>™</sup> is designed for children aged 2-16 years. Our facial recognition technology is optimized to work accurately with children's faces as they grow and change. The system learns and adapts to recognize children even as they age, ensuring consistent protection throughout their childhood.
                 </AccordionContent>
               </AccordionItem>
 
@@ -94,7 +94,7 @@ export default function FAQPage() {
                   How do I check my child in and out of venues?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay uses a simple QR code system for check-in and check-out. Each family receives a unique QR code that can be scanned at the venue entrance. The system automatically recognizes your child through facial recognition and confirms their identity. You can also use the mobile app to check in multiple children at once and receive instant confirmation when they're safely in the venue.
+                  mySafePlay<sup>™</sup> uses a simple QR code system for check-in and check-out. Each family receives a unique QR code that can be scanned at the venue entrance. The system automatically recognizes your child through facial recognition and confirms their identity. You can also use the mobile app to check in multiple children at once and receive instant confirmation when they're safely in the venue.
                 </AccordionContent>
               </AccordionItem>
 
@@ -103,7 +103,7 @@ export default function FAQPage() {
                   What types of real-time alerts will I receive?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay sends instant notifications for various safety and activity events: check-in/out confirmations, restricted area alerts, emotion detection triggers (if your child appears distressed), emergency situations, friendship activities, photo sharing opportunities, and location updates when your child moves between zones. You can customize which alerts you receive and how you want to be notified (push notification, text, or email).
+                  mySafePlay<sup>™</sup> sends instant notifications for various safety and activity events: check-in/out confirmations, restricted area alerts, emotion detection triggers (if your child appears distressed), emergency situations, friendship activities, photo sharing opportunities, and location updates when your child moves between zones. You can customize which alerts you receive and how you want to be notified (push notification, text, or email).
                 </AccordionContent>
               </AccordionItem>
             </div>
@@ -114,10 +114,10 @@ export default function FAQPage() {
 
               <AccordionItem value="ai-protection" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  How does SafePlay's AI protect my child?
+                  How does mySafePlay<sup>™</sup>'s AI protect my child?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay's AI continuously monitors for safety concerns using advanced computer vision and behavioral analysis. Our system detects emotional distress, bullying situations, overcrowding, and unauthorized access to restricted areas. When potential risks are identified, parents and venue staff receive instant alerts. The AI also ensures age-appropriate access to different areas and activities within the venue.
+                  mySafePlay<sup>™</sup>'s AI continuously monitors for safety concerns using advanced computer vision and behavioral analysis. Our system detects emotional distress, bullying situations, overcrowding, and unauthorized access to restricted areas. When potential risks are identified, parents and venue staff receive instant alerts. The AI also ensures age-appropriate access to different areas and activities within the venue.
                 </AccordionContent>
               </AccordionItem>
 
@@ -132,10 +132,10 @@ export default function FAQPage() {
 
               <AccordionItem value="behavioral-monitoring" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  What behavioral patterns does SafePlay monitor?
+                  What behavioral patterns does mySafePlay<sup>™</sup> monitor?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay monitors patterns that could indicate safety concerns, such as aggressive behavior, social isolation, or situations that might escalate into conflicts. The system also tracks positive interactions and friendships, helping parents understand their child's social development. All monitoring is designed to enhance safety while respecting children's natural play and social interactions.
+                  mySafePlay<sup>™</sup> monitors patterns that could indicate safety concerns, such as aggressive behavior, social isolation, or situations that might escalate into conflicts. The system also tracks positive interactions and friendships, helping parents understand their child's social development. All monitoring is designed to enhance safety while respecting children's natural play and social interactions.
                 </AccordionContent>
               </AccordionItem>
 
@@ -144,7 +144,7 @@ export default function FAQPage() {
                   How does age estimation help with safety?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay's age estimation ensures children access age-appropriate areas and activities. For example, toddler areas are protected from older children who might accidentally cause harm, while teen areas remain accessible only to appropriate age groups. This creates safer play environments tailored to different developmental stages and physical capabilities.
+                  mySafePlay<sup>™</sup>'s age estimation ensures children access age-appropriate areas and activities. For example, toddler areas are protected from older children who might accidentally cause harm, while teen areas remain accessible only to appropriate age groups. This creates safer play environments tailored to different developmental stages and physical capabilities.
                 </AccordionContent>
               </AccordionItem>
             </div>
@@ -158,7 +158,7 @@ export default function FAQPage() {
                   How does photo sharing work with other families?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay's smart photo sharing system automatically identifies when your child appears in photos with other children and offers to share those moments with the other families involved. All sharing requires explicit permission from both families, and you maintain complete control over which photos of your child can be shared. You can also request photos your child appears in from other families.
+                  mySafePlay<sup>™</sup>'s smart photo sharing system automatically identifies when your child appears in photos with other children and offers to share those moments with the other families involved. All sharing requires explicit permission from both families, and you maintain complete control over which photos of your child can be shared. You can also request photos your child appears in from other families.
                 </AccordionContent>
               </AccordionItem>
 
@@ -176,7 +176,7 @@ export default function FAQPage() {
                   How do I control who can see photos of my child?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  You have complete control over photo permissions through your SafePlay account. You can set preferences for automatic sharing with specific families, approve or deny individual photo sharing requests, and block sharing with any family. All photos remain private by default, and sharing only occurs with your explicit consent for each family or individual photo.
+                  You have complete control over photo permissions through your mySafePlay<sup>™</sup> account. You can set preferences for automatic sharing with specific families, approve or deny individual photo sharing requests, and block sharing with any family. All photos remain private by default, and sharing only occurs with your explicit consent for each family or individual photo.
                 </AccordionContent>
               </AccordionItem>
 
@@ -185,7 +185,7 @@ export default function FAQPage() {
                   Can I get copies of photos my child appears in?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  Yes! When other families capture photos that include your child, you can request copies through the SafePlay app. The system automatically identifies your child in photos and notifies you when new photos are available. Other families can approve or share these photos with you, creating a collaborative approach to capturing memories.
+                  Yes! When other families capture photos that include your child, you can request copies through the mySafePlay<sup>™</sup> app. The system automatically identifies your child in photos and notifies you when new photos are available. Other families can approve or share these photos with you, creating a collaborative approach to capturing memories.
                 </AccordionContent>
               </AccordionItem>
             </div>
@@ -199,7 +199,7 @@ export default function FAQPage() {
                   How can I connect with other parents?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay includes secure parent-to-parent messaging features that let you connect with other families whose children play with yours. You can coordinate playdates, share parenting tips, organize group activities, and build community connections. All communication is moderated for safety and privacy, and you control who can contact you.
+                  mySafePlay<sup>™</sup> includes secure parent-to-parent messaging features that let you connect with other families whose children play with yours. You can coordinate playdates, share parenting tips, organize group activities, and build community connections. All communication is moderated for safety and privacy, and you control who can contact you.
                 </AccordionContent>
               </AccordionItem>
 
@@ -208,16 +208,16 @@ export default function FAQPage() {
                   How does friendship detection work?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay's AI analyzes play patterns, proximity, and positive interactions to identify developing friendships between children. When children consistently play together and show positive social behaviors, the system suggests friendship connections to parents. This helps you understand your child's social circle and can facilitate deeper friendships through coordinated activities.
+                  mySafePlay<sup>™</sup>'s AI analyzes play patterns, proximity, and positive interactions to identify developing friendships between children. When children consistently play together and show positive social behaviors, the system suggests friendship connections to parents. This helps you understand your child's social circle and can facilitate deeper friendships through coordinated activities.
                 </AccordionContent>
               </AccordionItem>
 
               <AccordionItem value="playdate-coordination" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  Can I coordinate playdates through SafePlay?
+                  Can I coordinate playdates through mySafePlay<sup>™</sup>?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  Yes! SafePlay includes playdate coordination tools that let you schedule activities with other families, share venue preferences, and coordinate timing. You can see when your child's friends are at the same venue and receive suggestions for group activities. The system also helps you find families with similar schedules and interests.
+                  Yes! mySafePlay<sup>™</sup> includes playdate coordination tools that let you schedule activities with other families, share venue preferences, and coordinate timing. You can see when your child's friends are at the same venue and receive suggestions for group activities. The system also helps you find families with similar schedules and interests.
                 </AccordionContent>
               </AccordionItem>
 
@@ -226,7 +226,7 @@ export default function FAQPage() {
                   How do I find my child in the venue?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay's enhanced navigation system provides real-time location tracking and optimal pathfinding to help you locate your child quickly. The mobile app shows your child's current location, suggests the best route to reach them, and considers crowd density to avoid congested areas. You'll also receive notifications when your child moves to different zones within the venue.
+                  mySafePlay<sup>™</sup>'s enhanced navigation system provides real-time location tracking and optimal pathfinding to help you locate your child quickly. The mobile app shows your child's current location, suggests the best route to reach them, and considers crowd density to avoid congested areas. You'll also receive notifications when your child moves to different zones within the venue.
                 </AccordionContent>
               </AccordionItem>
             </div>
@@ -240,7 +240,7 @@ export default function FAQPage() {
                   What are restricted zones and how do they work?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  Restricted zones are areas within venues that are designated as off-limits for safety reasons - such as storage areas, kitchens, or maintenance zones. SafePlay automatically detects when children enter these areas and immediately alerts both parents and venue staff. The system helps guide children back to safe play areas and prevents accidents before they happen.
+                  Restricted zones are areas within venues that are designated as off-limits for safety reasons - such as storage areas, kitchens, or maintenance zones. mySafePlay<sup>™</sup> automatically detects when children enter these areas and immediately alerts both parents and venue staff. The system helps guide children back to safe play areas and prevents accidents before they happen.
                 </AccordionContent>
               </AccordionItem>
 
@@ -249,7 +249,7 @@ export default function FAQPage() {
                   How does capacity monitoring keep children safe?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay continuously monitors the number of children in each area to prevent overcrowding, which can lead to accidents or discomfort. When areas approach capacity limits, the system alerts venue staff and suggests alternative play areas to parents. This ensures optimal play experiences and maintains safe crowd densities throughout the venue.
+                  mySafePlay<sup>™</sup> continuously monitors the number of children in each area to prevent overcrowding, which can lead to accidents or discomfort. When areas approach capacity limits, the system alerts venue staff and suggests alternative play areas to parents. This ensures optimal play experiences and maintains safe crowd densities throughout the venue.
                 </AccordionContent>
               </AccordionItem>
 
@@ -258,7 +258,7 @@ export default function FAQPage() {
                   What happens during an emergency evacuation?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  During emergencies, SafePlay's system immediately activates evacuation protocols, providing real-time guidance for the safest exit routes while avoiding congested areas. Parents receive instant notifications with their child's location and evacuation status. The system helps venue staff account for all children and ensures families are reunited safely at designated meeting points.
+                  During emergencies, mySafePlay<sup>™</sup>'s system immediately activates evacuation protocols, providing real-time guidance for the safest exit routes while avoiding congested areas. Parents receive instant notifications with their child's location and evacuation status. The system helps venue staff account for all children and ensures families are reunited safely at designated meeting points.
                 </AccordionContent>
               </AccordionItem>
 
@@ -267,7 +267,7 @@ export default function FAQPage() {
                   How accurate is the location tracking?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay's location tracking is accurate to within 3-5 feet using a combination of facial recognition, camera networks, and zone-based monitoring. The system updates location information in real-time as children move throughout the venue, providing parents with current and precise information about their child's whereabouts and activities.
+                  mySafePlay<sup>™</sup>'s location tracking is accurate to within 3-5 feet using a combination of facial recognition, camera networks, and zone-based monitoring. The system updates location information in real-time as children move throughout the venue, providing parents with current and precise information about their child's whereabouts and activities.
                 </AccordionContent>
               </AccordionItem>
             </div>
@@ -281,7 +281,7 @@ export default function FAQPage() {
                   How does the QR code check-in system work?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  Each family receives a unique QR code that serves as their digital key to SafePlay venues. Simply scan your QR code at the entrance, and the system automatically recognizes your children through facial recognition. The process takes seconds and provides instant confirmation that your children are safely checked in. The system also handles membership verification and payment processing automatically.
+                  Each family receives a unique QR code that serves as their digital key to mySafePlay<sup>™</sup> venues. Simply scan your QR code at the entrance, and the system automatically recognizes your children through facial recognition. The process takes seconds and provides instant confirmation that your children are safely checked in. The system also handles membership verification and payment processing automatically.
                 </AccordionContent>
               </AccordionItem>
 
@@ -299,7 +299,7 @@ export default function FAQPage() {
                   What if I lose my QR code?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  No problem! You can access your QR code anytime through the SafePlay mobile app, email, or by providing identification at the venue. Venue staff can also verify your identity through the system and provide temporary access. For added security, QR codes can be regenerated instantly if needed, and the old codes are automatically deactivated.
+                  No problem! You can access your QR code anytime through the mySafePlay<sup>™</sup> mobile app, email, or by providing identification at the venue. Venue staff can also verify your identity through the system and provide temporary access. For added security, QR codes can be regenerated instantly if needed, and the old codes are automatically deactivated.
                 </AccordionContent>
               </AccordionItem>
 
@@ -331,7 +331,7 @@ export default function FAQPage() {
                   What type of cameras and setup is required?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay works with high-definition IP cameras that we provide and install. Our team handles the complete setup including camera placement, network configuration, and system integration. Cameras are strategically positioned at entry/exit points and play areas for optimal coverage while respecting privacy boundaries.
+                  mySafePlay<sup>™</sup> works with high-definition IP cameras that we provide and install. Our team handles the complete setup including camera placement, network configuration, and system integration. Cameras are strategically positioned at entry/exit points and play areas for optimal coverage while respecting privacy boundaries.
                 </AccordionContent>
               </AccordionItem>
 
@@ -351,10 +351,10 @@ export default function FAQPage() {
 
               <AccordionItem value="pricing-model" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  How much does SafePlay cost?
+                  How much does mySafePlay<sup>™</sup> cost?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay offers flexible pricing based on venue size and requirements. Our basic package starts at $299/month for small venues (up to 50 children), with enterprise solutions available for larger facilities. This includes hardware, software, installation, training, and 24/7 support. Contact us for a customized quote based on your specific needs.
+                  mySafePlay<sup>™</sup> offers flexible pricing based on venue size and requirements. Our basic package starts at $299/month for small venues (up to 50 children), with enterprise solutions available for larger facilities. This includes hardware, software, installation, training, and 24/7 support. Contact us for a customized quote based on your specific needs.
                 </AccordionContent>
               </AccordionItem>
 
@@ -383,10 +383,10 @@ export default function FAQPage() {
 
               <AccordionItem value="coppa-compliance" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  What is COPPA and how does SafePlay comply?
+                  What is COPPA and how does mySafePlay<sup>™</sup> comply?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  The Children's Online Privacy Protection Act (COPPA) is a U.S. federal law that protects children under 13 from inappropriate data collection. SafePlay fully complies with COPPA by obtaining verifiable parental consent before collecting any personal information from children, limiting data collection to what's necessary for safety services, providing parents with full control over their child's information, and implementing enhanced security measures for children's data. We never use children's information for marketing or advertising purposes.
+                  The Children's Online Privacy Protection Act (COPPA) is a U.S. federal law that protects children under 13 from inappropriate data collection. mySafePlay<sup>™</sup> fully complies with COPPA by obtaining verifiable parental consent before collecting any personal information from children, limiting data collection to what's necessary for safety services, providing parents with full control over their child's information, and implementing enhanced security measures for children's data. We never use children's information for marketing or advertising purposes.
                 </AccordionContent>
               </AccordionItem>
 
@@ -410,7 +410,7 @@ export default function FAQPage() {
 
               <AccordionItem value="delete-data" className="border-b border-gray-200">
                 <AccordionTrigger className="text-left text-lg font-medium">
-                  Can I delete my child's data from SafePlay?
+                  Can I delete my child's data from mySafePlay<sup>™</sup>?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
                   Yes, absolutely. You have complete control over your child's data and can request deletion at any time. You can delete specific photos/videos, remove biometric templates, delete location history, close your child's account entirely, or request a complete data purge. Most deletions are processed immediately, with some taking up to 30 days for complete removal from backup systems. We'll provide confirmation when deletion is complete. Contact privacy@mysafeplay.ai or use your account settings to request data deletion.
@@ -445,7 +445,7 @@ export default function FAQPage() {
                   What support is available?
                 </AccordionTrigger>
                 <AccordionContent className="text-gray-600 pt-4">
-                  SafePlay provides 24/7 technical support via phone, email, and live chat. Our support team includes technical specialists and customer success managers. We also offer remote diagnostics, on-site support when needed, and proactive system monitoring to prevent issues before they occur.
+                  mySafePlay<sup>™</sup> provides 24/7 technical support via phone, email, and live chat. Our support team includes technical specialists and customer success managers. We also offer remote diagnostics, on-site support when needed, and proactive system monitoring to prevent issues before they occur.
                 </AccordionContent>
               </AccordionItem>
 
@@ -477,7 +477,7 @@ export default function FAQPage() {
               Still have questions?
             </h2>
             <p className="text-xl mb-8 max-w-2xl mx-auto opacity-90">
-              Our team is here to help you understand how SafePlay can protect your children and enhance your venue operations.
+              Our team is here to help you understand how mySafePlay<sup>™</sup> can protect your children and enhance your venue operations.
             </p>
             <div className="space-x-4">
               <Link href="/contact" className="btn-secondary bg-white text-blue-600 hover:bg-gray-100">
@@ -501,7 +501,7 @@ export default function FAQPage() {
                 <div className="mb-4">
                   <Image 
                     src="/logos/safeplay_combined_logo.png" 
-                    alt="SafePlay" 
+                    alt="mySafePlay<sup>™</sup>" 
                     width={120} 
                     height={40}
                     className="h-10 w-auto filter brightness-0 invert"
@@ -560,7 +560,7 @@ export default function FAQPage() {
             {/* Bottom Bar */}
             <div className="border-t border-gray-700 pt-8 text-center">
               <p className="text-gray-400 text-sm">
-                © 2025 SafePlay. All Rights Reserved.
+                © 2025 mySafePlay<sup>™</sup>. All Rights Reserved.
               </p>
             </div>
           </div>

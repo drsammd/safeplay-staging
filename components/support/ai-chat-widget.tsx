@@ -184,7 +184,7 @@ export function AIChatWidget({ isOpen, onClose, initialMessage, context }: AICha
                 <Bot className="h-5 w-5" />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold">SafePlay AI</CardTitle>
+                <CardTitle className="text-lg font-semibold">mySafePlay<sup>™</sup> AI</CardTitle>
                 <p className="text-blue-100 text-sm">
                   {escalationInfo?.escalated ? 'Connecting to agent...' : 'AI Support Assistant'}
                 </p>
@@ -212,8 +212,8 @@ export function AIChatWidget({ isOpen, onClose, initialMessage, context }: AICha
                   className="text-center text-gray-500 py-8"
                 >
                   <Bot className="h-12 w-12 mx-auto mb-4 text-blue-500" />
-                  <p className="text-lg font-medium mb-2">Hi! I'm SafePlay AI</p>
-                  <p className="text-sm">I'm here to help you with any questions about child safety, venue management, or using the SafePlay platform.</p>
+                  <p className="text-lg font-medium mb-2">Hi! I'm mySafePlay<sup>™</sup> AI</p>
+                  <p className="text-sm">I'm here to help you with any questions about child safety, venue management, or using the mySafePlay<sup>™</sup> platform.</p>
                 </motion.div>
               )}
 
