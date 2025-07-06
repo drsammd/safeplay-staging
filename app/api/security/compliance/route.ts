@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
             score: 85,
             details: 'Security controls meet industry standards',
           });
-      } as any
+      }
 
       const overallScore = findings.reduce((sum, finding) => sum + finding.score, 0) / findings.length;
 
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
           description: 'Some areas require improvement',
           remediation: 'Implement recommended security controls',
         });
-      } as any
+      }
 
       recommendations.push({
         priority: 'HIGH',

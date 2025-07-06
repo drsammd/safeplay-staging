@@ -11,15 +11,15 @@ export async function GET() {
     checks: {
       environment: {
         status: 'unknown' as 'ok' | 'warning' | 'error',
-        details: {} as any
+        details: {}
       },
       database: {
         status: 'unknown' as 'ok' | 'warning' | 'error',
-        details: {} as any
+        details: {}
       },
       configuration: {
         status: 'unknown' as 'ok' | 'warning' | 'error', 
-        details: {} as any
+        details: {}
       }
     }
   };

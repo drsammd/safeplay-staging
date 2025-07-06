@@ -27,9 +27,9 @@ export async function GET(
             id: true,
             name: true,
             adminId: true,
-          } as any
-        } as any
-      } as any
+          }
+        }
+      }
     });
 
     if (!rule) {
@@ -40,7 +40,7 @@ export async function GET(
     if (session.user.role === "VENUE_ADMIN") {
       if (rule.venue.adminId !== session.user.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      } as any
+      }
     } else if (session.user.role === "PARENT") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -76,9 +76,9 @@ export async function PATCH(
         venue: {
           select: {
             adminId: true
-          } as any
-        } as any
-      } as any
+          }
+        }
+      }
     });
 
     if (!existingRule) {
@@ -89,7 +89,7 @@ export async function PATCH(
     if (session.user.role === "VENUE_ADMIN") {
       if (existingRule.venue.adminId !== session.user.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      } as any
+      }
     } else if (session.user.role === "PARENT") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -114,9 +114,9 @@ export async function PATCH(
           select: {
             id: true,
             name: true,
-          } as any
-        } as any
-      } as any
+          }
+        }
+      }
     });
 
     return NextResponse.json(updatedRule);
@@ -149,9 +149,9 @@ export async function DELETE(
         venue: {
           select: {
             adminId: true
-          } as any
-        } as any
-      } as any
+          }
+        }
+      }
     });
 
     if (!existingRule) {
@@ -162,7 +162,7 @@ export async function DELETE(
     if (session.user.role === "VENUE_ADMIN") {
       if (existingRule.venue.adminId !== session.user.id) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      } as any
+      }
     } else if (session.user.role === "PARENT") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
