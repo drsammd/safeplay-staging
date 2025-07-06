@@ -73,20 +73,16 @@ export default function StagingAuthPage() {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              background: '#3b82f6',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontSize: '24px',
-              fontWeight: 'bold'
-            }}>
-              🛡️
-            </div>
+            <img 
+              src="/family-logo.png" 
+              alt="mySafePlay Family-Centric Logo" 
+              style={{
+                width: '64px',
+                height: '64px',
+                objectFit: 'contain',
+                borderRadius: '50%'
+              }}
+            />
           </div>
           <h1 style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
             mySafePlay™
@@ -115,7 +111,15 @@ export default function StagingAuthPage() {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <span style={{ fontSize: '24px' }}>🔒</span>
+              <img 
+                src="/family-logo.png" 
+                alt="mySafePlay Family Logo" 
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  objectFit: 'contain'
+                }}
+              />
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
               Beta Environment Access
