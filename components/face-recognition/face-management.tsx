@@ -78,6 +78,7 @@ export default function FaceManagement({ childId, onUpdate }: FaceManagementProp
   const fetchData = async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const response = await fetch(`/api/faces/manage?childId=${childId}`);
       
       if (response.ok) {
@@ -90,13 +91,64 @@ export default function FaceManagement({ childId, onUpdate }: FaceManagementProp
           setFaceRecognitionEnabled(data.collection.child.faceRecognitionEnabled);
           setRecognitionThreshold([data.collection.child.recognitionThreshold * 100]);
         }
+      } else if (response.status === 503) {
+        // AWS configuration incomplete - show development mode message
+        setError('Face recognition is running in development mode. AWS services are not configured.');
+        // Create mock data for development
+        setCollection({
+          id: 'dev-collection',
+          awsCollectionId: 'dev-collection-id',
+          collectionName: 'Development Collection',
+          status: 'DEVELOPMENT',
+          faceRecords: [],
+          child: {
+            id: childId,
+            firstName: 'Demo',
+            lastName: 'Child',
+            faceRecognitionEnabled: false,
+            faceRecognitionConsent: true,
+            recognitionThreshold: 0.95
+          },
+          awsInfo: {
+            faceCount: 0,
+            faceModelVersion: 'Development'
+          }
+        });
+        setStats({
+          totalFaces: 0,
+          activeFaces: 0,
+          recentMatches: 0,
+          averageConfidence: 0
+        });
       } else {
         const errorData = await response.json();
         setError(errorData.error || 'Failed to load face management data');
       }
     } catch (err) {
       console.error('Error fetching face management data:', err);
-      setError('Failed to load face management data');
+      setError('Failed to load face management data. Running in development mode.');
+      // Provide fallback data
+      setCollection({
+        id: 'dev-collection',
+        awsCollectionId: 'dev-collection-id',
+        collectionName: 'Development Collection',
+        status: 'DEVELOPMENT',
+        faceRecords: [],
+        child: {
+          id: childId,
+          firstName: 'Demo',
+          lastName: 'Child',
+          faceRecognitionEnabled: false,
+          faceRecognitionConsent: true,
+          recognitionThreshold: 0.95
+        }
+      });
+      setStats({
+        totalFaces: 0,
+        activeFaces: 0,
+        recentMatches: 0,
+        averageConfidence: 0
+      });
     } finally {
       setIsLoading(false);
     }
@@ -195,7 +247,7 @@ export default function FaceManagement({ childId, onUpdate }: FaceManagementProp
     );
   }
 
-  if (error) {
+  if (error && !collection) {
     return (
       <Alert>
         <AlertCircle className="h-4 w-4" />
@@ -236,6 +288,14 @@ export default function FaceManagement({ childId, onUpdate }: FaceManagementProp
           {collection.status}
         </Badge>
       </div>
+
+      {/* Development Mode Warning */}
+      {error && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       {/* Stats Overview */}
       {stats && (
