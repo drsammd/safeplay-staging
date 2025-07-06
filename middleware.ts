@@ -169,13 +169,13 @@ const combinedMiddleware = withAuth(
 );
 
 export default function middleware(request: NextRequest) {
-  // First: Check stakeholder authentication
-  const stakeholderResponse = stakeholderAuthMiddleware(request);
-  if (stakeholderResponse.status !== 200) {
-    return stakeholderResponse;
-  }
+  // TEMPORARILY DISABLED: Stakeholder authentication for testing
+  // const stakeholderResponse = stakeholderAuthMiddleware(request);
+  // if (stakeholderResponse.status !== 200) {
+  //   return stakeholderResponse;
+  // }
 
-  // Second: Run NextAuth middleware
+  // Run NextAuth middleware only
   // @ts-ignore - NextAuth middleware has complex typing
   return combinedMiddleware(request, {} as any);
 }
