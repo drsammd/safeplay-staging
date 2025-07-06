@@ -19,7 +19,7 @@ export default async function DiscountAnalyticsPage() {
     redirect('/auth/signin');
   }
 
-  // Check if user is admin
+  // Check if user is admin - ensure SUPER_ADMIN access only
   const user = await prisma.user.findUnique({
     where: { id: session.user.id }
   });
