@@ -16,7 +16,7 @@ const updateFloorPlanSchema = z.object({
     height: z.number(),
     scale: z.number().optional(),
   }).optional(),
-  metadata: z.record(z.any()).optional(),
+  
 });
 
 export async function GET(

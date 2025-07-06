@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
           congestionLevel: data.congestionLevel || 'LOW',
           activityLevel: data.activityLevel || 'NORMAL'
         },
-        tags: ['traffic', 'occupancy']
+        
       }
     });
 

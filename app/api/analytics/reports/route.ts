@@ -310,7 +310,7 @@ async function generateReportData(
           reportType,
           period: `${startDate.toISOString()} to ${endDate.toISOString()}`
         },
-        tags: ['report', 'analytics']
+        
       }
     });
 

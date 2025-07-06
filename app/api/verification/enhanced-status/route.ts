@@ -20,13 +20,9 @@ export async function GET(request: NextRequest) {
     // Get the latest enhanced verification attempt
     const latestEnhancedVerification = await prisma.identityVerification.findFirst({
       where: { 
-        userId: session.user.id,
-        verificationMethod: 'AUTOMATED'
+        userId: session.user.id
       },
-      include: { 
-        documentAnalysis: true 
-      },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { submittedAt: 'desc' }
     });
 
     let enhancedData = null;
@@ -55,20 +51,9 @@ export async function GET(request: NextRequest) {
         },
         
         // Document analysis data
-        documentAnalysis: latestEnhancedVerification.documentAnalysis ? {
-          confidence: latestEnhancedVerification.documentAnalysis.confidence,
-          authenticityScore: latestEnhancedVerification.documentAnalysis.authenticityScore,
-          qualityScore: latestEnhancedVerification.documentAnalysis.qualityScore,
-          fraudIndicators: latestEnhancedVerification.documentAnalysis.fraudIndicators,
-          extractedAddressData: latestEnhancedVerification.documentAnalysis.extractedAddressData,
-          addressExtractionConfidence: latestEnhancedVerification.documentAnalysis.addressExtractionConfidence,
-          documentPhotoFaceDetection: latestEnhancedVerification.documentAnalysis.documentPhotoFaceDetection
-        } : null,
-        
-        autoApprovalEligible: latestEnhancedVerification.autoApprovalEligible,
-        verificationNotes: latestEnhancedVerification.verificationNotes,
-        createdAt: latestEnhancedVerification.createdAt,
-        verifiedAt: latestEnhancedVerification.verifiedAt,
+        verificationScore: latestEnhancedVerification.verificationScore,
+        submittedAt: latestEnhancedVerification.submittedAt,
+        reviewedAt: latestEnhancedVerification.reviewedAt,
         rejectionReason: latestEnhancedVerification.rejectionReason
       };
     }
@@ -80,7 +65,7 @@ export async function GET(request: NextRequest) {
         id: true,
         status: true,
         documentType: true,
-        verificationMethod: true,
+
         overallVerificationScore: true,
         addressMatchScore: true,
         faceComparisonScore: true,
@@ -105,7 +90,7 @@ export async function GET(request: NextRequest) {
         latestStatus: enhancedData?.status || 'NONE',
         addressVerified: enhancedData?.addressComparison?.matchScore ? enhancedData.addressComparison.matchScore > 0.8 : false,
         photoVerified: enhancedData?.faceComparison?.similarity ? enhancedData.faceComparison.similarity > 80 : false,
-        documentVerified: enhancedData?.documentAnalysis?.confidence ? enhancedData.documentAnalysis.confidence > 0.8 : false
+        documentVerified: enhancedData?.verificationScore ? enhancedData.verificationScore > 0.8 : false
       }
     });
 

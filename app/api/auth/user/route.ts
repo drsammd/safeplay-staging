@@ -26,11 +26,7 @@ export async function GET(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       include: {
-        subscription: {
-          include: {
-            plan: true
-          }
-        }
+        subscription: true
       }
     });
 
@@ -45,8 +41,7 @@ export async function GET(request: NextRequest) {
       role: user.role,
       hasSubscription: !!user.subscription,
       subscriptionStatus: user.subscription?.status,
-      planId: user.subscription?.planId,
-      planName: user.subscription?.plan?.name
+      planType: user.subscription?.planType
     });
 
     // Return user data with subscription information
@@ -58,20 +53,13 @@ export async function GET(request: NextRequest) {
       subscription: user.subscription ? {
         id: user.subscription.id,
         status: user.subscription.status,
-        planId: user.subscription.planId,
+        planType: user.subscription.planType,
         stripeCustomerId: user.subscription.stripeCustomerId,
         stripeSubscriptionId: user.subscription.stripeSubscriptionId,
         currentPeriodStart: user.subscription.currentPeriodStart,
         currentPeriodEnd: user.subscription.currentPeriodEnd,
-        trialStart: user.subscription.trialStart,
-        trialEnd: user.subscription.trialEnd,
-        plan: user.subscription.plan ? {
-          id: user.subscription.plan.id,
-          name: user.subscription.plan.name,
-          planType: user.subscription.plan.planType,
-          price: user.subscription.plan.price,
-          currency: user.subscription.plan.currency
-        } : null
+        autoRenew: user.subscription.autoRenew,
+        cancelAtPeriodEnd: user.subscription.cancelAtPeriodEnd
       } : null
     };
 

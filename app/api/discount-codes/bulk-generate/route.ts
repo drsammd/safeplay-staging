@@ -110,8 +110,7 @@ export async function POST(request: NextRequest) {
         minimumPurchase,
         campaignName,
         createdBy: session.user.id,
-        isTest,
-        tags: ['bulk-generated', campaignName || 'bulk-campaign'].filter(Boolean)
+        isTest
       });
     }
 

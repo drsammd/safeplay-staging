@@ -81,12 +81,10 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // Update child status
-        const newStatus = eventType === 'CHECK_IN' ? 'CHECKED_IN' : 'CHECKED_OUT';
+        // Update child's current venue
         await prisma.child.update({
           where: { id: childId },
           data: { 
-            status: newStatus,
             currentVenueId: eventType === 'CHECK_IN' ? venueId : null,
           },
         });

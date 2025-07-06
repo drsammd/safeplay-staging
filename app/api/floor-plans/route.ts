@@ -20,7 +20,7 @@ const createFloorPlanSchema = z.object({
     height: z.number(),
     scale: z.number().optional(),
   }).optional(),
-  metadata: z.record(z.any()).optional(),
+  
   venueId: z.string(),
 });
 

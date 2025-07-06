@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { SightingType } from "@prisma/client";
+// SightingType removed as it doesn't exist in schema
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const venueId = searchParams.get('venueId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-    const sightingType = searchParams.get('sightingType') as SightingType | null;
+    const sightingType = searchParams.get('sightingType');
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -106,13 +106,6 @@ export async function GET(request: NextRequest) {
             name: true,
           }
         },
-        camera: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-          }
-        },
         zone: {
           select: {
             id: true,
@@ -192,7 +185,7 @@ export async function POST(request: NextRequest) {
       data: {
         childId: data.childId,
         venueId: data.venueId,
-        cameraId: data.cameraId,
+
         floorPlanZoneId: data.floorPlanZoneId,
         position: data.position,
         confidence: data.confidence,
@@ -200,8 +193,8 @@ export async function POST(request: NextRequest) {
         imageUrl: data.imageUrl,
         imageKey: data.imageKey,
         recognitionEventId: data.recognitionEventId,
-        sightingType: data.sightingType || SightingType.DETECTED,
-        metadata: data.metadata,
+        sightingType: data.sightingType || 'DETECTED',
+        
         timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
       },
       include: {
@@ -217,13 +210,6 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-          }
-        },
-        camera: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
           }
         },
         zone: {

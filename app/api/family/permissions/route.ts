@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
       include: {
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     const familyMember = await prisma.familyMember.findUnique({
       where: { id: data.familyMemberId },
       include: {
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
       data: {
         familyMemberId: data.familyMemberId,
         grantedBy: session.user.id,
-        receivedBy: familyMember.memberUserId,
+        receivedBy: familyMember.memberId,
         permissionType: data.permissionType,
         resourceType: data.resourceType,
         resourceId: data.resourceId,
@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
       include: {
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
       data: {
         familyOwnerId: familyMember.familyOwnerId,
         actorId: session.user.id,
-        targetId: familyMember.memberUserId,
+        targetId: familyMember.memberId,
         actionType: 'UPDATE_PERMISSIONS',
         resourceType: 'PERMISSION',
         resourceId: permission.id,

@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
     const permissionSet = invitation.permissionSet as any || {}
     const familyMember = await prisma.familyMember.create({
       data: {
-        familyOwnerId: invitation.inviterUserId,
-        memberUserId: acceptedByUserId,
+        familyId: invitation.inviterUserId,
+        memberId: acceptedByUserId,
         familyRole: invitation.familyRole,
         displayName: invitation.inviteeName,
         invitationId: invitation.id,
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     // Log the activity
     await prisma.familyActivityLog.create({
       data: {
-        familyOwnerId: invitation.inviterUserId,
+        familyId: invitation.inviterUserId,
         actorId: acceptedByUserId,
         actionType: 'ACCEPT_INVITATION',
         resourceType: 'INVITATION',

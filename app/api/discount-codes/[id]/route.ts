@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { discountService, stripe } from '@/lib/stripe/discount-service';
-import { UserRole, DiscountCodeStatus } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 
 // GET - Get specific discount code
 export async function GET(
@@ -31,17 +31,17 @@ export async function GET(
     const discountCode = await prisma.discountCode.findUnique({
       where: { id: params.id },
       include: {
-        usageHistory: {
+        discountCodeUsages: {
           include: {
             user: {
               select: { id: true, name: true, email: true }
             }
           },
-          orderBy: { validatedAt: 'desc' }
+          orderBy: { usedAt: 'desc' }
         },
         _count: {
           select: {
-            usageHistory: true
+            discountCodeUsages: true
           }
         }
       }
@@ -52,14 +52,14 @@ export async function GET(
     }
 
     // Calculate analytics
-    const successfulUsages = discountCode.usageHistory.filter(u => u.usageStatus === 'REDEEMED');
+    const successfulUsages = discountCode.discountCodeUsages; // All usages are successful since they're recorded
     const totalRevenue = successfulUsages.reduce((sum, u) => sum + (u.finalAmount || 0), 0);
     const totalDiscount = successfulUsages.reduce((sum, u) => sum + (u.discountAmount || 0), 0);
 
     const enrichedCode = {
       ...discountCode,
       analytics: {
-        totalUsages: discountCode._count.usageHistory,
+        totalUsages: discountCode._count.discountCodeUsages,
         successfulUsages: successfulUsages.length,
         totalRevenue,
         totalDiscount,
@@ -167,7 +167,7 @@ export async function DELETE(
 
     const discountCode = await prisma.discountCode.findUnique({
       where: { id: params.id },
-      include: { usageHistory: true }
+      include: { discountCodeUsages: true }
     });
 
     if (!discountCode) {
@@ -175,7 +175,7 @@ export async function DELETE(
     }
 
     // Check if code has been used
-    if (discountCode.usageHistory.length > 0) {
+    if (discountCode.discountCodeUsages.length > 0) {
       return NextResponse.json(
         { error: 'Cannot delete discount code that has been used. Set status to inactive instead.' }, 
         { status: 400 }

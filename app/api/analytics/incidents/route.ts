@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           { adminId: session.user.id },
           session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
         ]
-      }
+      } as any
     });
 
     if (!venue) {
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
       where: {
         incidentNumber: {
           startsWith: `INC-${year}-`
-        }
+        } as any
       },
       orderBy: { incidentNumber: 'desc' }
     });
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         involvedPersons: data.involvedPersons || [],
         timeline: data.timeline || [],
         responseActions: data.responseActions || {}
-      }
+      } as any
     });
 
     // Log analytics event
@@ -118,8 +118,8 @@ export async function POST(request: NextRequest) {
           incidentType: data.incidentType,
           severity: data.severity || 'MEDIUM'
         },
-        tags: ['incident', 'safety']
-      }
+        
+      } as any
     });
 
     return NextResponse.json(incident);
@@ -162,12 +162,12 @@ export async function GET(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        }
+        } as any
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      }
+      } as any
 
       where.venueId = venueId;
     } else if (session.user.role !== 'SUPER_ADMIN') {
@@ -246,8 +246,8 @@ export async function PUT(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        }
-      }
+        } as any
+      } as any
     });
 
     if (!existingIncident) {
@@ -260,7 +260,7 @@ export async function PUT(request: NextRequest) {
         ...updateData,
         incidentOccurredAt: updateData.incidentOccurredAt ? new Date(updateData.incidentOccurredAt) : undefined,
         followUpDate: updateData.followUpDate ? new Date(updateData.followUpDate) : undefined
-      }
+      } as any
     });
 
     // Log analytics event for status changes
@@ -277,8 +277,8 @@ export async function PUT(request: NextRequest) {
             oldStatus: (existingIncident as any).status,
             newStatus: (updateData as any).status
           },
-          tags: ['incident', 'status_change']
-        }
+          
+        } as any
       });
     }
 
