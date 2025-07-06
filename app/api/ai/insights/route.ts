@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const [insights, total] = await Promise.all([
       prisma.aIInsight.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { timestamp: 'desc' },
         take: limit,
         skip: offset,
         include: {
