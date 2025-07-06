@@ -1,10 +1,9 @@
-// @ts-nocheck
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { enhancedRekognitionService, s3Service } from "@/lib/aws";
+import { isAWSAvailable, isDevelopmentMode } from "@/lib/aws/config";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +38,13 @@ export async function GET(request: NextRequest) {
       if (!child) {
         return NextResponse.json({ error: "Child not found or access denied" }, { status: 404 });
       }
+    }
+
+    // Check if AWS is available
+    if (!isAWSAvailable() && !isDevelopmentMode()) {
+      return NextResponse.json({ 
+        error: "AWS configuration incomplete. Face recognition features are not available." 
+      }, { status: 503 });
     }
 
     // Get comprehensive face data
@@ -89,10 +95,12 @@ export async function GET(request: NextRequest) {
       take: 10,
     });
 
-    // Get AWS collection info
-    const awsCollectionInfo = await enhancedRekognitionService.getCollectionInfo(
-      faceCollection.awsCollectionId
-    );
+    // Mock AWS collection info in development mode
+    const awsCollectionInfo = isDevelopmentMode() ? {
+      faceCount: faceCollection.faceRecords.length,
+      faceModelVersion: "6.0",
+      status: "ACTIVE"
+    } : null;
 
     // Calculate statistics
     const stats = {
@@ -172,18 +180,28 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Face record not found or access denied" }, { status: 404 });
     }
 
-    // Remove face from AWS Rekognition collection
-    const removeResult = await enhancedRekognitionService.deleteFace(
-      faceRecord.collection.awsCollectionId,
-      faceRecord.awsFaceId
-    );
+    // In development mode, skip AWS operations
+    if (isAWSAvailable() && !isDevelopmentMode()) {
+      try {
+        // Import AWS services only when needed
+        const { enhancedRekognitionService, s3Service } = await import("@/lib/aws");
+        
+        // Remove face from AWS Rekognition collection
+        const removeResult = await enhancedRekognitionService.deleteFace(
+          faceRecord.collection.awsCollectionId,
+          faceRecord.awsFaceId
+        );
 
-    if (!removeResult) {
-      console.warn("Failed to remove face from AWS, continuing with database deletion");
+        if (!removeResult) {
+          console.warn("Failed to remove face from AWS, continuing with database deletion");
+        }
+
+        // Delete image from S3
+        await s3Service.deleteImage(faceRecord.imageKey);
+      } catch (awsError) {
+        console.warn("AWS operation failed, continuing with database deletion:", awsError);
+      }
     }
-
-    // Delete image from S3
-    await s3Service.deleteImage(faceRecord.imageKey);
 
     // Delete face record from database
     await prisma.faceRecord.delete({

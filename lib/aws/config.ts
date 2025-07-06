@@ -108,7 +108,8 @@ export const AWS_CONFIG = {
 export function isDevelopmentMode(): boolean {
   const devMode = envFileCredentials.AWS_DEVELOPMENT_MODE || process.env.AWS_DEVELOPMENT_MODE;
   const nodeEnv = process.env.NODE_ENV;
-  return devMode === 'true' || nodeEnv === 'development';
+  const hasPlaceholderCredentials = accessKeyId === 'staging-placeholder' || secretAccessKey === 'staging-placeholder';
+  return devMode === 'true' || nodeEnv === 'development' || hasPlaceholderCredentials;
 }
 
 // Validate AWS configuration
