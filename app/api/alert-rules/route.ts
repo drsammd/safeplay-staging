@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         where.venueId = venue.id;
       } else {
         return NextResponse.json({ rules: [] });
-      } as any
+      }
     } else if (session.user.role === "PARENT") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
@@ -58,8 +58,8 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-          } as any
-        } as any
+          }
+        }
       },
       orderBy: [
         { ruleType: 'asc' },
@@ -106,12 +106,12 @@ export async function POST(request: NextRequest) {
         where: { 
           adminId: session.user.id,
           id: data.venueId 
-        } as any
+        }
       });
       
       if (!venue) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-      } as any
+      }
     }
 
     // Validate notification channels
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
           { error: `Invalid notification channels: ${invalidChannels.join(', ')}` },
           { status: 400 }
         );
-      } as any
+      }
     }
 
     const rule = await prisma.alertRule.create({
@@ -146,9 +146,9 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-          } as any
-        } as any
-      } as any
+          }
+        }
+      }
     });
 
     return NextResponse.json(rule, { status: 201 });

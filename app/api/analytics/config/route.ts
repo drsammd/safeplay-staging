@@ -45,12 +45,12 @@ export async function POST(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        } as any
+        }
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      } as any
+      }
     }
 
     // Check if configuration with same name/type/venue already exists
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         venueId: data.venueId,
         configType: validConfigType,
         name: data.name
-      } as any
+      }
     });
 
     if (existingConfig) {
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         isActive: data.isActive ?? true,
         // Note: dataRetentionDays and processingInterval don't exist in schema
         appliedBy: session.user.id
-      } as any
+      }
     });
 
     // Log analytics event
@@ -145,12 +145,12 @@ export async function GET(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        } as any
+        }
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      } as any
+      }
 
       where.venueId = venueId;
     } else if (session.user.role !== 'SUPER_ADMIN') {
@@ -227,7 +227,7 @@ export async function PUT(request: NextRequest) {
           { venueId: null, AND: session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' } },
           session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
         ]
-      } as any
+      }
     });
 
     if (!existingConfig) {
@@ -243,7 +243,7 @@ export async function PUT(request: NextRequest) {
         ...safeUpdateData,
         appliedBy: session.user.id,
         appliedAt: new Date()
-      } as any
+      }
     });
 
     // Log analytics event
@@ -301,7 +301,7 @@ export async function DELETE(request: NextRequest) {
           { venueId: null, AND: session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' } },
           session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
         ]
-      } as any
+      }
     });
 
     if (!existingConfig) {
@@ -327,7 +327,7 @@ export async function DELETE(request: NextRequest) {
             configName: existingConfig.name
           },
 
-        } as any
+        }
       });
     }
 

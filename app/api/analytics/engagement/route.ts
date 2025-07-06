@@ -62,12 +62,12 @@ export async function POST(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        } as any
+        }
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      } as any
+      }
     }
 
     // Check if record already exists for this user/venue/date
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
         userId: data.userId,
         venueId: data.venueId,
         date: new Date(data.date)
-      } as any
+      }
     });
 
     // Calculate engagement score
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
           satisfactionScore,
           retentionRisk: calculateRetentionRisk(engagementScore, satisfactionScore) as any,
           updatedAt: new Date()
-        } as any
+        }
       });
     } else {
       // Create new record
@@ -144,7 +144,7 @@ export async function POST(request: NextRequest) {
           engagementScore,
           satisfactionScore,
           retentionRisk: calculateRetentionRisk(engagementScore, satisfactionScore) as any
-        } as any
+        }
       });
     }
 
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
           retentionRisk: calculateRetentionRisk(engagementScore, satisfactionScore)
         },
         
-      } as any
+      }
     });
 
     return NextResponse.json(engagement);
@@ -210,12 +210,12 @@ export async function GET(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        } as any
+        }
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      } as any
+      }
 
       where.venueId = venueId;
     } else if (session.user.role !== 'SUPER_ADMIN') {
@@ -234,7 +234,7 @@ export async function GET(request: NextRequest) {
       // Non-admin users can only access their own data
       if (userId !== session.user.id && session.user.role !== 'SUPER_ADMIN') {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-      } as any
+      }
       where.userId = userId;
     }
 
