@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export const STAKEHOLDER_SESSION_COOKIE = 'stakeholder_auth';
-export const STAGING_PASSWORD = process.env.STAGING_PASSWORD || 'SafePlay2025Beta!';
+export const STAGING_PASSWORD = 'SafePlay2025Beta!'; // Temporarily hardcoded for testing
 export const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 
 export interface StakeholderSession {
