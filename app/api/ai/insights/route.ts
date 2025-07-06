@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const venueId = searchParams.get('venueId');
-    const zoneId = searchParams.get('zoneId');
     const childId = searchParams.get('childId');
     const insightType = searchParams.get('insightType');
     const category = searchParams.get('category');
@@ -31,7 +30,6 @@ export async function GET(request: NextRequest) {
     }
 
     const where: any = { venueId };
-    if (zoneId) where.zoneId = zoneId;
     if (childId) where.childId = childId;
     if (insightType) where.insightType = insightType;
     if (category) where.category = category;
@@ -44,9 +42,6 @@ export async function GET(request: NextRequest) {
         skip: offset,
         include: {
           venue: {
-            select: { name: true }
-          },
-          zone: {
             select: { name: true }
           },
           child: {
@@ -91,7 +86,6 @@ export async function POST(request: NextRequest) {
       severity,
       category,
       venueId,
-      zoneId,
       childId,
       timeframe,
       dataPoints,
@@ -117,21 +111,21 @@ export async function POST(request: NextRequest) {
         title,
         description,
         confidence: confidence || 0.8,
-        severity: severity || 'MEDIUM',
         category: category || 'SAFETY',
         venueId,
-        zoneId,
         childId,
-        timeframe: timeframe || {},
-        dataPoints: dataPoints || 1,
-        trendDirection: trendDirection || 'STABLE',
-        riskLevel: riskLevel || 'LOW',
-        actionRequired: actionRequired || false,
-        actionPriority: actionPriority || 'NORMAL',
+        data: {
+          timeframe: timeframe || {},
+          dataPoints: dataPoints || 1,
+          trendDirection: trendDirection || 'STABLE',
+          riskLevel: riskLevel || 'LOW',
+          actionRequired: actionRequired || false,
+          actionPriority: actionPriority || 'NORMAL',
+          preventiveMeasures: preventiveMeasures || [],
+          sourceData: sourceData || {},
+          analysisMethod: analysisMethod || 'manual',
+        },
         recommendations: recommendations || [],
-        preventiveMeasures: preventiveMeasures || [],
-        sourceData: sourceData || {},
-        analysisMethod: analysisMethod || 'manual',
       },
     });
 
