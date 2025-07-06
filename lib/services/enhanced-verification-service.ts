@@ -567,43 +567,49 @@ export class EnhancedVerificationService {
   async getVerificationStatusWithAnalysis(userId: string) {
     const baseStatus = await verificationService.getUserVerificationStatus(userId);
     
-    // Get latest document analysis
+    // Get latest identity verification
     const latestIdentityVerification = await prisma.identityVerification.findFirst({
       where: { userId },
-      include: { documentAnalysis: true },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { submittedAt: 'desc' }
     });
 
     return {
       ...baseStatus,
-      documentAnalysis: latestIdentityVerification?.documentAnalysis,
-      automatedAnalysisAvailable: !!latestIdentityVerification?.documentAnalysis,
-      lastAnalysisDate: latestIdentityVerification?.documentAnalysis?.processedAt
+      latestVerification: latestIdentityVerification,
+      verificationScore: latestIdentityVerification?.verificationScore,
+      lastSubmissionDate: latestIdentityVerification?.submittedAt
     };
   }
 
   async getPendingManualReviews(limit = 50) {
     return await prisma.identityVerification.findMany({
       where: {
-        status: 'UNDER_REVIEW',
-        documentAnalysis: {
-          requiresManualReview: true
-        }
+        status: 'PENDING'
       },
       include: {
         user: {
-          select: { id: true, name: true, email: true }
-        },
-        documentAnalysis: true
+          select: { id: true, name: true, email: true, role: true, phoneVerified: true, identityVerified: true, twoFactorEnabled: true, verificationLevel: true, phone: true, createdAt: true }
+        }
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { submittedAt: 'asc' },
       take: limit
+    });
+  }
+
+  async getVerificationById(verificationId: string) {
+    return await prisma.identityVerification.findUnique({
+      where: { id: verificationId },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, role: true, phoneVerified: true, identityVerified: true, twoFactorEnabled: true, verificationLevel: true, phone: true, createdAt: true }
+        }
+      }
     });
   }
 
   async getVerificationAnalytics(dateFrom?: Date, dateTo?: Date) {
     const whereClause = {
-      createdAt: {
+      submittedAt: {
         gte: dateFrom || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Default to 30 days
         lte: dateTo || new Date()
       }
@@ -611,53 +617,53 @@ export class EnhancedVerificationService {
 
     const [
       totalVerifications,
-      autoApprovedCount,
-      autoRejectedCount,
-      manualReviewCount,
-      avgProcessingTime
+      approvedCount,
+      rejectedCount,
+      pendingCount,
+      avgVerificationScore
     ] = await Promise.all([
       prisma.identityVerification.count({ where: whereClause }),
       
-      prisma.documentAnalysis.count({
+      prisma.identityVerification.count({
         where: {
           ...whereClause,
-          autoApproved: true
+          status: 'APPROVED'
         }
       }),
       
-      prisma.documentAnalysis.count({
+      prisma.identityVerification.count({
         where: {
           ...whereClause,
-          autoRejected: true
+          status: 'REJECTED'
         }
       }),
       
-      prisma.documentAnalysis.count({
+      prisma.identityVerification.count({
         where: {
           ...whereClause,
-          requiresManualReview: true
+          status: 'PENDING'
         }
       }),
       
-      prisma.documentAnalysis.aggregate({
+      prisma.identityVerification.aggregate({
         where: {
           ...whereClause,
-          processedAt: { not: null }
+          verificationScore: { not: null }
         },
         _avg: {
-          confidence: true
+          verificationScore: true
         }
       })
     ]);
 
     return {
       totalVerifications,
-      autoApprovedCount,
-      autoRejectedCount,
-      manualReviewCount,
+      autoApprovedCount: approvedCount,
+      autoRejectedCount: rejectedCount,
+      manualReviewCount: pendingCount,
       automationRate: totalVerifications > 0 ? 
-        ((autoApprovedCount + autoRejectedCount) / totalVerifications) * 100 : 0,
-      averageConfidence: avgProcessingTime._avg.confidence || 0
+        ((approvedCount + rejectedCount) / totalVerifications) * 100 : 0,
+      averageConfidence: avgVerificationScore._avg.verificationScore || 0
     };
   }
 

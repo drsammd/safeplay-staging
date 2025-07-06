@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
     if (status) where.status = status;
     if (severity) where.severity = severity;
     if (type) where.type = type;
-    if (venueId && session.user.role === "COMPANY_ADMIN") where.venueId = venueId;
-    if (childId && (session.user.role === "COMPANY_ADMIN" || session.user.role === "VENUE_ADMIN")) {
+    if (venueId && session.user.role === "SUPER_ADMIN") where.venueId = venueId;
+    if (childId && (session.user.role === "SUPER_ADMIN" || session.user.role === "VENUE_ADMIN")) {
       where.childId = childId;
     }
 

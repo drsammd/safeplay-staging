@@ -32,7 +32,7 @@ export const mockCompanyAdminSession = {
     id: 'company-admin-123',
     email: 'admin@company.com',
     name: 'Company Admin',
-    role: 'COMPANY_ADMIN',
+    role: 'SUPER_ADMIN',
   },
   expires: '2024-12-31',
 }

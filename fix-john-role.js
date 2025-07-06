@@ -31,7 +31,7 @@ async function fixJohnRole() {
     }
     
     // Update the role
-    console.log('Updating role from COMPANY_ADMIN to PARENT...');
+    console.log('Updating role from SUPER_ADMIN to PARENT...');
     
     const johnAfter = await prisma.user.update({
       where: { email: 'john@doe.com' },

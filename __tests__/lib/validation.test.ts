@@ -16,7 +16,7 @@ const childSchema = z.object({
 const userSchema = z.object({
   email: z.string().email('Invalid email format'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
-  role: z.enum(['PARENT', 'VENUE_ADMIN', 'COMPANY_ADMIN']),
+  role: z.enum(['PARENT', 'VENUE_ADMIN', 'SUPER_ADMIN']),
 })
 
 describe('Validation Tests', () => {

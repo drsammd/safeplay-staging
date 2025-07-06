@@ -23,7 +23,7 @@ export default async function DiscountCodesPage() {
     where: { id: session.user.id }
   });
 
-  if (!user || user.role !== UserRole.COMPANY_ADMIN) {
+  if (!user || user.role !== UserRole.SUPER_ADMIN) {
     redirect('/unauthorized');
   }
 

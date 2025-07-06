@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { trigger, userId, metadata, delayMinutes, requireAuth = true } = body;
 
-    if (requireAuth && (!session?.user || !['COMPANY_ADMIN', 'VENUE_ADMIN'].includes(session.user.role))) {
+    if (requireAuth && (!session?.user || !['SUPER_ADMIN', 'VENUE_ADMIN'].includes(session.user.role))) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

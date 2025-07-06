@@ -65,7 +65,7 @@ export async function GET(
 
     // Check access permissions
     if (
-      session.user.role !== 'COMPANY_ADMIN' &&
+      session.user.role !== 'SUPER_ADMIN' &&
       camera.venue.adminId !== session.user.id
     ) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -89,7 +89,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'COMPANY_ADMIN') {
+    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -104,7 +104,7 @@ export async function PATCH(
 
     // Check access permissions
     if (
-      session.user.role !== 'COMPANY_ADMIN' &&
+      session.user.role !== 'SUPER_ADMIN' &&
       camera.venue.adminId !== session.user.id
     ) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -168,7 +168,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'COMPANY_ADMIN') {
+    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -183,7 +183,7 @@ export async function DELETE(
 
     // Check access permissions
     if (
-      session.user.role !== 'COMPANY_ADMIN' &&
+      session.user.role !== 'SUPER_ADMIN' &&
       camera.venue.adminId !== session.user.id
     ) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

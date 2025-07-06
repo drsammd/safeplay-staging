@@ -71,8 +71,8 @@ export function SupportCenterLayout({ initialTab = 'overview', showChat = true }
     return `${Math.round(minutes / 1440)}d`
   }
 
-  const canViewAnalytics = session?.user?.role === 'COMPANY_ADMIN' || session?.user?.role === 'VENUE_ADMIN'
-  const canManageAgents = session?.user?.role === 'COMPANY_ADMIN'
+  const canViewAnalytics = session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'VENUE_ADMIN'
+  const canManageAgents = session?.user?.role === 'SUPER_ADMIN'
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -276,7 +276,7 @@ function OverviewTab({ stats, userRole }: { stats: any; userRole?: string }) {
                 Chat with AI Assistant
               </Button>
 
-              {userRole === 'COMPANY_ADMIN' && (
+              {userRole === 'SUPER_ADMIN' && (
                 <Button className="w-full justify-start" variant="outline">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   View Analytics Dashboard

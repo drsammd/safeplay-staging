@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         }
       ]
     }
-    // COMPANY_ADMIN can see all sessions
+    // SUPER_ADMIN can see all sessions
 
     // Apply filters
     if (status) whereClause.status = status

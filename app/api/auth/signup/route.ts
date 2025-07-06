@@ -13,7 +13,7 @@ const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   name: z.string().min(2, "Name must be at least 2 characters"),
-  role: z.enum(["PARENT", "VENUE_ADMIN", "COMPANY_ADMIN"]).default("PARENT"),
+  role: z.enum(["PARENT", "VENUE_ADMIN", "SUPER_ADMIN"]).default("PARENT"),
   agreeToTerms: z.boolean().refine(val => val === true, "You must agree to the Terms of Service"),
   agreeToPrivacy: z.boolean().refine(val => val === true, "You must agree to the Privacy Policy"),
 });

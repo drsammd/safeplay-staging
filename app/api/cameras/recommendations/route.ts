@@ -364,12 +364,12 @@ export async function GET(request: NextRequest) {
         id: venueId,
         OR: [
           { adminId: session.user.id },
-          { admin: { role: 'COMPANY_ADMIN' } }
+          { admin: { role: 'SUPER_ADMIN' } }
         ]
       }
     });
 
-    if (!venue && session.user.role !== 'COMPANY_ADMIN') {
+    if (!venue && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -409,7 +409,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'COMPANY_ADMIN') {
+    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
       console.log('❌ Insufficient permissions:', session.user.role);
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
@@ -431,7 +431,7 @@ export async function POST(request: NextRequest) {
         id: venueId,
         OR: [
           { adminId: session.user.id },
-          { admin: { role: 'COMPANY_ADMIN' } }
+          { admin: { role: 'SUPER_ADMIN' } }
         ]
       }
     });
@@ -444,7 +444,7 @@ export async function POST(request: NextRequest) {
       userRole: session.user.role
     });
 
-    if (!venue && session.user.role !== 'COMPANY_ADMIN') {
+    if (!venue && session.user.role !== 'SUPER_ADMIN') {
       console.log('❌ Access denied to venue');
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }

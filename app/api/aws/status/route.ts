@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     
     // Only allow admin users or in development mode
-    if (!session?.user || (session.user.role !== "COMPANY_ADMIN" && !isDevelopmentMode())) {
+    if (!session?.user || (session.user.role !== "SUPER_ADMIN" && !isDevelopmentMode())) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

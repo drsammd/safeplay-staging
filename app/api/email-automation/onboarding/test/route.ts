@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export const POST = withErrorHandling(async (request: NextRequest) => {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.id || session.user.role !== 'COMPANY_ADMIN') {
+  if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
     return apiErrorHandler.createErrorResponse(
       ErrorType.AUTHORIZATION,
       'FORBIDDEN',

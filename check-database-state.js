@@ -31,11 +31,11 @@ async function checkDatabaseState() {
     // Check specifically for admin users
     const adminUsers = await prisma.user.findMany({
       where: {
-        role: 'COMPANY_ADMIN'
+        role: 'SUPER_ADMIN'
       }
     });
     
-    console.log('👑 Admin Users (COMPANY_ADMIN role):');
+    console.log('👑 Admin Users (SUPER_ADMIN role):');
     adminUsers.forEach(admin => {
       console.log(`  - Email: ${admin.email}`);
       console.log(`    ID: ${admin.id}`);

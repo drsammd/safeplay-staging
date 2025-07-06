@@ -103,7 +103,7 @@ export default function IdentityVerificationDetailPage({
 
   useEffect(() => {
     if (status === "loading") return;
-    if (!session || session.user.role !== 'COMPANY_ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
       redirect("/unauthorized");
     }
     fetchVerificationDetails();
@@ -269,7 +269,7 @@ export default function IdentityVerificationDetailPage({
     );
   }
 
-  if (!session || session.user.role !== 'COMPANY_ADMIN') {
+  if (!session || session.user.role !== 'SUPER_ADMIN') {
     return null; // Will redirect
   }
 

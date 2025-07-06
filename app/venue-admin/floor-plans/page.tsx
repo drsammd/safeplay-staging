@@ -12,7 +12,7 @@ export default async function VenueFloorPlansPage() {
     redirect('/auth/signin');
   }
 
-  if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'COMPANY_ADMIN') {
+  if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
     redirect('/unauthorized');
   }
 

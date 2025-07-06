@@ -7,13 +7,49 @@ import { enhancedVerificationService } from '@/lib/services/enhanced-verificatio
 
 export const dynamic = 'force-dynamic';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const verificationId = params.id;
+    
+    // Get verification details with user relation
+    const verification = await enhancedVerificationService.getVerificationById(verificationId);
+    
+    if (!verification) {
+      return NextResponse.json({ 
+        error: 'Verification not found' 
+      }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      verification,
+      verificationHistory: [] // Add history if needed
+    });
+
+  } catch (error) {
+    console.error('Get verification details API error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== 'COMPANY_ADMIN') {
+    if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

@@ -98,7 +98,7 @@ export async function GET(
     const agentId = params.agentId
 
     // Users can only view their own agent profile, admins can view all
-    if (session.user.role !== 'COMPANY_ADMIN') {
+    if (session.user.role !== 'SUPER_ADMIN') {
       const userAgent = await db.supportAgent.findFirst({
         where: { 
           id: agentId,
@@ -211,7 +211,7 @@ export async function PATCH(
     }
 
     // Users can update their own status, admins can update everything
-    const canUpdateAll = session.user.role === 'COMPANY_ADMIN'
+    const canUpdateAll = session.user.role === 'SUPER_ADMIN'
     const canUpdateStatus = agent.userId === session.user.id
 
     if (!canUpdateAll && !canUpdateStatus) {
@@ -297,7 +297,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role !== 'COMPANY_ADMIN') {
+    if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

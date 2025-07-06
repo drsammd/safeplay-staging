@@ -39,7 +39,7 @@ export class EmailAutomationInitService {
       
       if (!systemAdminId) {
         const systemAdmin = await prisma.user.findFirst({
-          where: { role: 'COMPANY_ADMIN' }
+          where: { role: 'SUPER_ADMIN' }
         });
         
         if (systemAdmin) {

@@ -7,7 +7,7 @@ const DEMO_ACCOUNTS = [
     email: 'admin@mysafeplay.ai',
     password: 'password123',
     name: 'Sarah Mitchell',
-    role: 'COMPANY_ADMIN',
+    role: 'SUPER_ADMIN',
     agreeToTerms: true,
     agreeToPrivacy: true
   },

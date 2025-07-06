@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const data = parentEngagementSchema.parse(body);
 
     // Verify user access (users can only create their own engagement records or admins can create any)
-    if (data.userId !== session.user.id && session.user.role !== 'COMPANY_ADMIN') {
+    if (data.userId !== session.user.id && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
           id: data.venueId,
           OR: [
             { adminId: session.user.id },
-            session.user.role === 'COMPANY_ADMIN' ? {} : { id: 'never' }
+            session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
         }
       });
@@ -208,7 +208,7 @@ export async function GET(request: NextRequest) {
           id: venueId,
           OR: [
             { adminId: session.user.id },
-            session.user.role === 'COMPANY_ADMIN' ? {} : { id: 'never' }
+            session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
         }
       });
@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
       }
 
       where.venueId = venueId;
-    } else if (session.user.role !== 'COMPANY_ADMIN') {
+    } else if (session.user.role !== 'SUPER_ADMIN') {
       // Non-admin users can only see their own engagement or their venue's engagement
       const userVenues = await prisma.venue.findMany({
         where: { adminId: session.user.id },
@@ -232,7 +232,7 @@ export async function GET(request: NextRequest) {
 
     if (userId) {
       // Non-admin users can only access their own data
-      if (userId !== session.user.id && session.user.role !== 'COMPANY_ADMIN') {
+      if (userId !== session.user.id && session.user.role !== 'SUPER_ADMIN') {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
       where.userId = userId;

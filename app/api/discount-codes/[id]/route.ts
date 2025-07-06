@@ -24,7 +24,7 @@ export async function GET(
       where: { id: session.user.id }
     });
 
-    if (!user || user.role !== UserRole.COMPANY_ADMIN) {
+    if (!user || user.role !== UserRole.SUPER_ADMIN) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
@@ -97,7 +97,7 @@ export async function PUT(
       where: { id: session.user.id }
     });
 
-    if (!user || user.role !== UserRole.COMPANY_ADMIN) {
+    if (!user || user.role !== UserRole.SUPER_ADMIN) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 
@@ -161,7 +161,7 @@ export async function DELETE(
       where: { id: session.user.id }
     });
 
-    if (!user || user.role !== UserRole.COMPANY_ADMIN) {
+    if (!user || user.role !== UserRole.SUPER_ADMIN) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
     }
 

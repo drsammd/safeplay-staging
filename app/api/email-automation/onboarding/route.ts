@@ -28,7 +28,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const userId = searchParams.get('userId') || session.user.id;
 
   // Only allow users to check their own progress unless they're admin
-  if (userId !== session.user.id && session.user.role !== 'COMPANY_ADMIN') {
+  if (userId !== session.user.id && session.user.role !== 'SUPER_ADMIN') {
     return apiErrorHandler.createErrorResponse(
       ErrorType.AUTHORIZATION,
       'FORBIDDEN',
@@ -76,7 +76,7 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
   const reason = searchParams.get('reason') || 'User request';
 
   // Only allow users to cancel their own sequence unless they're admin
-  if (userId !== session.user.id && session.user.role !== 'COMPANY_ADMIN') {
+  if (userId !== session.user.id && session.user.role !== 'SUPER_ADMIN') {
     return apiErrorHandler.createErrorResponse(
       ErrorType.AUTHORIZATION,
       'FORBIDDEN',
@@ -112,7 +112,7 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
 export const POST = withErrorHandling(async (request: NextRequest) => {
   const session = await getServerSession(authOptions);
   
-  if (!session?.user?.id || session.user.role !== 'COMPANY_ADMIN') {
+  if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
     return apiErrorHandler.createErrorResponse(
       ErrorType.AUTHORIZATION,
       'FORBIDDEN',

@@ -59,7 +59,7 @@ export default function DemoStatusPage() {
 
   const getRoleBadge = (role: string) => {
     const colors = {
-      COMPANY_ADMIN: 'bg-red-500',
+      SUPER_ADMIN: 'bg-red-500',
       VENUE_ADMIN: 'bg-blue-500', 
       PARENT: 'bg-green-500'
     };

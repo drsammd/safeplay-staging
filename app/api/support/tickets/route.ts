@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
         { venueId: { in: userVenues.map(v => v.id) } }
       ]
     }
-    // COMPANY_ADMIN can see all tickets
+    // SUPER_ADMIN can see all tickets
 
     // Apply filters
     if (status) whereClause.status = status

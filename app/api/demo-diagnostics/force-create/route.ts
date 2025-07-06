@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 interface DemoAccount {
   email: string;
   name: string;
-  role: 'COMPANY_ADMIN' | 'VENUE_ADMIN' | 'PARENT';
+  role: 'SUPER_ADMIN' | 'VENUE_ADMIN' | 'PARENT';
   password: string;
 }
 

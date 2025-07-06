@@ -441,8 +441,8 @@ export class EmailAutomationEngine {
       case UserSegmentType.VENUE_ADMINS:
         return user.role === 'VENUE_ADMIN';
 
-      case UserSegmentType.COMPANY_ADMINS:
-        return user.role === 'COMPANY_ADMIN';
+      case UserSegmentType.SUPER_ADMINS:
+        return user.role === 'SUPER_ADMIN';
 
       case UserSegmentType.VERIFIED_USERS:
         return user.identityVerified && user.phoneVerified;
@@ -626,7 +626,7 @@ export class EmailAutomationEngine {
     const baseUrl = process.env.NEXTAUTH_URL || 'https://localhost:3000';
     
     switch (role) {
-      case 'COMPANY_ADMIN':
+      case 'SUPER_ADMIN':
         return `${baseUrl}/admin`;
       case 'VENUE_ADMIN':
         return `${baseUrl}/venue-admin`;

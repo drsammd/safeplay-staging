@@ -21,7 +21,7 @@ async function testCriticalAccountsAuthentication() {
   console.log('\n🔐 TESTING AUTHENTICATION FLOW...');
   
   const testAccounts = [
-    { email: 'admin@mysafeplay.ai', password: 'password123', expectedRole: 'COMPANY_ADMIN' },
+    { email: 'admin@mysafeplay.ai', password: 'password123', expectedRole: 'SUPER_ADMIN' },
     { email: 'john@doe.com', password: 'johndoe123', expectedRole: 'PARENT' },
     { email: 'venue@mysafeplay.ai', password: 'password123', expectedRole: 'VENUE_ADMIN' },
     { email: 'parent@mysafeplay.ai', password: 'password123', expectedRole: 'PARENT' }
@@ -131,7 +131,7 @@ async function simulateMiddlewareLogic() {
   console.log('\n🛡️ SIMULATING MIDDLEWARE PROTECTION...');
   
   const testRoutes = [
-    { path: '/admin', requiredRole: 'COMPANY_ADMIN', testUser: 'admin@mysafeplay.ai' },
+    { path: '/admin', requiredRole: 'SUPER_ADMIN', testUser: 'admin@mysafeplay.ai' },
     { path: '/venue-admin', requiredRole: 'VENUE_ADMIN', testUser: 'venue@mysafeplay.ai' },
     { path: '/parent', requiredRole: 'PARENT', testUser: 'john@doe.com' }
   ];
@@ -201,7 +201,7 @@ async function main() {
     console.log('🔑 VERIFIED ADMIN ACCESS:');
     console.log('Email: admin@mysafeplay.ai');
     console.log('Password: password123');
-    console.log('Role: COMPANY_ADMIN');
+    console.log('Role: SUPER_ADMIN');
     console.log('Target URL: /admin');
   } else {
     console.log('❌ DEPLOYMENT NOT READY: Some tests failed');

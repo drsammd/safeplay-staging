@@ -27,7 +27,7 @@ export const testUsers = {
     id: 'user-company-admin-123',
     email: 'company-admin@test.com',
     name: 'Test Company Admin',
-    role: 'COMPANY_ADMIN' as const,
+    role: 'SUPER_ADMIN' as const,
     venueId: null,
     hashedPassword: '$2b$12$test.hashed.password',
     isActive: true,

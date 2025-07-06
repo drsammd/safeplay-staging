@@ -35,7 +35,7 @@ async function testAPILogic() {
         id: requestBody.venueId,
         OR: [
           { adminId: sessionUser.id },
-          { admin: { role: 'COMPANY_ADMIN' } }
+          { admin: { role: 'SUPER_ADMIN' } }
         ]
       }
     });
@@ -47,7 +47,7 @@ async function testAPILogic() {
       adminId: venue?.adminId
     });
     
-    if (!venue && sessionUser.role !== 'COMPANY_ADMIN') {
+    if (!venue && sessionUser.role !== 'SUPER_ADMIN') {
       console.log('❌ Access denied to venue');
       return { error: 'Access denied', status: 403 };
     }

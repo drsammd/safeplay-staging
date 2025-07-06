@@ -21,7 +21,7 @@ export default function EmergencyAccessPage() {
 
   const accessOptions = [
     {
-      role: 'COMPANY_ADMIN',
+      role: 'SUPER_ADMIN',
       title: 'Company Admin Dashboard',
       description: 'Full administrative access to system settings, analytics, and user management',
       icon: Shield,

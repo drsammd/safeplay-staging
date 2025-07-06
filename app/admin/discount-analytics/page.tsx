@@ -1,4 +1,5 @@
 
+
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -23,7 +24,7 @@ export default async function DiscountAnalyticsPage() {
     where: { id: session.user.id }
   });
 
-  if (!user || user.role !== UserRole.COMPANY_ADMIN) {
+  if (!user || user.role !== UserRole.SUPER_ADMIN) {
     redirect('/unauthorized');
   }
 
@@ -35,4 +36,5 @@ export default async function DiscountAnalyticsPage() {
     </div>
   );
 }
+
 
