@@ -33,7 +33,7 @@ function runCommand(command, args = [], options = {}) {
 }
 
 async function runTests() {
-  log('blue', '🧪 SafePlay Testing Framework - Comprehensive Test Suite');
+  log('blue', '🧪 mySafePlay<sup>™</sup> Testing Framework - Comprehensive Test Suite');
   log('blue', '=======================================================');
 
   const tests = [

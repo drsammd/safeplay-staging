@@ -222,7 +222,7 @@ export function KnowledgeBaseInterface() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Knowledge Base</h2>
-          <p className="text-gray-600 mt-1">Find answers and learn about SafePlay features</p>
+          <p className="text-gray-600 mt-1">Find answers and learn about mySafePlay<sup>™</sup> features</p>
         </div>
         
         <Button className="flex items-center space-x-2">
