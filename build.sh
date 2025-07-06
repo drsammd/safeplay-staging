@@ -31,6 +31,25 @@ if ! npx prisma generate; then
 fi
 echo "Prisma client generated successfully"
 
+# Create database schema if DATABASE_URL is available
+if [ ! -z "$DATABASE_URL" ]; then
+    echo "Creating database schema..."
+    if npx prisma db push --force-reset --accept-data-loss; then
+        echo "✅ Database schema created successfully"
+    else
+        echo "⚠️  Database schema creation failed - trying alternative method"
+        # Try without force reset in case database exists
+        if npx prisma db push; then
+            echo "✅ Database schema updated successfully"
+        else
+            echo "❌ Database schema creation failed completely"
+            exit 1
+        fi
+    fi
+else
+    echo "⚠️  DATABASE_URL not found - skipping database schema creation"
+fi
+
 # Run Next.js build with TypeScript checking disabled
 echo "Starting Next.js build..."
 yarn build
