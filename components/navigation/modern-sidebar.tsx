@@ -290,7 +290,6 @@ export default function ModernSidebar({ userRole, isOpen, onToggle }: ModernSide
               height={45}
               className="h-8 w-auto"
             />
-            <span className="ml-2 text-xl font-bold text-gray-900">mySafePlay™</span>
           </Link>
         </div>
 
