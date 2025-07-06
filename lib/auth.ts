@@ -98,16 +98,56 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
     redirect: async ({ url, baseUrl }) => {
+      console.log("🔄 Redirect callback:", { url, baseUrl });
+      
+      // Handle role-based redirects after successful login
+      if (url.includes("/api/auth/callback")) {
+        // This is a callback from successful authentication
+        return baseUrl;
+      }
+      
       // Allow relative callback URLs
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      if (url.startsWith("/")) {
+        const fullUrl = `${baseUrl}${url}`;
+        console.log("✅ Relative redirect:", fullUrl);
+        return fullUrl;
+      }
+      
       // Allow callback URLs on the same origin
-      if (new URL(url).origin === baseUrl) return url;
+      try {
+        const urlObj = new URL(url);
+        const baseUrlObj = new URL(baseUrl);
+        if (urlObj.origin === baseUrlObj.origin) {
+          console.log("✅ Same origin redirect:", url);
+          return url;
+        }
+      } catch (error) {
+        console.error("❌ URL parsing error:", error);
+      }
+      
+      console.log("🏠 Default redirect to baseUrl:", baseUrl);
       return baseUrl;
     },
+    signIn: async ({ user, account, profile, email, credentials }) => {
+      console.log("🔐 SignIn callback:", {
+        userId: user?.id,
+        email: user?.email,
+        role: user?.role
+      });
+      
+      // Always allow sign in if we reach this point
+      return true;
+    },
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   pages: {
     signIn: "/auth/signin",
+    error: "/auth/error",
   },
+  debug: process.env.NODE_ENV === "development",
   events: {
     signIn: async ({ user, account, profile, isNewUser }) => {
       console.log("📝 Sign in event:", {
