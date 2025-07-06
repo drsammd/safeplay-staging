@@ -41,10 +41,10 @@ function stakeholderAuthMiddleware(request: NextRequest) {
     return new NextResponse('Too Many Requests', { 
       status: 429,
       headers: {
-        'Retry-After': '900', // 15 minutes
-        'X-RateLimit-Limit': '10',
+        'Retry-After': '300', // 5 minutes
+        'X-RateLimit-Limit': '100',
         'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': (Date.now() + 900000).toString(),
+        'X-RateLimit-Reset': (Date.now() + 300000).toString(),
       }
     });
   }
