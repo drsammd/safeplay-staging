@@ -84,8 +84,8 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
 export function isRateLimited(ip: string): boolean {
   const now = Date.now();
-  const windowMs = 15 * 60 * 1000; // 15 minutes
-  const maxAttempts = 10;
+  const windowMs = 5 * 60 * 1000; // 5 minutes (reduced window)
+  const maxAttempts = 100; // Increased from 10 to 100 requests per window
   
   const current = rateLimitStore.get(ip);
   
