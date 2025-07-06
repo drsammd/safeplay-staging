@@ -103,12 +103,11 @@ const combinedMiddleware = withAuth(
     if (pathname.startsWith("/admin")) {
       console.log("🛡️ NextAuth: Checking admin access:", { 
         tokenRole: token?.role, 
-        requiredRole: "COMPANY_ADMIN",
-        isMatch: token?.role === "COMPANY_ADMIN",
-        strictEqual: token?.role !== "COMPANY_ADMIN" 
+        requiredRoles: ["COMPANY_ADMIN", "SUPER_ADMIN"],
+        isMatch: token?.role === "COMPANY_ADMIN" || token?.role === "SUPER_ADMIN"
       });
       
-      if (token?.role !== "COMPANY_ADMIN") {
+      if (token?.role !== "COMPANY_ADMIN" && token?.role !== "SUPER_ADMIN") {
         console.log("❌ NextAuth: DENYING admin access - redirecting to unauthorized");
         return Response.redirect(new URL("/unauthorized", req.url));
       }
