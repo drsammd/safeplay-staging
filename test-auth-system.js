@@ -8,7 +8,7 @@ async function testAuthFlow() {
   const testCredentials = [
     { email: 'john@doe.com', password: 'johndoe123', role: 'PARENT', label: 'Parent (John)' },
     { email: 'venue@mysafeplay.ai', password: 'password123', role: 'VENUE_ADMIN', label: 'Venue Admin' },
-    { email: 'admin@mysafeplay.ai', password: 'password123', role: 'COMPANY_ADMIN', label: 'Company Admin' },
+    { email: 'admin@mysafeplay.ai', password: 'password123', role: 'SUPER_ADMIN', label: 'Company Admin' },
   ];
 
   // Test each credential via the actual auth API

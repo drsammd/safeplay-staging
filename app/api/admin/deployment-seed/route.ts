@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         return acc;
       }, {} as Record<string, number>),
       credentials: [
-        { email: 'admin@mysafeplay.ai', password: 'password123', role: 'COMPANY_ADMIN' },
+        { email: 'admin@mysafeplay.ai', password: 'password123', role: 'SUPER_ADMIN' },
         { email: 'venue@mysafeplay.ai', password: 'password123', role: 'VENUE_ADMIN' },
         { email: 'parent@mysafeplay.ai', password: 'password123', role: 'PARENT' },
         { email: 'john@mysafeplay.ai', password: 'johndoe123', role: 'PARENT' }

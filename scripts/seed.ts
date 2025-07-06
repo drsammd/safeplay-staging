@@ -31,7 +31,7 @@ async function main() {
       email: 'admin@mysafeplay.ai',
       password: hashedPassword,
       name: 'Sarah Mitchell',
-      role: 'COMPANY_ADMIN',
+      role: 'SUPER_ADMIN',
       phone: '+1 (555) 001-0001',
     },
   });

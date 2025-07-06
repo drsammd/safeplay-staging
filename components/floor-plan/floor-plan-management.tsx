@@ -70,8 +70,8 @@ export default function FloorPlanManagement({ venueId, userRole, userId }: Floor
     );
   }
 
-  // For COMPANY_ADMIN without venueId, show venue selector (simplified for now)
-  if (!venueId && userRole === 'COMPANY_ADMIN') {
+  // For SUPER_ADMIN without venueId, show venue selector (simplified for now)
+  if (!venueId && userRole === 'SUPER_ADMIN') {
     return (
       <Card>
         <CardHeader>

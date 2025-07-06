@@ -31,10 +31,10 @@ export default function TestLoginPage() {
   const [result, setResult] = useState<AuthTestResponse | null>(null);
 
   const quickTestAccounts = [
-    { email: 'admin@mysafeplay.ai', password: 'password123', role: 'COMPANY_ADMIN' },
+    { email: 'admin@mysafeplay.ai', password: 'password123', role: 'SUPER_ADMIN' },
     { email: 'venue@mysafeplay.ai', password: 'password123', role: 'VENUE_ADMIN' },
     { email: 'parent@mysafeplay.ai', password: 'password123', role: 'PARENT' },
-    { email: 'john@mysafeplay.ai', password: 'johndoe123', role: 'COMPANY_ADMIN' }
+    { email: 'john@mysafeplay.ai', password: 'johndoe123', role: 'SUPER_ADMIN' }
   ];
 
   const handleTestLogin = async (e: React.FormEvent) => {

@@ -38,7 +38,7 @@ async function canAccessSession(sessionId: string, userId: string, userRole: str
   if (session.agent?.userId === userId) return session
 
   // Company admin can access all sessions
-  if (userRole === 'COMPANY_ADMIN') return session
+  if (userRole === 'SUPER_ADMIN') return session
 
   return null
 }
@@ -135,7 +135,7 @@ export async function POST(
 
     // Determine sender type
     let senderType = 'USER'
-    if (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'VENUE_ADMIN') {
+    if (session.user.role === 'SUPER_ADMIN' || session.user.role === 'VENUE_ADMIN') {
       // Check if user is the assigned agent
       const isAssignedAgent = chatSession.agent?.userId === session.user.id
       if (isAssignedAgent) {

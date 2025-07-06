@@ -65,7 +65,7 @@ async function testAdminAuth() {
     console.log('🎭 Role verification:', {
       role: adminUser.role,
       roleType: typeof adminUser.role,
-      isCompanyAdmin: adminUser.role === 'COMPANY_ADMIN',
+      isCompanyAdmin: adminUser.role === 'SUPER_ADMIN',
       trimmedRole: adminUser.role.trim(),
       roleLength: adminUser.role.length
     });
@@ -73,9 +73,9 @@ async function testAdminAuth() {
     // Test 4: Check for any hidden characters
     const roleBytes = Buffer.from(adminUser.role, 'utf8');
     console.log('🔍 Role bytes analysis:', {
-      expectedBytes: Buffer.from('COMPANY_ADMIN', 'utf8'),
+      expectedBytes: Buffer.from('SUPER_ADMIN', 'utf8'),
       actualBytes: roleBytes,
-      match: roleBytes.equals(Buffer.from('COMPANY_ADMIN', 'utf8'))
+      match: roleBytes.equals(Buffer.from('SUPER_ADMIN', 'utf8'))
     });
     
   } catch (error) {

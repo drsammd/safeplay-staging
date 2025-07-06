@@ -356,7 +356,7 @@ export class AlertMonitoringService {
           escalationLevel: alert.escalationLevel
         },
         recipients: {
-          roles: ['COMPANY_ADMIN'],
+          roles: ['SUPER_ADMIN'],
           venueIds: [alert.venueId]
         }
       });
@@ -528,14 +528,14 @@ export class AlertMonitoringService {
       // Add company admins
       const companyAdmins = await prisma.user.findMany({
         where: {
-          role: 'COMPANY_ADMIN'
+          role: 'SUPER_ADMIN'
         }
       });
 
       for (const admin of companyAdmins) {
         recipients.push({
           userId: admin.id,
-          recipientType: NotificationRecipientType.COMPANY_ADMIN,
+          recipientType: NotificationRecipientType.SUPER_ADMIN,
           channels: [NotificationChannel.EMAIL, NotificationChannel.IN_APP]
         });
       }
@@ -556,14 +556,14 @@ export class AlertMonitoringService {
       // Add company admins for escalated alerts
       const companyAdmins = await prisma.user.findMany({
         where: {
-          role: 'COMPANY_ADMIN'
+          role: 'SUPER_ADMIN'
         }
       });
 
       for (const admin of companyAdmins) {
         recipients.push({
           userId: admin.id,
-          recipientType: NotificationRecipientType.COMPANY_ADMIN,
+          recipientType: NotificationRecipientType.SUPER_ADMIN,
           channels: [NotificationChannel.SMS, NotificationChannel.EMAIL, NotificationChannel.PHONE_CALL]
         });
       }

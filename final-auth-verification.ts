@@ -7,7 +7,7 @@ async function verifyFinalImplementation() {
   
   // Verify all demo accounts exist with correct domains
   const expectedAccounts = [
-    { email: 'admin@mysafeplay.ai', name: 'Sarah Mitchell', role: 'COMPANY_ADMIN' },
+    { email: 'admin@mysafeplay.ai', name: 'Sarah Mitchell', role: 'SUPER_ADMIN' },
     { email: 'venue@mysafeplay.ai', name: 'John Smith', role: 'VENUE_ADMIN' },
     { email: 'parent@mysafeplay.ai', name: 'Emily Johnson', role: 'PARENT' },
     { email: 'john@mysafeplay.ai', name: 'John Doe', role: 'PARENT' },

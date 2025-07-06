@@ -132,7 +132,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'COMPANY_ADMIN') {
+    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -237,7 +237,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'COMPANY_ADMIN') {
+    if (session.user.role !== 'VENUE_ADMIN' && session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -372,7 +372,7 @@ async function getNotificationRecipients(tx: any, targetAudience: string[], zone
         // Get venue staff
         const staff = await tx.user.findMany({
           where: {
-            role: { in: ['VENUE_ADMIN', 'COMPANY_ADMIN'] },
+            role: { in: ['VENUE_ADMIN', 'SUPER_ADMIN'] },
             managedVenues: { some: { id: zone.floorPlan.venueId } }
           }
         });

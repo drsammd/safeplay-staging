@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Company admins can check any venue
-    if (user.role === 'COMPANY_ADMIN' && !venueId) {
+    if (user.role === 'SUPER_ADMIN' && !venueId) {
       return NextResponse.json({ error: 'Venue ID required for company admin' }, { status: 400 });
     }
 

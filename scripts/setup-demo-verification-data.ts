@@ -42,7 +42,7 @@ async function setupDemoVerificationData() {
         requiredPhone: true,
         requiredIdentity: true,
         requiredTwoFactor: true,
-        applicableRoles: ['VENUE_ADMIN', 'COMPANY_ADMIN'],
+        applicableRoles: ['VENUE_ADMIN', 'SUPER_ADMIN'],
         applicableActions: ['admin_access', 'user_management', 'venue_configuration'],
         gracePeriodDays: 0,
         enforced: true

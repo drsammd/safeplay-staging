@@ -15,10 +15,10 @@ async function testRoleAssignment() {
     
     console.log('📝 John\'s current role:', johnBefore?.role);
     
-    // Step 2: Temporarily change john@doe.com to COMPANY_ADMIN
+    // Step 2: Temporarily change john@doe.com to SUPER_ADMIN
     const updatedJohn = await prisma.user.update({
       where: { email: 'john@doe.com' },
-      data: { role: 'COMPANY_ADMIN' }
+      data: { role: 'SUPER_ADMIN' }
     });
     
     console.log('✅ Updated John\'s role to:', updatedJohn.role);
@@ -32,14 +32,14 @@ async function testRoleAssignment() {
     
     // Step 4: Check admin count
     const adminCount = await prisma.user.count({
-      where: { role: 'COMPANY_ADMIN' }
+      where: { role: 'SUPER_ADMIN' }
     });
     
-    console.log('👑 Total COMPANY_ADMIN users:', adminCount);
+    console.log('👑 Total SUPER_ADMIN users:', adminCount);
     
     // List all admin users
     const allAdmins = await prisma.user.findMany({
-      where: { role: 'COMPANY_ADMIN' },
+      where: { role: 'SUPER_ADMIN' },
       select: { email: true, role: true }
     });
     

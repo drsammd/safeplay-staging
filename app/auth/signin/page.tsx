@@ -74,7 +74,7 @@ export default function SignInPage() {
         const session = await getSession();
         
         // Redirect based on user role
-        if (session?.user?.role === 'COMPANY_ADMIN') {
+        if (session?.user?.role === 'SUPER_ADMIN') {
           router.push('/admin');
         } else if (session?.user?.role === 'VENUE_ADMIN') {
           router.push('/venue-admin');
@@ -145,7 +145,7 @@ export default function SignInPage() {
           const session = await getSession();
           
           // Redirect based on user role
-          if (session?.user?.role === 'COMPANY_ADMIN') {
+          if (session?.user?.role === 'SUPER_ADMIN') {
             router.push('/admin');
           } else if (session?.user?.role === 'VENUE_ADMIN') {
             router.push('/venue-admin');

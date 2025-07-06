@@ -29,10 +29,10 @@ export default function ForceCreateDemoPage() {
   const [result, setResult] = useState<CreationResponse | null>(null);
 
   const demoAccounts = [
-    { email: 'admin@mysafeplay.ai', name: 'Admin User', role: 'COMPANY_ADMIN', password: 'password123' },
+    { email: 'admin@mysafeplay.ai', name: 'Admin User', role: 'SUPER_ADMIN', password: 'password123' },
     { email: 'venue@mysafeplay.ai', name: 'Venue Administrator', role: 'VENUE_ADMIN', password: 'password123' },
     { email: 'parent@mysafeplay.ai', name: 'Parent User', role: 'PARENT', password: 'password123' },
-    { email: 'john@mysafeplay.ai', name: 'John Doe', role: 'COMPANY_ADMIN', password: 'johndoe123' }
+    { email: 'john@mysafeplay.ai', name: 'John Doe', role: 'SUPER_ADMIN', password: 'johndoe123' }
   ];
 
   const handleCreateAccounts = async () => {
@@ -64,7 +64,7 @@ export default function ForceCreateDemoPage() {
 
   const getRoleBadge = (role: string) => {
     const colors = {
-      COMPANY_ADMIN: 'bg-red-500',
+      SUPER_ADMIN: 'bg-red-500',
       VENUE_ADMIN: 'bg-blue-500', 
       PARENT: 'bg-green-500'
     };

@@ -4,7 +4,7 @@ interface MockUser {
   id: string
   email: string
   name: string
-  role: 'PARENT' | 'VENUE_ADMIN' | 'COMPANY_ADMIN'
+  role: 'PARENT' | 'VENUE_ADMIN' | 'SUPER_ADMIN'
   isActive: boolean
 }
 

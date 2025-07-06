@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
           id: data.venueId,
           OR: [
             { adminId: session.user.id },
-            session.user.role === 'COMPANY_ADMIN' ? {} : { id: 'never' }
+            session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
         }
       });
@@ -354,7 +354,7 @@ async function buildVenueWhereClause(venueId: string | undefined, userId: string
     return { venueId };
   }
   
-  if (userRole !== 'COMPANY_ADMIN') {
+  if (userRole !== 'SUPER_ADMIN') {
     const userVenues = await prisma.venue.findMany({
       where: { adminId: userId },
       select: { id: true }

@@ -58,7 +58,7 @@ async function canAccessTicket(ticketId: string, userId: string, userRole: strin
   if (userRole === 'VENUE_ADMIN' && ticket.venue?.adminId === userId) return true
 
   // Company admin can access all tickets
-  if (userRole === 'COMPANY_ADMIN') return true
+  if (userRole === 'SUPER_ADMIN') return true
 
   return false
 }
@@ -173,7 +173,7 @@ export async function POST(
 
     // Determine sender type
     let senderType = 'USER'
-    if (session.user.role === 'COMPANY_ADMIN' || session.user.role === 'VENUE_ADMIN') {
+    if (session.user.role === 'SUPER_ADMIN' || session.user.role === 'VENUE_ADMIN') {
       senderType = 'AGENT'
     }
 

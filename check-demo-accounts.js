@@ -11,14 +11,14 @@ async function checkDemoAccounts() {
   const expectedAccounts = [
     { email: 'john@doe.com', password: 'johndoe123', role: 'PARENT', label: 'Demo Parent (John)' },
     { email: 'venue@mysafeplay.ai', password: 'password123', role: 'VENUE_ADMIN', label: 'Venue Admin' },
-    { email: 'admin@mysafeplay.ai', password: 'password123', role: 'COMPANY_ADMIN', label: 'Company Admin' },
+    { email: 'admin@mysafeplay.ai', password: 'password123', role: 'SUPER_ADMIN', label: 'Company Admin' },
     { email: 'parent@mysafeplay.ai', password: 'password123', role: 'PARENT', label: 'Demo Parent' },
   ];
 
   // Also check the case-sensitive versions the user tried
   const userTriedAccounts = [
     { email: 'venue@SafePlay.com', password: 'password123', role: 'VENUE_ADMIN', label: 'User Tried: Venue (wrong case)' },
-    { email: 'Admin@SafePlay.com', password: 'Password123', role: 'COMPANY_ADMIN', label: 'User Tried: Admin (wrong case)' },
+    { email: 'Admin@SafePlay.com', password: 'Password123', role: 'SUPER_ADMIN', label: 'User Tried: Admin (wrong case)' },
   ];
 
   console.log('📋 EXPECTED ACCOUNTS STATUS:');

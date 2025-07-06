@@ -35,7 +35,7 @@ async function canAccessSession(sessionId: string, userId: string, userRole: str
   if (session.agent?.userId === userId) return true
 
   // Company admin can access all sessions
-  if (userRole === 'COMPANY_ADMIN') return true
+  if (userRole === 'SUPER_ADMIN') return true
 
   return false
 }

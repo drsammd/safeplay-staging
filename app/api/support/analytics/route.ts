@@ -239,7 +239,7 @@ async function generateAnalytics(startDate: Date, endDate: Date, filters: any = 
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user.role !== 'COMPANY_ADMIN' && session.user.role !== 'VENUE_ADMIN')) {
+    if (!session?.user || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'VENUE_ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

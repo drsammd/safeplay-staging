@@ -14,7 +14,7 @@ const CRITICAL_ACCOUNTS = [
     email: 'admin@mysafeplay.ai',
     password: 'password123',
     name: 'Sarah Mitchell',
-    role: 'COMPANY_ADMIN' as const,
+    role: 'SUPER_ADMIN' as const,
     phone: '+1 (555) 001-0001',
   },
   {

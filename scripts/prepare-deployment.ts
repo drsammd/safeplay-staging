@@ -15,7 +15,7 @@ const DEPLOYMENT_DATA = {
       email: 'admin@mysafeplay.ai',
       password: 'password123',
       name: 'Sarah Mitchell',
-      role: 'COMPANY_ADMIN' as const,
+      role: 'SUPER_ADMIN' as const,
       phone: '+1 (555) 001-0001',
     },
     {
@@ -244,7 +244,7 @@ async function verifyDeploymentData() {
       where: { email: 'admin@mysafeplay.ai' }
     });
     
-    return admin && admin.role === 'COMPANY_ADMIN';
+    return admin && admin.role === 'SUPER_ADMIN';
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('❌ Error verifying data:', errorMessage);
@@ -311,7 +311,7 @@ async function main() {
     console.log('=' .repeat(50));
     console.log('Email: admin@mysafeplay.ai');
     console.log('Password: password123');
-    console.log('Role: COMPANY_ADMIN');
+    console.log('Role: SUPER_ADMIN');
     console.log('Access URL: /admin');
     console.log('=' .repeat(50));
     console.log('\nThe database is now ready for deployment!');

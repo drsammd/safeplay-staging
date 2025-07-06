@@ -25,7 +25,7 @@ export default async function PaymentManagementPage() {
     where: { id: session.user.id },
   });
 
-  if (!user || user.role !== 'COMPANY_ADMIN') {
+  if (!user || user.role !== 'SUPER_ADMIN') {
     redirect('/unauthorized');
   }
 

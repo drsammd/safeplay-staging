@@ -62,7 +62,7 @@ async function canAccessTicket(ticketId: string, userId: string, userRole: strin
   if (userRole === 'VENUE_ADMIN' && ticket.venue?.adminId === userId) return true
 
   // Company admin can access all tickets
-  if (userRole === 'COMPANY_ADMIN') return true
+  if (userRole === 'SUPER_ADMIN') return true
 
   return false
 }
@@ -284,7 +284,7 @@ export async function PATCH(
         entry.eventType,
         entry.description,
         session.user.id,
-        session.user.role === 'COMPANY_ADMIN' || session.user.role === 'VENUE_ADMIN' ? 'AGENT' : 'USER',
+        session.user.role === 'SUPER_ADMIN' || session.user.role === 'VENUE_ADMIN' ? 'AGENT' : 'USER',
         entry.oldValue,
         entry.newValue
       )
@@ -315,7 +315,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role !== 'COMPANY_ADMIN') {
+    if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

@@ -25,7 +25,7 @@ async function finalVerificationTest() {
       },
       {
         email: 'admin@mysafeplay.ai',
-        expectedRole: 'COMPANY_ADMIN', 
+        expectedRole: 'SUPER_ADMIN', 
         expectedAccess: '/admin',
         description: 'Sarah Mitchell (Company Admin)'
       },

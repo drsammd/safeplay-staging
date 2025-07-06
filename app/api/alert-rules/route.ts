@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Apply filters
-    if (venueId && session.user.role === "COMPANY_ADMIN") {
+    if (venueId && session.user.role === "SUPER_ADMIN") {
       where.venueId = venueId;
     }
 

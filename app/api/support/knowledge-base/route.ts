@@ -21,7 +21,7 @@ const createArticleSchema = z.object({
   tags: z.array(z.string()).optional(),
   searchKeywords: z.array(z.string()).optional(),
   isPublic: z.boolean().default(true),
-  requiredRole: z.enum(['COMPANY_ADMIN', 'VENUE_ADMIN', 'PARENT']).optional(),
+  requiredRole: z.enum(['SUPER_ADMIN', 'VENUE_ADMIN', 'PARENT']).optional(),
   targetAudience: z.array(z.string()).optional(),
   metaDescription: z.string().optional(),
   metaKeywords: z.array(z.string()).optional()
@@ -179,7 +179,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user.role !== 'COMPANY_ADMIN' && session.user.role !== 'VENUE_ADMIN')) {
+    if (!session?.user || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'VENUE_ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

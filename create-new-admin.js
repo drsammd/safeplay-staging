@@ -17,7 +17,7 @@ async function createNewAdmin() {
         email: 'admin2@mysafeplay.ai',
         password: hashedPassword,
         name: 'Admin Two',
-        role: 'COMPANY_ADMIN'
+        role: 'SUPER_ADMIN'
       }
     });
     
@@ -35,7 +35,7 @@ async function createNewAdmin() {
         email: 'test@admin.com',
         password: hashedPassword2,
         name: 'Test Admin',
-        role: 'COMPANY_ADMIN'
+        role: 'SUPER_ADMIN'
       }
     });
     
@@ -47,7 +47,7 @@ async function createNewAdmin() {
     
     // List all admin accounts now
     const allAdmins = await prisma.user.findMany({
-      where: { role: 'COMPANY_ADMIN' },
+      where: { role: 'SUPER_ADMIN' },
       select: { email: true, role: true, name: true }
     });
     

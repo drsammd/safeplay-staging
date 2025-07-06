@@ -24,7 +24,7 @@ export const mockCompanyAdmin = {
   id: 'company-admin-123',
   email: 'admin@company.com',
   name: 'Company Admin',
-  role: 'COMPANY_ADMIN',
+  role: 'SUPER_ADMIN',
   venueId: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

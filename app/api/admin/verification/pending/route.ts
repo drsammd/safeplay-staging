@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || session.user.role !== 'COMPANY_ADMIN') {
+    if (!session?.user?.id || session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -27,16 +27,14 @@ export async function GET(request: NextRequest) {
         user: verification.user,
         documentType: verification.documentType,
         status: verification.status,
-        createdAt: verification.createdAt,
-        documentAnalysis: verification.documentAnalysis ? {
-          confidence: verification.documentAnalysis.confidence,
-          authenticityScore: verification.documentAnalysis.authenticityScore,
-          qualityScore: verification.documentAnalysis.qualityScore,
-          fraudIndicators: verification.documentAnalysis.fraudIndicators,
-          extractedFields: verification.documentAnalysis.extractedFields,
-          reviewReason: verification.documentAnalysis.reviewReason,
-          processedAt: verification.documentAnalysis.processedAt
-        } : null
+        submittedAt: verification.submittedAt,
+        verificationScore: verification.verificationScore,
+        rejectionReason: verification.rejectionReason,
+        reviewedAt: verification.reviewedAt,
+        reviewedBy: verification.reviewedBy,
+        documentImages: verification.documentImages,
+        selfieImage: verification.selfieImage,
+        metadata: verification.metadata
       }))
     });
 

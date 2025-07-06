@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         id: data.venueId,
         OR: [
           { adminId: session.user.id },
-          session.user.role === 'COMPANY_ADMIN' ? {} : { id: 'never' }
+          session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
         ]
       }
     });
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
           id: venueId,
           OR: [
             { adminId: session.user.id },
-            session.user.role === 'COMPANY_ADMIN' ? {} : { id: 'never' }
+            session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
         }
       });
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
       }
 
       where.venueId = venueId;
-    } else if (session.user.role !== 'COMPANY_ADMIN') {
+    } else if (session.user.role !== 'SUPER_ADMIN') {
       // Non-admin users can only see their venue incidents
       const userVenues = await prisma.venue.findMany({
         where: { adminId: session.user.id },
@@ -244,7 +244,7 @@ export async function PUT(request: NextRequest) {
         venue: {
           OR: [
             { adminId: session.user.id },
-            session.user.role === 'COMPANY_ADMIN' ? {} : { id: 'never' }
+            session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
         }
       }

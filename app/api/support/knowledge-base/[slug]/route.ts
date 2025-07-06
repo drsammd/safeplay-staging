@@ -21,7 +21,7 @@ const updateArticleSchema = z.object({
   tags: z.array(z.string()).optional(),
   searchKeywords: z.array(z.string()).optional(),
   isPublic: z.boolean().optional(),
-  requiredRole: z.enum(['COMPANY_ADMIN', 'VENUE_ADMIN', 'PARENT']).optional(),
+  requiredRole: z.enum(['SUPER_ADMIN', 'VENUE_ADMIN', 'PARENT']).optional(),
   targetAudience: z.array(z.string()).optional(),
   status: z.enum(['DRAFT', 'REVIEW', 'PUBLISHED', 'ARCHIVED']).optional(),
   metaDescription: z.string().optional(),
@@ -68,7 +68,7 @@ async function ensureUniqueSlug(baseSlug: string, excludeId?: string): Promise<s
 // Check if user can access article
 function canAccessArticle(article: any, userRole?: string) {
   if (!article.isPublic && !userRole) return false
-  if (article.status !== 'PUBLISHED' && userRole !== 'COMPANY_ADMIN' && userRole !== 'VENUE_ADMIN') return false
+  if (article.status !== 'PUBLISHED' && userRole !== 'SUPER_ADMIN' && userRole !== 'VENUE_ADMIN') return false
   if (article.requiredRole && (!userRole || userRole === 'PARENT' && article.requiredRole !== 'PARENT')) return false
   return true
 }
@@ -135,7 +135,7 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || (session.user.role !== 'COMPANY_ADMIN' && session.user.role !== 'VENUE_ADMIN')) {
+    if (!session?.user || (session.user.role !== 'SUPER_ADMIN' && session.user.role !== 'VENUE_ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -223,7 +223,7 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user || session.user.role !== 'COMPANY_ADMIN') {
+    if (!session?.user || session.user.role !== 'SUPER_ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

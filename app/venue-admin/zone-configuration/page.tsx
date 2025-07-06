@@ -100,7 +100,7 @@ export default function ZoneConfigurationPage() {
       router.push('/auth/signin');
       return;
     }
-    if (session.user?.role !== 'VENUE_ADMIN' && session.user?.role !== 'COMPANY_ADMIN') {
+    if (session.user?.role !== 'VENUE_ADMIN' && session.user?.role !== 'SUPER_ADMIN') {
       router.push('/unauthorized');
       return;
     }

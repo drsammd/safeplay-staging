@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       where.status = status;
     }
 
-    if (venueId && session.user.role === "COMPANY_ADMIN") {
+    if (venueId && session.user.role === "SUPER_ADMIN") {
       where.venueId = venueId;
     }
 
