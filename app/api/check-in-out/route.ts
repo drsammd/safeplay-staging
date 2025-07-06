@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
             address: true,
           },
         },
-        parent: {
+        user: {
           select: {
             id: true,
             name: true,
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
             location: true,
           },
         },
-        biometricVerifications: {
+        identityVerifications: {
           select: {
             id: true,
             verificationResult: true,
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       data: {
         childId,
         venueId,
-        parentId: session.user.role === 'PARENT' ? session.user.id : body.parentId,
+        userId: session.user.role === 'PARENT' ? session.user.id : body.userId,
         eventType,
         method,
         qrCode,
@@ -198,12 +198,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Update child status
-    const newStatus = eventType === 'CHECK_IN' ? 'CHECKED_IN' : 'CHECKED_OUT';
+    // Update child's current venue
     await prisma.child.update({
       where: { id: childId },
       data: { 
-        status: newStatus,
         currentVenueId: eventType === 'CHECK_IN' ? venueId : null,
       },
     });
@@ -212,12 +210,12 @@ export async function POST(request: NextRequest) {
     if (biometricRequired && method !== 'STAFF_MANUAL') {
       // This would integrate with biometric verification API
       // For now, we'll create a pending verification record
-      await prisma.biometricVerification.create({
+      await prisma.identityVerification.create({
         data: {
-          checkInEventId: checkInOutEvent.id,
-          personType: 'CHILD',
+          
+          
           personId: childId,
-          verificationType: 'FACE_RECOGNITION',
+          verificationType: 'GOVERNMENT_ID',
           capturedBiometric: '', // Would be populated by biometric capture
           verificationResult: 'PENDING',
           auditLog: {

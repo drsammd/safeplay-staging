@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       memberId,
       membershipId,
       packageId,
-      checkInEventId,
+      
       transactionType,
       items,
       amount,
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         memberId,
         membershipId,
         packageId,
-        checkInEventId,
+        
         transactionType,
         amount,
         tax,

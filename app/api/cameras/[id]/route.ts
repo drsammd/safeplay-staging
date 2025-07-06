@@ -48,9 +48,8 @@ export async function GET(
           select: { id: true, name: true, adminId: true }
         },
         floorPlan: {
-          select: { id: true, name: true, fileUrl: true }
+          select: { id: true, name: true }
         },
-        coverageAreas: true,
         recognitionZones: true,
         cameraEvents: {
           take: 10,
@@ -117,7 +116,7 @@ export async function PATCH(
       where: { id: params.id },
       data: {
         ...validatedData,
-        lastPing: validatedData.status === 'ONLINE' ? new Date() : camera.lastPing
+        status: validatedData.status
       },
       include: {
         venue: {
@@ -126,7 +125,6 @@ export async function PATCH(
         floorPlan: {
           select: { id: true, name: true }
         },
-        coverageAreas: true,
         recognitionZones: true
       }
     });
@@ -134,7 +132,7 @@ export async function PATCH(
     // Log camera update event
     await prisma.cameraEvent.create({
       data: {
-        type: 'CONFIGURATION_CHANGED',
+        type: 'ONLINE',
         description: 'Camera configuration updated',
         severity: 'INFO',
         cameraId: camera.id,

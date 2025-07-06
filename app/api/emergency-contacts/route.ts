@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
         venueId: data.venueId,
         userId: data.userId,
         contactType: data.contactType || EmergencyContactType.PERSONAL,
-        metadata: data.metadata,
+        
       },
       include: {
         child: {

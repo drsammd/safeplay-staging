@@ -15,8 +15,8 @@ class CameraRecommendationEngine {
     zones: any[]
   ) {
     const recommendations = [];
-    const floorWidth = floorPlan.dimensions?.width || 1000;
-    const floorHeight = floorPlan.dimensions?.height || 800;
+    const floorWidth = floorPlan.width || 1000;
+    const floorHeight = floorPlan.height || 800;
     
     // Define high-priority areas that need coverage
     const criticalZones = zones.filter(zone => 
@@ -55,10 +55,10 @@ class CameraRecommendationEngine {
     for (const blindSpot of blindSpots.slice(0, 3)) { // Limit to 3 blind spot recommendations
       recommendations.push({
         recommendationType: 'BLIND_SPOT',
-        suggestedPosition: blindSpot.position,
+        suggestedPosition: blindSpot.coordinates,
         reasoning: `Blind spot detected in coverage area (${blindSpot.size}m²)`,
         priority: blindSpot.size > 50 ? 'HIGH' : 'MEDIUM',
-        coverageArea: this.calculateCoverageArea(blindSpot.position, 60, 10),
+        coverageArea: this.calculateCoverageArea(blindSpot.coordinates, 60, 10),
         estimatedCost: 1200,
         metadata: {
           blindSpotSize: blindSpot.size,
@@ -101,7 +101,7 @@ class CameraRecommendationEngine {
     const map = Array(gridSize).fill(null).map(() => Array(gridSize).fill(0));
     
     for (const camera of cameras) {
-      if (camera.position && camera.viewAngle && camera.viewDistance) {
+      if (camera.coordinates && camera.viewAngle && camera.viewDistance) {
         const coverage = this.calculateCameraCoverage(camera, gridSize, width, height);
         
         for (let i = 0; i < gridSize; i++) {
@@ -119,8 +119,8 @@ class CameraRecommendationEngine {
   
   static calculateCameraCoverage(camera: any, gridSize: number, floorWidth: number, floorHeight: number) {
     const coverage = Array(gridSize).fill(null).map(() => Array(gridSize).fill(false));
-    const camX = (camera.position.x / floorWidth) * gridSize;
-    const camY = (camera.position.y / floorHeight) * gridSize;
+    const camX = (camera.coordinates.x / floorWidth) * gridSize;
+    const camY = (camera.coordinates.y / floorHeight) * gridSize;
     const maxDistance = (camera.viewDistance / Math.max(floorWidth, floorHeight)) * gridSize;
     const halfAngle = (camera.viewAngle || 60) / 2;
     const rotation = camera.rotation || 0;
@@ -149,10 +149,10 @@ class CameraRecommendationEngine {
     let maxCoverage = 0;
     
     for (const camera of cameras) {
-      if (camera.position) {
+      if (camera.coordinates) {
         const distance = Math.sqrt(
-          (camera.position.x - zoneCenter.x) ** 2 + 
-          (camera.position.y - zoneCenter.y) ** 2
+          (camera.coordinates.x - zoneCenter.x) ** 2 + 
+          (camera.coordinates.y - zoneCenter.y) ** 2
         );
         
         const coverage = Math.max(0, 1 - (distance / (camera.viewDistance || 10)));
@@ -215,15 +215,15 @@ class CameraRecommendationEngine {
     // Distance to zone center (closer is better)
     const zoneCenter = this.getZoneCenter(zone.coordinates);
     const distanceToZone = Math.sqrt(
-      (position.x - zoneCenter.x) ** 2 + (position.y - zoneCenter.y) ** 2
+      (coordinates.x - zoneCenter.x) ** 2 + (coordinates.y - zoneCenter.y) ** 2
     );
     score += Math.max(0, 200 - distanceToZone);
     
     // Distance to existing cameras (farther is better to avoid overlap)
     for (const camera of existingCameras) {
-      if (camera.position) {
+      if (camera.coordinates) {
         const distance = Math.sqrt(
-          (position.x - camera.position.x) ** 2 + (position.y - camera.position.y) ** 2
+          (coordinates.x - camera.coordinates.x) ** 2 + (coordinates.y - camera.coordinates.y) ** 2
         );
         score += Math.min(100, distance);
       }
@@ -297,11 +297,11 @@ class CameraRecommendationEngine {
     const zoneRadius = 150; // Assume 150 unit radius for zone coverage
     
     return cameras.filter(camera => {
-      if (!camera.position) return false;
+      if (!camera.coordinates) return false;
       
       const distance = Math.sqrt(
-        (camera.position.x - zoneCenter.x) ** 2 + 
-        (camera.position.y - zoneCenter.y) ** 2
+        (camera.coordinates.x - zoneCenter.x) ** 2 + 
+        (camera.coordinates.y - zoneCenter.y) ** 2
       );
       
       return distance <= zoneRadius;
@@ -312,8 +312,8 @@ class CameraRecommendationEngine {
     const zoneCenter = this.getZoneCenter(zone.coordinates);
     
     // Position the redundant camera opposite to the primary camera relative to zone center
-    const dx = primaryCamera.position.x - zoneCenter.x;
-    const dy = primaryCamera.position.y - zoneCenter.y;
+    const dx = primaryCamera.coordinates.x - zoneCenter.x;
+    const dy = primaryCamera.coordinates.y - zoneCenter.y;
     
     const redundantX = Math.max(50, Math.min(floorWidth - 50, zoneCenter.x - dx));
     const redundantY = Math.max(50, Math.min(floorHeight - 50, zoneCenter.y - dy));
@@ -333,8 +333,8 @@ class CameraRecommendationEngine {
     // Add coverage arc points
     for (let i = 0; i <= 8; i++) {
       const angle = (startAngle + (i * angleStep)) * (Math.PI / 180);
-      const x = position.x + Math.cos(angle) * viewDistance;
-      const y = position.y + Math.sin(angle) * viewDistance;
+      const x = coordinates.x + Math.cos(angle) * viewDistance;
+      const y = coordinates.y + Math.sin(angle) * viewDistance;
       points.push({ x, y });
     }
     
@@ -469,7 +469,7 @@ export async function POST(request: NextRequest) {
       floorPlanId: floorPlan?.id,
       floorPlanName: floorPlan?.name,
       zonesCount: floorPlan?.zones?.length || 0,
-      dimensions: floorPlan?.dimensions
+      dimensions: { width: floorPlan?.width, height: floorPlan?.height }
     });
 
     if (!floorPlan) {
@@ -487,7 +487,7 @@ export async function POST(request: NextRequest) {
     
     console.log('📹 Existing cameras query result:', {
       camerasCount: existingCameras.length,
-      cameras: existingCameras.map(c => ({ id: c.id, name: c.name, position: c.position }))
+      cameras: existingCameras.map(c => ({ id: c.id, name: c.name, coordinates: c.coordinates }))
     });
 
     // Clear existing recommendations if regenerating
@@ -500,7 +500,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('🤖 Generating recommendations with data:', {
-      floorPlanDimensions: floorPlan.dimensions,
+      floorPlanDimensions: { width: floorPlan.width, height: floorPlan.height },
       zonesCount: floorPlan.zones.length,
       existingCamerasCount: existingCameras.length
     });
@@ -529,7 +529,7 @@ export async function POST(request: NextRequest) {
         return prisma.cameraRecommendation.create({
           data: {
             venueId,
-            floorPlanId,
+
             recommendationType: rec.recommendationType as any,
             suggestedPosition: rec.suggestedPosition,
             reasoning: rec.reasoning,

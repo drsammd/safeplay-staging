@@ -188,8 +188,8 @@ export async function PATCH(
         const permissionSet = invitation.permissionSet as any || {}
         familyMember = await prisma.familyMember.create({
           data: {
-            familyOwnerId: invitation.inviterUserId,
-            memberUserId: acceptedByUserId,
+            familyId: invitation.inviterUserId,
+            memberId: acceptedByUserId,
             familyRole: invitation.familyRole,
             displayName: invitation.inviteeName,
             invitationId: invitation.id,
@@ -236,7 +236,7 @@ export async function PATCH(
         // Log the activity
         await prisma.familyActivityLog.create({
           data: {
-            familyOwnerId: invitation.inviterUserId,
+            familyId: invitation.inviterUserId,
             actorId: acceptedByUserId,
             actionType: 'ACCEPT_INVITATION',
             resourceType: 'INVITATION',
@@ -274,7 +274,7 @@ export async function PATCH(
         // Log the activity
         await prisma.familyActivityLog.create({
           data: {
-            familyOwnerId: invitation.inviterUserId,
+            familyId: invitation.inviterUserId,
             actorId: session.user.id,
             actionType: 'DECLINE_INVITATION',
             resourceType: 'INVITATION',
@@ -309,7 +309,7 @@ export async function PATCH(
         // Log the activity
         await prisma.familyActivityLog.create({
           data: {
-            familyOwnerId: invitation.inviterUserId,
+            familyId: invitation.inviterUserId,
             actorId: session.user.id,
             actionType: 'REVOKE_INVITATION',
             resourceType: 'INVITATION',

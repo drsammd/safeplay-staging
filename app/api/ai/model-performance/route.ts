@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
 
     const where: any = {};
     if (venueId) where.venueId = venueId;
-    if (modelType) where.modelType = modelType;
+    if (modelType) where.performanceType = modelType;
 
     const modelPerformance = await prisma.aIModelPerformance.findMany({
       where,
-      orderBy: { evaluationDate: 'desc' },
+      orderBy: { timestamp: 'desc' },
       take: limit,
       include: {
         venue: {
@@ -86,29 +86,35 @@ export async function POST(request: NextRequest) {
       data: {
         modelName,
         modelVersion,
-        modelType: modelType as any,
+        performanceType: modelType as any,
         venueId,
+        metrics: {
+          accuracy: accuracy || 0,
+          precision: precision || 0,
+          recall: recall || 0,
+          f1Score: f1Score || 0,
+          resourceUsage: resourceUsage || {},
+          falsePositiveRate: falsePositiveRate || 0,
+          falseNegativeRate: falseNegativeRate || 0,
+          confidenceDistribution: {},
+          calibrationScore: performanceMetrics.calibrationScore,
+          driftDetection: performanceMetrics.driftDetected,
+          driftScore: performanceMetrics.driftScore,
+          performanceTrend: {},
+          comparisonBaseline: {},
+          businessImpact: {},
+          needsRetraining: performanceMetrics.needsRetraining,
+          recommendations: performanceMetrics.recommendations,
+          evaluatedBy: session.user?.email,
+          notes,
+        },
         accuracy: accuracy || 0,
         precision: precision || 0,
         recall: recall || 0,
         f1Score: f1Score || 0,
         processingTime: processingTime || 0,
         throughput: throughput || 0,
-        resourceUsage: resourceUsage || {},
         errorRate: errorRate || 0,
-        falsePositiveRate: falsePositiveRate || 0,
-        falseNegativeRate: falseNegativeRate || 0,
-        confidenceDistribution: {},
-        calibrationScore: performanceMetrics.calibrationScore,
-        driftDetection: performanceMetrics.driftDetected,
-        driftScore: performanceMetrics.driftScore,
-        performanceTrend: {},
-        comparisonBaseline: {},
-        businessImpact: {},
-        needsRetraining: performanceMetrics.needsRetraining,
-        recommendations: performanceMetrics.recommendations,
-        evaluatedBy: session.user?.email,
-        notes,
       },
     });
 

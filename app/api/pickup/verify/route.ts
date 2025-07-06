@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
         // Create biometric verification record
         const biometricVerification = await prisma.biometricVerification.create({
           data: {
-            personType: 'AUTHORIZED_PERSON',
+            
             personId: authorizationId,
             verificationType: 'FACE_RECOGNITION',
             capturedBiometric: biometricData,

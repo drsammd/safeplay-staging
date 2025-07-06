@@ -124,7 +124,7 @@ async function handlePaymentSucceeded(invoice: any) {
           stripeChargeId: invoice.charge,
           billingPeriodStart: invoice.period_start ? new Date(invoice.period_start * 1000) : null,
           billingPeriodEnd: invoice.period_end ? new Date(invoice.period_end * 1000) : null,
-          metadata: invoice,
+          
         }
       });
     }
@@ -156,7 +156,7 @@ async function handlePaymentFailed(invoice: any) {
           currency: invoice.currency.toUpperCase(),
           description: `Failed subscription payment - ${invoice.period_start ? new Date(invoice.period_start * 1000).toDateString() : 'N/A'}`,
           failureReason: invoice.last_finalization_error?.message || 'Payment failed',
-          metadata: invoice,
+          
         }
       });
     }
@@ -235,7 +235,7 @@ async function logBillingEvent(event: any) {
           stripeEventType: event.type,
           stripeObjectId: event.data.object.id,
           processedAt: new Date(),
-          metadata: event.data.object,
+          
         }
       });
     }

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        }
+        } as any
       },
       include: { venue: true }
     });
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
       where: {
         cameraId: data.cameraId,
         date: new Date(data.date)
-      }
+      } as any
     });
 
     // Calculate derived metrics
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
           criticalEvents: data.criticalEvents || 0,
           responseTime: data.responseTime || 0,
           updatedAt: new Date()
-        }
+        } as any
       });
     } else {
       // Create new record
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
           criticalEvents: data.criticalEvents || 0,
           responseTime: data.responseTime || 0,
           metadata: data.metadata
-        }
+        } as any
       });
     }
 
@@ -163,8 +163,8 @@ export async function POST(request: NextRequest) {
           errorCount: data.errorCount || 0,
           detectionCount: data.detectionCount || 0
         },
-        tags: ['camera', 'performance', 'monitoring']
-      }
+        
+      } as any
     });
 
     return NextResponse.json(performance);
@@ -208,12 +208,12 @@ export async function GET(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        }
+        } as any
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      }
+      } as any
 
       where.venueId = venueId;
     } else if (session.user.role !== 'SUPER_ADMIN') {

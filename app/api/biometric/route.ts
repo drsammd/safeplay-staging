@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { BiometricPersonType, BiometricVerificationType, BiometricResult } from '@prisma/client';
+import { IdentityVerificationType } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const personId = searchParams.get('personId');
-    const personType = searchParams.get('personType') as BiometricPersonType | null;
-    const result = searchParams.get('result') as BiometricResult | null;
+    const personType = searchParams.get('personType');
+    const result = searchParams.get('result');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
@@ -38,31 +38,18 @@ export async function GET(request: NextRequest) {
     if (personType) where.personType = personType;
     if (result) where.verificationResult = result;
 
-    const biometricVerifications = await prisma.biometricVerification.findMany({
+    const biometricVerifications = await prisma.identityVerification.findMany({
       where,
       include: {
-        checkInEvent: {
+        user: {
           select: {
             id: true,
-            eventType: true,
-            timestamp: true,
-            child: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-        pickupEvent: {
-          select: {
-            id: true,
-            timestamp: true,
-            pickupPersonName: true,
-          },
+            name: true,
+            email: true
+          }
         },
       },
-      orderBy: { timestamp: 'desc' },
+      orderBy: { submittedAt: 'desc' },
       take: limit,
       skip: offset,
     });
@@ -72,7 +59,7 @@ export async function GET(request: NextRequest) {
       pagination: {
         limit,
         offset,
-        total: await prisma.biometricVerification.count({ where }),
+        total: await prisma.identityVerification.count({ where }),
       },
     });
   } catch (error) {
@@ -147,29 +134,27 @@ export async function POST(request: NextRequest) {
 
     const verificationResult = simulateVerification();
 
-    const biometricVerification = await prisma.biometricVerification.create({
+    const biometricVerification = await prisma.identityVerification.create({
       data: {
-        checkInEventId,
-        pickupEventId,
-        personType,
-        personId,
+        userId: personId,
         verificationType,
-        capturedBiometric,
-        matchConfidence: verificationResult.matchConfidence,
-        verificationResult: verificationResult.verificationResult as BiometricResult,
-        awsRekognitionResponse: verificationResult.awsRekognitionResponse,
-        processingTime: verificationResult.processingTime,
-        deviceInfo,
-        environmentalFactors,
-        qualityScore: verificationResult.qualityScore,
-        livenessDetected: verificationResult.livenessDetected,
-        spoofingDetected: verificationResult.spoofingDetected,
-        auditLog: {
-          action: 'biometric_verification_completed',
-          timestamp: new Date(),
-          initiatedBy: session.user.id,
-          result: verificationResult.verificationResult,
-          confidence: verificationResult.matchConfidence,
+        status: verificationResult.verificationResult === 'MATCH' ? 'VERIFIED' : 'FAILED',
+        verificationScore: verificationResult.matchConfidence,
+        metadata: {
+          awsRekognitionResponse: verificationResult.awsRekognitionResponse,
+          processingTime: verificationResult.processingTime,
+          deviceInfo,
+          environmentalFactors,
+          qualityScore: verificationResult.qualityScore,
+          livenessDetected: verificationResult.livenessDetected,
+          spoofingDetected: verificationResult.spoofingDetected,
+          auditLog: {
+            action: 'biometric_verification_completed',
+            timestamp: new Date(),
+            initiatedBy: session.user.id,
+            result: verificationResult.verificationResult,
+            confidence: verificationResult.matchConfidence,
+          },
         },
       },
     });
@@ -179,7 +164,6 @@ export async function POST(request: NextRequest) {
       await prisma.checkInOutEvent.update({
         where: { id: checkInEventId },
         data: {
-          verifiedAt: new Date(),
           verifiedBy: session.user.id,
         },
       });
@@ -189,12 +173,9 @@ export async function POST(request: NextRequest) {
       success: true,
       biometricVerification: {
         id: biometricVerification.id,
-        verificationResult: biometricVerification.verificationResult,
-        matchConfidence: biometricVerification.matchConfidence,
-        qualityScore: biometricVerification.qualityScore,
-        processingTime: biometricVerification.processingTime,
-        livenessDetected: biometricVerification.livenessDetected,
-        spoofingDetected: biometricVerification.spoofingDetected,
+        verificationScore: biometricVerification.verificationScore,
+        status: biometricVerification.status,
+        
       },
       message: 'Biometric verification completed',
     });

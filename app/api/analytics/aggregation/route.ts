@@ -41,12 +41,12 @@ export async function POST(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        }
+        } as any
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      }
+      } as any
     }
 
     const startDate = new Date(data.startDate);
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...whereClause,
           timestamp: dateFilter
-        }
+        } as any
       }),
 
       // Incident count
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...whereClause,
           incidentOccurredAt: dateFilter
-        }
+        } as any
       }),
 
       // Alert count
@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
         where: {
           ...whereClause,
           createdAt: dateFilter
-        }
+        } as any
       }),
 
       // Average camera uptime
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
         },
         _avg: {
           uptimePercentage: true
-        }
+        } as any
       }),
 
       // Average parent engagement
@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
         },
         _avg: {
           engagementScore: true
-        }
+        } as any
       }),
 
       // Traffic summary
@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
         _avg: {
           peakOccupancy: true,
           capacityUtilization: true
-        }
+        } as any
       }),
 
       // Recent high-severity incidents
@@ -205,7 +205,7 @@ export async function GET(request: NextRequest) {
           incidentOccurredAt: dateFilter,
           severity: {
             in: ['HIGH', 'CRITICAL', 'CATASTROPHIC']
-          }
+          } as any
         },
         select: {
           id: true,

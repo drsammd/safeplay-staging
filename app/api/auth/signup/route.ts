@@ -84,17 +84,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         userId: newUser.id,
         agreementType: "TERMS_OF_SERVICE",
         version: agreementVersion,
-        agreed: true,
         agreedAt: currentTime,
         ipAddress,
         userAgent,
-        documentUrl: "/terms",
-        parentConsent: role === "PARENT", // Parent accounts are providing consent
-        metadata: {
-          registrationFlow: true,
-          accountCreation: true,
-          timestamp: currentTime.toISOString(),
-        }
+        content: "Terms of Service Agreement"
       },
     });
 
@@ -104,19 +97,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         userId: newUser.id,
         agreementType: "PRIVACY_POLICY",
         version: agreementVersion,
-        agreed: true,
         agreedAt: currentTime,
         ipAddress,
         userAgent,
-        documentUrl: "/privacy",
-        parentConsent: role === "PARENT",
-        metadata: {
-          registrationFlow: true,
-          accountCreation: true,
-          timestamp: currentTime.toISOString(),
-          coppaCompliance: true,
-          gdprCompliance: true,
-        }
+        content: "Privacy Policy Agreement"
       },
     });
 
@@ -125,19 +109,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       await tx.legalAgreement.create({
         data: {
           userId: newUser.id,
-          agreementType: "COPPA_CONSENT",
+          agreementType: "PARENTAL_CONSENT",
           version: agreementVersion,
-          agreed: true,
           agreedAt: currentTime,
           ipAddress,
           userAgent,
-          parentConsent: true,
-          metadata: {
-            registrationFlow: true,
-            accountCreation: true,
-            timestamp: currentTime.toISOString(),
-            childrenUnder13: true,
-          }
+          content: "Parental Consent Agreement"
         },
       });
 
@@ -145,20 +122,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       await tx.legalAgreement.create({
         data: {
           userId: newUser.id,
-          agreementType: "BIOMETRIC_CONSENT",
+          agreementType: "DATA_PROCESSING_AGREEMENT",
           version: agreementVersion,
-          agreed: true,
           agreedAt: currentTime,
           ipAddress,
           userAgent,
-          parentConsent: true,
-          metadata: {
-            registrationFlow: true,
-            accountCreation: true,
-            timestamp: currentTime.toISOString(),
-            facialRecognition: true,
-            biometricData: true,
-          }
+          content: "Data Processing Agreement - Registration Flow with Biometric Data Processing",
         },
       });
     }

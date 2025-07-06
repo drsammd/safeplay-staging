@@ -263,7 +263,7 @@ export async function POST(request: NextRequest) {
           confidence: 1.0,
           entryTime: new Date(),
           metadata: {
-            checkInEventId: event.id,
+            
             method
           }
         }

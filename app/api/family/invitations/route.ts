@@ -166,8 +166,8 @@ export async function POST(request: NextRequest) {
     // Check if this person is already a family member
     const existingMember = await prisma.familyMember.findFirst({
       where: {
-        familyOwnerId: session.user.id,
-        memberUser: {
+        familyId: session.user.id,
+        member: {
           email: data.inviteeEmail
         }
       }

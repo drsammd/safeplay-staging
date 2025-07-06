@@ -207,7 +207,7 @@ export async function POST(request: NextRequest) {
         lastSeenLocation: data.lastSeenLocation,
         lastSeenTime: data.lastSeenTime ? new Date(data.lastSeenTime) : null,
         autoResolveAt: data.autoResolveAt ? new Date(data.autoResolveAt) : null,
-        metadata: data.metadata,
+        
       },
       include: {
         child: {

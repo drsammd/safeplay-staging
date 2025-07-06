@@ -84,18 +84,19 @@ export async function POST(request: NextRequest) {
     const enrollmentRecords = await Promise.all(
       enrollmentResult.enrollmentResults.map(async (result, index) => {
         if (result.success) {
-          return await prisma.biometricVerification.create({
+          return await prisma.identityVerification.create({
             data: {
-              personType,
-              personId,
+              userId: personId,
               verificationType,
-              capturedBiometric: biometricImages[index],
-              storedBiometric: `stored_${result.faceId}`,
-              verificationResult: 'MATCH', // Enrollment is successful
-              matchConfidence: result.quality,
-              qualityScore: result.quality,
-              processingTime: 1000 + Math.floor(Math.random() * 1000),
-              awsRekognitionResponse: {
+              status: 'VERIFIED',
+              metadata: {
+                capturedBiometric: biometricImages[index],
+                storedBiometric: `stored_${result.faceId}`,
+                enrollmentResult: 'MATCH',
+                matchConfidence: result.quality,
+                qualityScore: result.quality,
+                processingTime: 1000 + Math.floor(Math.random() * 1000),
+                awsRekognitionResponse: {
                 Face: {
                   FaceId: result.faceId,
                   BoundingBox: result.boundingBox,
@@ -104,13 +105,14 @@ export async function POST(request: NextRequest) {
                 },
                 FaceModelVersion: "6.0",
                 UnindexedFaces: [],
-              },
-              auditLog: {
-                action: 'biometric_enrollment',
-                timestamp: new Date(),
-                initiatedBy: session.user.id,
-                imageIndex: index,
-                success: result.success,
+                },
+                auditLog: {
+                  action: 'biometric_enrollment',
+                  timestamp: new Date(),
+                  initiatedBy: session.user.id,
+                  imageIndex: index,
+                  success: result.success,
+                },
               },
             },
           });

@@ -37,7 +37,7 @@ const analyticsEventSchema = z.object({
   sessionId: z.string().optional(),
   deviceId: z.string().optional(),
   location: z.any().optional(),
-  metadata: z.any().optional(),
+  
   tags: z.array(z.string()).optional(),
   timestamp: z.string().datetime().optional()
 });
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
           { adminId: session.user.id },
           session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
         ]
-      }
+      } as any
     });
 
     if (!venue) {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
         tags: data.tags || [],
         processedAt: new Date()
-      }
+      } as any
     });
 
     return NextResponse.json(event);
@@ -116,12 +116,12 @@ export async function GET(request: NextRequest) {
             { adminId: session.user.id },
             session.user.role === 'SUPER_ADMIN' ? {} : { id: 'never' }
           ]
-        }
+        } as any
       });
 
       if (!venue) {
         return NextResponse.json({ error: 'Venue not found or access denied' }, { status: 404 });
-      }
+      } as any
 
       where.venueId = venueId;
     } else if (session.user.role !== 'SUPER_ADMIN') {
