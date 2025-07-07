@@ -96,7 +96,7 @@ export default function FamilyManagementPage() {
   }
 
   const handleRemoveMember = async (member: FamilyMember) => {
-    if (!confirm(`Are you sure you want to remove ${member.displayName || member.memberUser.name} from your family?`)) {
+    if (!confirm(`Are you sure you want to remove ${member.displayName || member.member?.name} from your family?`)) {
       return
     }
 
@@ -108,7 +108,7 @@ export default function FamilyManagementPage() {
       if (response.ok) {
         toast({
           title: "Member Removed",
-          description: `${member.displayName || member.memberUser.name} has been removed from your family`,
+          description: `${member.displayName || member.member?.name} has been removed from your family`,
         })
         fetchFamilyMembers()
       } else {

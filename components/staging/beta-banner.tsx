@@ -2,18 +2,21 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
 import { AlertTriangle, X, Shield, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 export function BetaBanner() {
   const [isVisible, setIsVisible] = useState(true);
+  const pathname = usePathname();
 
-  if (!isVisible) return null;
+  // Hide banner completely on staging-auth page
+  if (pathname === '/staging-auth') return null;
 
   return (
     <div 
-      className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200" 
+      className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 transition-all duration-300 ease-in-out" 
       style={{ 
         position: 'fixed', 
         top: 0, 
@@ -22,7 +25,9 @@ export function BetaBanner() {
         width: '100vw',
         zIndex: 9999,
         margin: 0,
-        padding: 0
+        padding: 0,
+        height: isVisible ? '60px' : '0px',
+        overflow: 'hidden'
       }}
     >
       <div className="w-full px-4 py-3" style={{ margin: 0, maxWidth: 'none' }}>

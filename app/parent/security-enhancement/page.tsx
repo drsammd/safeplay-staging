@@ -124,7 +124,7 @@ export default function SecurityEnhancementPage() {
 
         {/* Error Display */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center">
+          <div className="mb-6 bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-center">
             <AlertCircle className="h-5 w-5 mr-2" />
             {error}
           </div>
