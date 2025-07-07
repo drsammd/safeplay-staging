@@ -4,8 +4,10 @@
 import { useEffect, useState } from "react";
 import { Users, Clock, Camera, AlertTriangle, Activity, TrendingUp, Monitor, Play, Eye } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function VenueAdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     childrenInVenue: 23,
     averageStayTime: 125,
@@ -26,6 +28,27 @@ export default function VenueAdminDashboard() {
     { id: 1, type: "SAFETY", child: "Sofia Martinez", message: "Child near unsupervised exit", severity: 3, time: "8 minutes ago" },
     { id: 2, type: "EXIT", child: "Noah Wilson", message: "Child detected at main entrance", severity: 2, time: "15 minutes ago" },
   ]);
+
+  // Button click handlers
+  const handleLiveTracking = () => {
+    router.push('/venue-admin/tracking');
+  };
+
+  const handleViewCameras = () => {
+    router.push('/venue-admin/cameras');
+  };
+
+  const handleStaffStatus = () => {
+    router.push('/venue-admin/staff');
+  };
+
+  const handleEmergency = () => {
+    router.push('/venue-admin/emergency');
+  };
+
+  const handleResolveAlert = (alertId: number) => {
+    setActiveAlerts(prev => prev.filter(alert => alert.id !== alertId));
+  };
 
   return (
     <div className="space-y-6">
@@ -215,7 +238,10 @@ export default function VenueAdminDashboard() {
                   }`}>
                     Level {alert.severity}
                   </span>
-                  <button className="btn-accent text-sm px-3 py-1">
+                  <button 
+                    onClick={() => handleResolveAlert(alert.id)}
+                    className="btn-accent text-sm px-3 py-1"
+                  >
                     Resolve
                   </button>
                 </div>
@@ -272,19 +298,31 @@ export default function VenueAdminDashboard() {
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-4">
-            <button className="btn-primary p-4 h-auto flex flex-col items-center space-y-2">
+            <button 
+              onClick={handleLiveTracking}
+              className="btn-primary p-4 h-auto flex flex-col items-center space-y-2 hover:bg-blue-700 transition-colors"
+            >
               <Activity className="h-6 w-6" />
               <span className="text-sm">Live Tracking</span>
             </button>
-            <button className="btn-secondary p-4 h-auto flex flex-col items-center space-y-2">
+            <button 
+              onClick={handleViewCameras}
+              className="btn-secondary p-4 h-auto flex flex-col items-center space-y-2 hover:bg-gray-700 transition-colors"
+            >
               <Camera className="h-6 w-6" />
               <span className="text-sm">View Cameras</span>
             </button>
-            <button className="btn-primary p-4 h-auto flex flex-col items-center space-y-2">
+            <button 
+              onClick={handleStaffStatus}
+              className="btn-primary p-4 h-auto flex flex-col items-center space-y-2 hover:bg-blue-700 transition-colors"
+            >
               <Users className="h-6 w-6" />
               <span className="text-sm">Staff Status</span>
             </button>
-            <button className="btn-secondary p-4 h-auto flex flex-col items-center space-y-2">
+            <button 
+              onClick={handleEmergency}
+              className="btn-secondary p-4 h-auto flex flex-col items-center space-y-2 hover:bg-red-700 transition-colors"
+            >
               <AlertTriangle className="h-6 w-6" />
               <span className="text-sm">Emergency</span>
             </button>

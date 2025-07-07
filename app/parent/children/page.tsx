@@ -215,7 +215,11 @@ export default function ChildrenPage() {
           </p>
         </div>
         <button 
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setFormData({ firstName: "", lastName: "", dateOfBirth: "", profilePhoto: "" });
+            setError(null);
+            setShowAddModal(true);
+          }}
           className="btn-primary flex items-center space-x-2"
         >
           <Plus className="h-5 w-5" />
@@ -360,7 +364,11 @@ export default function ChildrenPage() {
 
         {/* Add Child Card */}
         <div 
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            setFormData({ firstName: "", lastName: "", dateOfBirth: "", profilePhoto: "" });
+            setError(null);
+            setShowAddModal(true);
+          }}
           className="card border-2 border-dashed border-gray-300 hover:border-blue-500 cursor-pointer transition-colors"
         >
           <div className="text-center py-8">
@@ -497,14 +505,43 @@ export default function ChildrenPage() {
                   <button 
                     type="button"
                     className="flex-1 btn-primary"
-                    onClick={() => {
-                      // In a real app, this would update the child
-                      console.log('Updating child:', formData);
-                      setShowEditModal(false);
-                      setSelectedChild(null);
+                    disabled={isSubmitting}
+                    onClick={async () => {
+                      setIsSubmitting(true);
+                      setError(null);
+                      
+                      try {
+                        const response = await fetch(`/api/children/${selectedChild.id}`, {
+                          method: 'PUT',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            firstName: formData.firstName,
+                            lastName: formData.lastName,
+                            dateOfBirth: formData.dateOfBirth,
+                            profilePhoto: formData.profilePhoto
+                          }),
+                        });
+
+                        if (response.ok) {
+                          await fetchChildren(); // Refresh the list
+                          setShowEditModal(false);
+                          setSelectedChild(null);
+                          setFormData({ firstName: "", lastName: "", dateOfBirth: "", profilePhoto: "" });
+                        } else {
+                          const errorData = await response.json();
+                          setError(errorData.error || 'Failed to update child');
+                        }
+                      } catch (error) {
+                        console.error('Error updating child:', error);
+                        setError('Failed to update child. Please try again.');
+                      } finally {
+                        setIsSubmitting(false);
+                      }
                     }}
                   >
-                    Save Changes
+                    {isSubmitting ? 'Saving...' : 'Save Changes'}
                   </button>
                   <button 
                     type="button"

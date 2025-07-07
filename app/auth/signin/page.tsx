@@ -52,34 +52,54 @@ export default function SignInPage() {
     setError("");
 
     try {
-      // First, attempt to sign in with credentials
-      const result = await signIn("credentials", {
-        email: formData.email,
-        password: formData.password,
-        redirect: false,
+      // Check if user requires 2FA first without signing in
+      const checkResponse = await fetch('/api/auth/check-2fa', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
       });
 
-      if (result?.error) {
-        if (result.error === '2FA_REQUIRED') {
-          // User has 2FA enabled, need to proceed to 2FA step
-          setUserRequires2FA(true);
-          setStep('two-factor');
-          // Send SMS 2FA code automatically if user has SMS 2FA
-          await sendSMS2FACode();
-        } else {
+      const checkData = await checkResponse.json();
+
+      if (!checkData.success) {
+        setError(checkData.error || 'Invalid email or password');
+        return;
+      }
+
+      if (checkData.requires2FA) {
+        // User has 2FA enabled, need to proceed to 2FA step
+        setUserRequires2FA(true);
+        setUserId(checkData.userId);
+        setStep('two-factor');
+        // Send SMS 2FA code automatically if user has SMS 2FA
+        await sendSMS2FACode();
+      } else {
+        // User doesn't have 2FA, proceed with normal sign in
+        const result = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (result?.error) {
           setError(result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error);
-        }
-      } else if (result?.ok) {
-        // Successful login without 2FA
-        const session = await getSession();
-        
-        // Redirect based on user role
-        if (session?.user?.role === 'SUPER_ADMIN') {
-          router.push('/admin');
-        } else if (session?.user?.role === 'VENUE_ADMIN') {
-          router.push('/venue-admin');
-        } else {
-          router.push('/parent');
+        } else if (result?.ok) {
+          // Successful login without 2FA
+          const session = await getSession();
+          
+          // Redirect based on user role
+          if (session?.user?.role === 'SUPER_ADMIN') {
+            router.push('/admin');
+          } else if (session?.user?.role === 'VENUE_ADMIN') {
+            router.push('/venue-admin');
+          } else {
+            router.push('/parent');
+          }
         }
       }
     } catch (error) {
@@ -137,7 +157,7 @@ export default function SignInPage() {
         const result = await signIn("credentials", {
           email: formData.email,
           password: formData.password,
-          twoFactorVerified: true,
+          twoFactorVerified: 'true',
           redirect: false,
         });
 

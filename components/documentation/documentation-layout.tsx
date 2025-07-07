@@ -42,12 +42,6 @@ export default function DocumentationLayout({ children, title, description }: Do
       current: pathname === "/docs"
     },
     {
-      name: "Company Admin Manual",
-      href: "/docs/company-admin",
-      icon: Shield,
-      current: pathname.startsWith("/docs/company-admin")
-    },
-    {
       name: "Venue Admin Manual", 
       href: "/docs/venue-admin",
       icon: Building,

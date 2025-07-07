@@ -34,6 +34,7 @@ export default function FamilyManagementPage() {
   const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null)
   const [currentView, setCurrentView] = useState<'dashboard' | 'permissions' | 'child-access'>('dashboard')
   const [isLoading, setIsLoading] = useState(true)
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false)
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -182,9 +183,18 @@ export default function FamilyManagementPage() {
     <div className="container mx-auto py-6">
       {/* Page Header */}
       <div className="mb-8">
-        <div className="flex items-center space-x-3 mb-2">
-          <Users className="h-8 w-8 text-blue-600" />
-          <h1 className="text-3xl font-bold text-gray-900">Family Management</h1>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center space-x-3">
+            <Users className="h-8 w-8 text-blue-600" />
+            <h1 className="text-3xl font-bold text-gray-900">Family Management</h1>
+          </div>
+          <Button 
+            onClick={() => setShowAddMemberModal(true)}
+            className="flex items-center space-x-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Add Family Member</span>
+          </Button>
         </div>
         <p className="text-gray-600">
           Manage your family members, their permissions, and access to your children's information.
@@ -273,6 +283,67 @@ export default function FamilyManagementPage() {
           <FamilyActivityLog />
         </TabsContent>
       </Tabs>
+
+      {/* Add Family Member Modal */}
+      {showAddMemberModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Add Family Member</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Name</label>
+                  <input
+                    type="text"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter family member's name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Relationship</label>
+                  <select className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Select relationship</option>
+                    <option value="FATHER">Father</option>
+                    <option value="MOTHER">Mother</option>
+                    <option value="UNCLE">Uncle</option>
+                    <option value="AUNT">Aunt</option>
+                    <option value="GRANDPARENT">Grandparent</option>
+                    <option value="CAREGIVER">Caregiver</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div className="flex space-x-3 pt-4">
+                  <Button 
+                    onClick={() => {
+                      // Handle add member logic here
+                      console.log('Adding family member...');
+                      setShowAddMemberModal(false);
+                    }}
+                    className="flex-1"
+                  >
+                    Send Invitation
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setShowAddMemberModal(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
