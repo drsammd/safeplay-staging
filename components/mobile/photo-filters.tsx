@@ -152,7 +152,7 @@ export function PhotoFilters({ filters, photos, onFiltersChange, onClose }: Phot
               <option value="">All Venues</option>
               {uniqueVenues.map(venue => (
                 <option key={venue.id} value={venue.id}>
-                  {venue.name}
+                  {venue?.name || 'Unknown Venue'}
                 </option>
               ))}
             </select>

@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
+import { AISettingsModal } from '../../../components/ai/ai-settings-modal';
+import { AIAnalyticsExport } from '../../../components/ai/ai-analytics-export';
 
 interface AIFeatureStatus {
   name: string;
@@ -58,6 +60,9 @@ export default function AIFeaturesPage() {
   const [recentInsights, setRecentInsights] = useState<RecentInsight[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [isConfiguring, setIsConfiguring] = useState(false);
+  const [showConfigDialog, setShowConfigDialog] = useState(false);
+  const [showAISettings, setShowAISettings] = useState(false);
 
   useEffect(() => {
     fetchAIData();
@@ -237,10 +242,20 @@ export default function AIFeaturesPage() {
             Advanced artificial intelligence for child safety and behavioral analysis
           </p>
         </div>
-        <Button>
-          <Settings className="h-4 w-4 mr-2" />
-          Configure AI Settings
-        </Button>
+        <div className="flex space-x-2">
+          <AIAnalyticsExport 
+            trigger={
+              <Button variant="outline">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Export Report
+              </Button>
+            }
+          />
+          <Button onClick={() => setShowAISettings(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            Configure AI Settings
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -472,6 +487,16 @@ export default function AIFeaturesPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* AI Settings Modal */}
+      <AISettingsModal 
+        open={showAISettings}
+        onOpenChange={setShowAISettings}
+        onSettingsUpdate={(settings) => {
+          console.log('AI settings updated:', settings);
+          toast.success('AI settings updated successfully');
+        }}
+      />
     </div>
   );
 }

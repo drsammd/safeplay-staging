@@ -43,23 +43,19 @@ async function seedFloorPlansAndCameras() {
       data: {
         name: 'Main Play Area Floor Plan',
         description: 'Primary floor plan showing the main play area, entrance, and safety zones',
-        fileUrl: '/backgrounds/venue_bg.png', // Using existing image as placeholder
-        fileType: 'PNG',
-        originalFileName: 'main_floor_plan.png',
-        fileSize: 1024000, // 1MB
-        dimensions: {
-          width: 1200,
-          height: 800,
-          scale: 0.01 // 1cm per pixel
-        },
-        metadata: {
-          uploadType: 'sample',
-          version: '1.0'
-        },
+        imageUrl: 'https://i.pinimg.com/736x/f3/ac/17/f3ac1781405fd89e7527ee0970ab5bd5.jpg', // Demo floor plan image
+        imageKey: 'floor-plans/demo-main-area.png',
+        width: 1200,
+        height: 800,
+        scale: 0.01, // 1cm per pixel
         version: 1,
         isActive: true,
         venueId: venue.id,
-        uploadedBy: venueAdmin.id
+        uploadedBy: venueAdmin.id,
+        metadata: {
+          uploadType: 'sample',
+          version: '1.0'
+        }
       }
     });
 
@@ -137,30 +133,21 @@ async function seedFloorPlansAndCameras() {
       prisma.camera.create({
         data: {
           name: 'Entrance Camera 1',
+          type: 'DOME',
+          brand: 'SafeCam',
           model: 'SafeCam Pro 4K',
           serialNumber: 'SC-ENT-001',
           ipAddress: '192.168.1.101',
           streamUrl: 'rtsp://192.168.1.101:554/stream1',
           status: 'ONLINE',
-          position: { x: 200, y: 80 },
-          viewAngle: 90,
-          viewDistance: 15,
-          rotation: 45,
-          height: 3.0,
-          isRecordingEnabled: true,
-          isRecognitionEnabled: true,
-          recognitionThreshold: 0.90,
-          specifications: {
-            resolution: '4K',
-            fps: 30,
-            nightVision: true,
-            weatherProof: true
-          },
-          configuration: {
-            motionDetection: true,
-            audioRecording: false,
-            alertsEnabled: true
-          },
+          coordinates: { x: 200, y: 80 },
+          orientation: 45,
+          resolution: '4K',
+          frameRate: 30,
+          fieldOfView: 90,
+          nightVision: true,
+          motionDetection: true,
+          isActive: true,
           venueId: venue.id,
           floorPlanId: floorPlan.id,
           lastPing: new Date()
