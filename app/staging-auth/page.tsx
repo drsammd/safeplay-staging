@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Lock } from "lucide-react";
 
 export default function StagingAuthPage() {
   const [password, setPassword] = useState("");
@@ -111,14 +112,10 @@ export default function StagingAuthPage() {
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <img 
-                src="/family-logo.png" 
-                alt="mySafePlay Family Logo" 
-                style={{
-                  width: '32px',
-                  height: '32px',
-                  objectFit: 'contain'
-                }}
+              <Lock 
+                size={32}
+                color="#3b82f6"
+                aria-label="Secure Access"
               />
             </div>
             <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937', marginBottom: '0.5rem' }}>
