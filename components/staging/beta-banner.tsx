@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { AlertTriangle, X, Shield, Info } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +10,26 @@ import { Button } from "@/components/ui/button";
 export function BetaBanner() {
   const [isVisible, setIsVisible] = useState(true);
   const pathname = usePathname();
+
+  // Update document class when banner visibility changes
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (isVisible) {
+        document.documentElement.classList.add('beta-banner-visible');
+        document.documentElement.classList.remove('beta-banner-hidden');
+      } else {
+        document.documentElement.classList.remove('beta-banner-visible');
+        document.documentElement.classList.add('beta-banner-hidden');
+      }
+    }
+  }, [isVisible]);
+
+  // Set initial class on mount
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('beta-banner-visible');
+    }
+  }, []);
 
   // Hide banner completely on staging-auth page
   if (pathname === '/staging-auth') return null;

@@ -114,20 +114,62 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: [
-        { emergencyContact: 'desc' },
-        { emergencyContactOrder: 'asc' },
-        { createdAt: 'asc' }
+        { status: 'desc' },
+        { joinedAt: 'asc' }
       ]
     })
 
+    // Transform data to match UI expectations
+    const transformMember = (member: any) => {
+      const permissions = member.permissions || []
+      const hasPermission = (type: string) => permissions.some((p: any) => p.permissionType === type)
+      const isEmergencyContact = hasPermission('EMERGENCY_CONTACT')
+      
+      return {
+        ...member,
+        // Map relationship to familyRole for UI compatibility
+        familyRole: member.relationship || 'OTHER',
+        // Add display name (use member name as fallback)
+        displayName: member.member?.name || member.member?.email?.split('@')[0],
+        // Calculate permission flags from permissions array
+        emergencyContact: isEmergencyContact,
+        emergencyContactOrder: isEmergencyContact ? 1 : null,
+        isBlocked: member.status === 'BLOCKED' || member.status === 'SUSPENDED',
+        canViewAllChildren: hasPermission('VIEW_ALL_CHILDREN') || hasPermission('FULL_ACCESS'),
+        canEditChildren: hasPermission('EDIT_CHILDREN') || hasPermission('FULL_ACCESS'),
+        canCheckInOut: hasPermission('CHECK_IN_OUT') || hasPermission('FULL_ACCESS'),
+        canViewPhotos: hasPermission('VIEW_PHOTOS') || hasPermission('FULL_ACCESS'),
+        canViewVideos: hasPermission('VIEW_VIDEOS') || hasPermission('FULL_ACCESS'),
+        canPurchaseMedia: hasPermission('PURCHASE_MEDIA') || hasPermission('FULL_ACCESS'),
+        canReceiveAlerts: hasPermission('RECEIVE_ALERTS') || isEmergencyContact,
+        canViewLocation: hasPermission('VIEW_LOCATION') || hasPermission('FULL_ACCESS'),
+        canViewReports: hasPermission('VIEW_REPORTS') || hasPermission('FULL_ACCESS'),
+        canManageFamily: hasPermission('MANAGE_FAMILY') || hasPermission('FULL_ACCESS'),
+        canMakePayments: hasPermission('MAKE_PAYMENTS') || hasPermission('FULL_ACCESS'),
+        // Set default access levels
+        photoAccess: hasPermission('FULL_ACCESS') ? 'FULL' : hasPermission('VIEW_PHOTOS') ? 'THUMBNAILS_ONLY' : 'NO_ACCESS',
+        videoAccess: hasPermission('FULL_ACCESS') ? 'FULL' : hasPermission('VIEW_VIDEOS') ? 'THUMBNAILS_ONLY' : 'NO_ACCESS',
+        alertTypes: isEmergencyContact ? ['EMERGENCY', 'SAFETY'] : [],
+        allowedVenues: [],
+        timeRestrictions: null,
+        notificationChannels: ['EMAIL'],
+        quietHoursStart: null,
+        quietHoursEnd: null,
+        notificationFrequency: isEmergencyContact ? 'REAL_TIME' : 'DAILY',
+        lastActiveAt: member.joinedAt, // Fallback since we don't track last active yet
+      }
+    }
+
+    const transformedMembers = familyMembers.map(transformMember)
+
     // Separate into families I own vs families I'm a member of
-    const ownedFamilies = familyMembers.filter(member => member.familyId === session.user.id)
-    const memberOfFamilies = familyMembers.filter(member => member.memberId === session.user.id)
+    const ownedFamilies = transformedMembers.filter(member => member.familyId === session.user.id)
+    const memberOfFamilies = transformedMembers.filter(member => member.memberId === session.user.id)
 
     return NextResponse.json({
       ownedFamilies,
       memberOfFamilies,
-      total: familyMembers.length
+      total: transformedMembers.length
     })
 
   } catch (error) {

@@ -14,8 +14,60 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
         twoFactorVerified: { label: "2FA Verified", type: "text" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         console.log("🔍 AUTHORIZE called with:", credentials?.email);
+
+        // Check for auto-signin token first (for stakeholder access)
+        if (!credentials?.email && !credentials?.password) {
+          try {
+            const { decode } = await import('next-auth/jwt');
+            const cookies = req.headers?.cookie;
+            
+            if (cookies) {
+              const autoSigninMatch = cookies.match(/auto-signin-token=([^;]+)/);
+              if (autoSigninMatch) {
+                const autoSigninToken = autoSigninMatch[1];
+                
+                const tokenData = await decode({
+                  token: autoSigninToken,
+                  secret: process.env.NEXTAUTH_SECRET!
+                });
+
+                if (tokenData?.autoSignin && tokenData?.userId && tokenData?.email) {
+                  // Check if token is not expired
+                  if (!tokenData.exp || tokenData.exp > Math.floor(Date.now() / 1000)) {
+                    console.log("✅ Auto-signin with stakeholder token for:", tokenData.email);
+                    
+                    // Fetch user from database
+                    const user = await prisma.user.findUnique({
+                      where: { id: tokenData.userId as string }
+                    });
+
+                    if (user) {
+                      console.log("✅ Auto-signin successful for:", user.email);
+                      return {
+                        id: user.id,
+                        email: user.email,
+                        name: user.name,
+                        role: user.role,
+                        phoneVerified: user.phoneVerified,
+                        identityVerified: user.identityVerified,
+                        twoFactorEnabled: user.twoFactorEnabled,
+                        verificationLevel: user.verificationLevel,
+                      };
+                    }
+                  } else {
+                    console.log("⏰ Auto-signin token expired");
+                  }
+                } else {
+                  console.log("❌ Invalid auto-signin token");
+                }
+              }
+            }
+          } catch (error) {
+            console.error("❌ Auto-signin error:", error);
+          }
+        }
 
         if (!credentials?.email || !credentials?.password) {
           console.log("❌ Missing credentials");
