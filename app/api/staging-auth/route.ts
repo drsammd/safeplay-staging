@@ -42,12 +42,19 @@ export async function POST(request: NextRequest) {
     // Auto-authenticate into demo account to eliminate double credential entry
     let demoUser;
     try {
-      demoUser = await prisma.user.findUnique({
-        where: { email: 'parent@mysafeplay.ai' }
+      // Try both demo accounts for better flexibility
+      demoUser = await prisma.user.findFirst({
+        where: { 
+          email: { 
+            in: ['parent@mysafeplay.ai', 'john@mysafeplay.ai'] 
+          }
+        }
       });
       
       if (!demoUser) {
-        console.log('⚠️ Demo user not found, will require manual login');
+        console.log('⚠️ No demo users found, will require manual login');
+      } else {
+        console.log('✅ Found demo user for auto-authentication:', demoUser.email);
       }
     } catch (error) {
       console.error('❌ Error fetching demo user:', error);
@@ -57,7 +64,8 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ 
       success: true, 
       autoAuthenticated: !!demoUser,
-      redirectTo: demoUser ? '/parent' : '/'
+      redirectTo: demoUser ? '/parent' : '/',
+      message: demoUser ? `Auto-authenticated as ${demoUser.name}` : 'Stakeholder access granted'
     });
     
     const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 24 hours
@@ -74,22 +82,25 @@ export async function POST(request: NextRequest) {
     // Auto-authenticate with NextAuth if demo user exists
     if (demoUser) {
       try {
+        const tokenPayload = {
+          sub: demoUser.id,
+          email: demoUser.email,
+          name: demoUser.name,
+          role: demoUser.role,
+          phoneVerified: demoUser.phoneVerified || false,
+          identityVerified: demoUser.identityVerified || false,
+          twoFactorEnabled: demoUser.twoFactorEnabled || false,
+          verificationLevel: demoUser.verificationLevel || 'UNVERIFIED',
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
+        };
+
         const jwt = await encode({
-          token: {
-            sub: demoUser.id,
-            email: demoUser.email,
-            name: demoUser.name,
-            role: demoUser.role,
-            phoneVerified: demoUser.phoneVerified,
-            identityVerified: demoUser.identityVerified,
-            twoFactorEnabled: demoUser.twoFactorEnabled,
-            verificationLevel: demoUser.verificationLevel,
-            iat: Math.floor(Date.now() / 1000),
-            exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
-          },
+          token: tokenPayload,
           secret: process.env.NEXTAUTH_SECRET!
         });
 
+        // Set NextAuth session token with proper configuration
         response.cookies.set('next-auth.session-token', jwt, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -98,9 +109,20 @@ export async function POST(request: NextRequest) {
           path: '/'
         });
 
+        // Also set legacy session token for compatibility
+        response.cookies.set('__Secure-next-auth.session-token', jwt, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          path: '/'
+        });
+
         console.log('✅ Auto-authenticated stakeholder into demo account:', demoUser.email);
+        console.log('✅ Session token set for auto-authentication');
       } catch (error) {
         console.error('❌ Error creating NextAuth session:', error);
+        // Continue without failing the stakeholder auth
       }
     }
 

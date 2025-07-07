@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { BetaBanner } from "@/components/staging/beta-banner";
+import { VersionTracker } from "@/components/version-tracker";
 import { NO_INDEX_META_TAGS } from "@/lib/security-headers";
 import Providers from "@/components/providers/session-provider";
 import "./globals.css";
@@ -37,6 +38,7 @@ export default function RootLayout({
         <meta httpEquiv="X-Robots-Tag" content="noindex, nofollow" />
         <link rel="icon" href="/logos/safeplay_combined_logo.png" />
         <link rel="apple-touch-icon" href="/logos/safeplay_combined_logo.png" />
+        <VersionTracker placement="meta" />
       </head>
       <body>
         <ErrorBoundary level="global">
@@ -48,6 +50,7 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <BetaBanner />
+              <VersionTracker placement="console" />
               {children}
               <Toaster />
             </ThemeProvider>
