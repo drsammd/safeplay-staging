@@ -33,11 +33,20 @@ export default function StagingAuthPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Small delay for better UX
-        setTimeout(() => {
-          router.push('/');
-          router.refresh();
-        }, 500);
+        // Check if user was auto-authenticated
+        if (data.autoAuthenticated && data.redirectTo) {
+          // Small delay for better UX
+          setTimeout(() => {
+            router.push(data.redirectTo);
+            router.refresh();
+          }, 500);
+        } else {
+          // Fallback to home page
+          setTimeout(() => {
+            router.push('/');
+            router.refresh();
+          }, 500);
+        }
       } else {
         setError(data.message || 'Invalid password. Please try again.');
         setAttempts(prev => prev + 1);

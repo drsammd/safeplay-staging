@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Users, MapPin, Camera, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
+  const [stats] = useState({
     totalUsers: 1247,
     totalVenues: 89,
     totalMemories: 5432,
@@ -14,7 +14,7 @@ export default function AdminDashboard() {
     alertsToday: 12
   });
 
-  const [recentActivity, setRecentActivity] = useState([
+  const [recentActivity] = useState([
     { id: 1, type: "venue_created", venue: "Happy Kids Playground", time: "2 hours ago" },
     { id: 2, type: "memory_sold", venue: "Fun Zone", amount: 9.99, time: "3 hours ago" },
     { id: 3, type: "alert_resolved", venue: "Adventure Park", time: "5 hours ago" },

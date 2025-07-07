@@ -5,6 +5,8 @@ import {
   STAKEHOLDER_SESSION_COOKIE,
   isRateLimited 
 } from '@/lib/staging-auth';
+import { prisma } from '@/lib/db';
+import { encode } from 'next-auth/jwt';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,15 +34,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create session
+    // Create stakeholder session
     const sessionData = createStakeholderSession(request, rememberMe);
     
     console.log(`✅ Stakeholder authenticated for IP: ${ip}, Remember: ${rememberMe}`);
 
-    // Set secure cookie
-    const response = NextResponse.json({ success: true });
+    // Auto-authenticate into demo account to eliminate double credential entry
+    let demoUser;
+    try {
+      demoUser = await prisma.user.findUnique({
+        where: { email: 'parent@mysafeplay.ai' }
+      });
+      
+      if (!demoUser) {
+        console.log('⚠️ Demo user not found, will require manual login');
+      }
+    } catch (error) {
+      console.error('❌ Error fetching demo user:', error);
+    }
+
+    // Set secure cookies
+    const response = NextResponse.json({ 
+      success: true, 
+      autoAuthenticated: !!demoUser,
+      redirectTo: demoUser ? '/parent' : '/'
+    });
+    
     const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 24 hours
     
+    // Set stakeholder session cookie
     response.cookies.set(STAKEHOLDER_SESSION_COOKIE, sessionData, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -48,6 +70,39 @@ export async function POST(request: NextRequest) {
       maxAge,
       path: '/'
     });
+
+    // Auto-authenticate with NextAuth if demo user exists
+    if (demoUser) {
+      try {
+        const jwt = await encode({
+          token: {
+            sub: demoUser.id,
+            email: demoUser.email,
+            name: demoUser.name,
+            role: demoUser.role,
+            phoneVerified: demoUser.phoneVerified,
+            identityVerified: demoUser.identityVerified,
+            twoFactorEnabled: demoUser.twoFactorEnabled,
+            verificationLevel: demoUser.verificationLevel,
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
+          },
+          secret: process.env.NEXTAUTH_SECRET!
+        });
+
+        response.cookies.set('next-auth.session-token', jwt, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 30 * 24 * 60 * 60, // 30 days
+          path: '/'
+        });
+
+        console.log('✅ Auto-authenticated stakeholder into demo account:', demoUser.email);
+      } catch (error) {
+        console.error('❌ Error creating NextAuth session:', error);
+      }
+    }
 
     return response;
   } catch (error) {
