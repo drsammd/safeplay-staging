@@ -148,8 +148,8 @@ export default function DiscountCodeManagement() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(searchTerm && { search: searchTerm }),
-        ...(filterCategory && { category: filterCategory }),
-        ...(filterStatus && { status: filterStatus })
+        ...(filterCategory && filterCategory !== 'all' && { category: filterCategory }),
+        ...(filterStatus && filterStatus !== 'all' && { status: filterStatus })
       });
 
       const response = await fetch(`/api/discount-codes?${params}`);
@@ -319,7 +319,7 @@ export default function DiscountCodeManagement() {
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {DISCOUNT_CATEGORIES.map(cat => (
                   <SelectItem key={cat.value} value={cat.value}>
                     {cat.label}
@@ -332,7 +332,7 @@ export default function DiscountCodeManagement() {
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="ACTIVE">Active</SelectItem>
                 <SelectItem value="INACTIVE">Inactive</SelectItem>
                 <SelectItem value="EXPIRED">Expired</SelectItem>
