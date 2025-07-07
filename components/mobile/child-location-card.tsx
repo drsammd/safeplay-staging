@@ -153,7 +153,7 @@ export function ChildLocationCard({ location, index, isLive = false }: ChildLoca
           <div className="space-y-1">
             <div className="flex items-center space-x-1 text-sm text-gray-600">
               <MapPin className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{location.venue.name}</span>
+              <span className="truncate">{location.venue?.name || 'Unknown Venue'}</span>
             </div>
             
             <div className="flex items-center space-x-1 text-sm text-gray-500">

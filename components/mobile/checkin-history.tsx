@@ -183,7 +183,7 @@ export function CheckInOutHistory({ history, onClose }: CheckInOutHistoryProps) 
                           
                           <div className="flex items-center space-x-1 text-sm text-gray-600 mb-2">
                             <MapPin className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">{event.venue.name}</span>
+                            <span className="truncate">{event.venue?.name || 'Unknown Venue'}</span>
                           </div>
                           
                           <div className="flex items-center space-x-1 text-sm text-gray-500 mb-2">

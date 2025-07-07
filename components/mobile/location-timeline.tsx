@@ -170,7 +170,7 @@ export function LocationTimeline({ history, selectedChild }: LocationTimelinePro
                 {/* Venue Info */}
                 <div className="flex items-center space-x-1 text-sm text-gray-600 mb-3">
                   <MapPin className="h-4 w-4" />
-                  <span>{location.venue.name}</span>
+                  <span>{location.venue?.name || 'Unknown Venue'}</span>
                 </div>
                 
                 {/* Metrics */}

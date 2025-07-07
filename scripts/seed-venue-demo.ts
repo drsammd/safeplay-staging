@@ -72,7 +72,7 @@ async function seedVenueDemo() {
           phone: '+1-555-0123',
           phoneVerified: true,
           identityVerified: true,
-          verificationLevel: 'FULL_VERIFIED',
+          verificationLevel: 'FULLY_VERIFIED',
         }
       });
       console.log('✅ Created demo venue admin');
@@ -142,32 +142,23 @@ async function seedVenueDemo() {
         const camera = await prisma.camera.create({
           data: {
             name: camData.name,
+            type: 'DOME',
+            brand: 'Demo Security',
             model: 'Demo Camera Pro',
             serialNumber: `DEMO-${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
             ipAddress: `192.168.1.${100 + cameras.length}`,
             streamUrl: `rtsp://demo-stream-${cameras.length + 1}.local/stream`,
             status: 'ONLINE',
-            lastPing: new Date(),
             venueId: venue.id,
-            position: { x: camData.x, y: camData.y },
-            viewAngle: 60,
-            viewDistance: 12,
-            rotation: camData.angle,
-            height: 2.8,
-            specifications: {
-              resolution: '1920x1080',
-              fps: 30,
-              nightVision: true,
-              zoom: '3x optical'
-            },
-            configuration: {
-              motionDetection: true,
-              faceRecognition: true,
-              alertZones: true
-            },
-            isRecordingEnabled: true,
-            isRecognitionEnabled: true,
-            recognitionThreshold: 0.87,
+            coordinates: { x: camData.x, y: camData.y },
+            orientation: camData.angle,
+            resolution: '1920x1080',
+            frameRate: 30,
+            fieldOfView: 60,
+            nightVision: true,
+            motionDetection: true,
+            isActive: true,
+            installationDate: new Date(),
           }
         });
         cameras.push(camera);
@@ -199,7 +190,7 @@ async function seedVenueDemo() {
             phone: `+1-555-010${i}`,
             phoneVerified: true,
             identityVerified: true,
-            verificationLevel: 'FULL_VERIFIED',
+            verificationLevel: 'FULLY_VERIFIED',
           }
         });
       }
@@ -254,12 +245,11 @@ async function seedVenueDemo() {
           data: {
             childId: child.id,
             venueId: venue.id,
-            parentId: child.parentId,
+            userId: child.parentId,
             eventType: 'CHECK_IN',
             method: 'QR_CODE',
             location: { zone: 'Main Entrance' },
             timestamp: checkInTime,
-            isAuthorized: true,
             notes: 'Demo check-in event',
           }
         });
@@ -305,14 +295,14 @@ async function seedVenueDemo() {
     // Create some demo alerts
     const alertData = [
       {
-        type: 'EXIT',
+        type: 'CHILD_MISSING',
         title: 'Child Near Exit',
         description: 'Sofia Martinez detected near unsupervised exit zone',
         severity: 3,
         childId: children.find(c => c.firstName === 'Sofia')?.id,
       },
       {
-        type: 'SAFETY',
+        type: 'CAPACITY_EXCEEDED',
         title: 'Zone Capacity Alert',
         description: 'Play Area A approaching capacity limit',
         severity: 2,

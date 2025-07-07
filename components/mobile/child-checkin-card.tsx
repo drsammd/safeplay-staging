@@ -100,7 +100,7 @@ export function ChildCheckInCard({ child, index, onAction, isProcessing }: Child
             <div className="space-y-1">
               <div className="flex items-center space-x-1 text-sm text-gray-600">
                 <MapPin className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{child.currentVenue.name}</span>
+                <span className="truncate">{child.currentVenue?.name || 'Unknown Venue'}</span>
               </div>
               {child.checkInTime && (
                 <div className="flex items-center space-x-1 text-sm text-gray-500">
@@ -146,7 +146,7 @@ export function ChildCheckInCard({ child, index, onAction, isProcessing }: Child
       {isCheckedIn && child.currentVenue && (
         <div className="mt-3 pt-3 border-t border-green-200">
           <div className="flex items-center justify-between text-xs text-gray-600">
-            <span>Location: {child.currentVenue.address}</span>
+            <span>Location: {child.currentVenue?.address || 'Unknown Address'}</span>
             <span className="text-green-600 font-medium">● Active</span>
           </div>
         </div>

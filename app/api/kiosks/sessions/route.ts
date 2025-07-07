@@ -1,84 +1,135 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { KioskSessionType, KioskSessionStatus } from '@prisma/client';
+import { authOptions } from '../../auth/[...nextauth]/route';
+import { KioskManager, KioskSession } from '../../../../utils/kiosk-manager';
 
-export const dynamic = 'force-dynamic';
+// Mock kiosk sessions storage (in production, this would be in a database)
+let kioskSessions: KioskSession[] = [
+  {
+    id: 'session-1',
+    sessionId: 'SESSION_ABC123',
+    kioskId: 'KIOSK_MAIN_001',
+    sessionType: 'CHECK_IN',
+    status: 'ACTIVE',
+    startTime: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 minutes ago
+    parentId: 'parent-1',
+    childrenIds: ['child-1'],
+    language: 'en',
+    steps: [
+      {
+        id: 'welcome',
+        name: 'WELCOME',
+        title: 'Welcome to SafePlay',
+        description: 'Welcome to our secure check-in system',
+        type: 'WELCOME',
+        required: true,
+        completed: true,
+      },
+      {
+        id: 'qr_scan',
+        name: 'QR_SCAN',
+        title: 'Scan QR Code',
+        description: 'Please scan your child\'s QR code',
+        type: 'QR_SCAN',
+        required: true,
+        completed: false,
+      },
+    ],
+    currentStep: 'qr_scan',
+    completedSteps: ['welcome'],
+    kiosk: {
+      name: 'Main Entrance Kiosk',
+      location: 'Main Entrance',
+    },
+  },
+  {
+    id: 'session-2',
+    sessionId: 'SESSION_DEF456',
+    kioskId: 'KIOSK_EXIT_001',
+    sessionType: 'CHECK_OUT',
+    status: 'ACTIVE',
+    startTime: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
+    parentId: 'parent-2',
+    childrenIds: ['child-2', 'child-3'],
+    language: 'en',
+    steps: [
+      {
+        id: 'welcome',
+        name: 'WELCOME',
+        title: 'Welcome to SafePlay',
+        description: 'Welcome to our secure check-out system',
+        type: 'WELCOME',
+        required: true,
+        completed: true,
+      },
+      {
+        id: 'qr_scan',
+        name: 'QR_SCAN',
+        title: 'Scan QR Code',
+        description: 'Please scan your pickup authorization code',
+        type: 'QR_SCAN',
+        required: true,
+        completed: true,
+      },
+      {
+        id: 'confirmation',
+        name: 'CONFIRMATION',
+        title: 'Confirm Check-out',
+        description: 'Please confirm the check-out details',
+        type: 'CONFIRMATION',
+        required: true,
+        completed: false,
+      },
+    ],
+    currentStep: 'confirmation',
+    completedSteps: ['welcome', 'qr_scan'],
+    kiosk: {
+      name: 'Exit Kiosk',
+      location: 'Main Exit',
+    },
+  },
+];
 
-// GET /api/kiosks/sessions - Get kiosk sessions
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
     const kioskId = searchParams.get('kioskId');
-    const sessionType = searchParams.get('sessionType') as KioskSessionType | null;
-    const status = searchParams.get('status') as KioskSessionStatus | null;
-    const parentId = searchParams.get('parentId');
-    const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const sessionType = searchParams.get('sessionType');
 
-    const where: any = {};
-
-    if (session.user.role === 'PARENT') {
-      where.parentId = session.user.id;
+    let filteredSessions = kioskSessions;
+    
+    if (status) {
+      filteredSessions = filteredSessions.filter(session => session.status === status);
+    }
+    
+    if (kioskId) {
+      filteredSessions = filteredSessions.filter(session => session.kioskId === kioskId);
+    }
+    
+    if (sessionType) {
+      filteredSessions = filteredSessions.filter(session => session.sessionType === sessionType);
     }
 
-    if (kioskId) where.kioskId = kioskId;
-    if (sessionType) where.sessionType = sessionType;
-    if (status) where.status = status;
-    if (parentId && session.user.role !== 'PARENT') where.parentId = parentId;
-
-    const kioskSessions = await prisma.kioskSession.findMany({
-      where,
-      include: {
-        kiosk: {
-          select: {
-            id: true,
-            name: true,
-            location: true,
-            kioskType: true,
-            venue: {
-              select: {
-                name: true,
-                address: true,
-              },
-            },
-          },
-        },
-        checkInEvents: {
-          take: 10,
-          orderBy: { timestamp: 'desc' },
-          select: {
-            id: true,
-            eventType: true,
-            timestamp: true,
-            child: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { startTime: 'desc' },
-      take: limit,
-      skip: offset,
-    });
+    // Calculate duration for active sessions
+    filteredSessions = filteredSessions.map(session => ({
+      ...session,
+      duration: session.status === 'ACTIVE' 
+        ? KioskManager.calculateSessionDuration(session)
+        : session.duration,
+    }));
 
     return NextResponse.json({
-      kioskSessions,
-      pagination: {
-        limit,
-        offset,
-        total: await prisma.kioskSession.count({ where }),
-      },
+      success: true,
+      kioskSessions: filteredSessions,
+      total: filteredSessions.length,
     });
   } catch (error) {
     console.error('Error fetching kiosk sessions:', error);
@@ -89,10 +140,10 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/kiosks/sessions - Start new kiosk session
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -101,111 +152,67 @@ export async function POST(request: NextRequest) {
     const {
       kioskId,
       sessionType,
-      childrenIds = [],
-      language = 'en',
-      accessibilityMode = false,
+      parentId,
+      childrenIds,
+      language,
     } = body;
 
+    // Validate required fields
     if (!kioskId || !sessionType) {
       return NextResponse.json(
-        { error: 'Missing required fields: kioskId, sessionType' },
+        { error: 'Kiosk ID and session type are required' },
         { status: 400 }
       );
     }
 
-    // Verify kiosk exists and is online
-    const kiosk = await prisma.checkInKiosk.findFirst({
-      where: { kioskId },
+    // Create new session
+    const newSession = KioskManager.createSession(kioskId, sessionType, {
+      parentId,
+      childrenIds: childrenIds || [],
+      language: language || 'en',
     });
 
-    if (!kiosk) {
-      return NextResponse.json(
-        { error: 'Kiosk not found' },
-        { status: 404 }
-      );
-    }
+    // Add kiosk information
+    newSession.kiosk = {
+      name: 'Demo Kiosk',
+      location: 'Demo Location',
+    };
 
-    if (kiosk.status !== 'ONLINE' && kiosk.status !== 'IDLE') {
-      return NextResponse.json(
-        { error: 'Kiosk is not available' },
-        { status: 400 }
-      );
-    }
+    // Add to storage
+    kioskSessions.push(newSession);
 
-    // Generate unique session ID
-    const sessionId = `SES${Date.now()}${Math.floor(Math.random() * 1000)}`;
-
-    const kioskSession = await prisma.kioskSession.create({
-      data: {
-        kioskId: kiosk.id,
-        sessionId,
-        parentId: session.user.role === 'PARENT' ? session.user.id : null,
-        childrenIds,
-        sessionType,
-        language,
-        accessibilityMode,
-        completedSteps: [],
-        currentStep: 'WELCOME',
-      },
-      include: {
-        kiosk: {
-          select: {
-            name: true,
-            location: true,
-            capabilities: true,
-          },
-        },
-      },
-    });
-
-    // Update kiosk status to busy
-    await prisma.checkInKiosk.update({
-      where: { id: kiosk.id },
-      data: { status: 'BUSY' },
+    console.log('Kiosk session created:', {
+      sessionId: newSession.sessionId,
+      kioskId,
+      sessionType,
+      userId: session.user.id,
+      timestamp: new Date().toISOString(),
     });
 
     return NextResponse.json({
       success: true,
-      kioskSession: {
-        id: kioskSession.id,
-        sessionId: kioskSession.sessionId,
-        sessionType: kioskSession.sessionType,
-        currentStep: kioskSession.currentStep,
-        kiosk: kioskSession.kiosk,
-      },
-      message: 'Kiosk session started successfully',
+      session: newSession,
+      message: 'Kiosk session created successfully',
     });
   } catch (error) {
-    console.error('Error starting kiosk session:', error);
+    console.error('Error creating kiosk session:', error);
     return NextResponse.json(
-      { error: 'Failed to start kiosk session' },
+      { error: 'Failed to create kiosk session' },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/kiosks/sessions - Update kiosk session
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession();
+    
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const {
-      sessionId,
-      currentStep,
-      completedSteps,
-      status,
-      errorEncountered,
-      errorDetails,
-      userSatisfaction,
-      feedback,
-      dataCollected,
-      consentGiven,
-      assistanceRequired,
-    } = body;
+    const { sessionId, stepId, stepUpdates, status } = body;
 
     if (!sessionId) {
       return NextResponse.json(
@@ -214,56 +221,43 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const updateData: any = {};
+    // Find session
+    const sessionIndex = kioskSessions.findIndex(s => s.sessionId === sessionId);
+    if (sessionIndex === -1) {
+      return NextResponse.json(
+        { error: 'Session not found' },
+        { status: 404 }
+      );
+    }
 
-    if (currentStep) updateData.currentStep = currentStep;
-    if (completedSteps) updateData.completedSteps = completedSteps;
+    let updatedSession = kioskSessions[sessionIndex];
+
+    // Update session status
     if (status) {
-      updateData.status = status;
-      if (status === 'COMPLETED' || status === 'ABANDONED') {
-        updateData.endTime = new Date();
-        updateData.duration = Math.floor((Date.now() - new Date().getTime()) / 1000);
+      updatedSession.status = status;
+      if (status === 'COMPLETED' || status === 'CANCELLED') {
+        updatedSession.endTime = new Date().toISOString();
+        updatedSession.duration = KioskManager.calculateSessionDuration(updatedSession);
       }
     }
-    if (errorEncountered !== undefined) updateData.errorEncountered = errorEncountered;
-    if (errorDetails) updateData.errorDetails = errorDetails;
-    if (userSatisfaction !== undefined) updateData.userSatisfaction = userSatisfaction;
-    if (feedback) updateData.feedback = feedback;
-    if (dataCollected) updateData.dataCollected = dataCollected;
-    if (consentGiven) updateData.consentGiven = consentGiven;
-    if (assistanceRequired !== undefined) updateData.assistanceRequired = assistanceRequired;
 
-    // Increment interaction count
-    updateData.totalInteractions = { increment: 1 };
-
-    const kioskSession = await prisma.kioskSession.update({
-      where: { sessionId },
-      data: updateData,
-      include: {
-        kiosk: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    // If session ended, update kiosk status back to idle
-    if (status === 'COMPLETED' || status === 'ABANDONED') {
-      await prisma.checkInKiosk.update({
-        where: { id: kioskSession.kiosk.id },
-        data: { 
-          status: 'IDLE',
-          totalTransactions: { increment: 1 },
-          dailyTransactions: { increment: 1 },
-        },
-      });
+    // Update specific step
+    if (stepId && stepUpdates) {
+      updatedSession = KioskManager.updateSessionStep(updatedSession, stepId, stepUpdates);
     }
+
+    kioskSessions[sessionIndex] = updatedSession;
+
+    console.log('Kiosk session updated:', {
+      sessionId,
+      updates: { stepId, stepUpdates, status },
+      userId: session.user.id,
+      timestamp: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
-      kioskSession,
+      session: updatedSession,
       message: 'Kiosk session updated successfully',
     });
   } catch (error) {

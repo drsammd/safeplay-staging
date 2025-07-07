@@ -233,7 +233,7 @@ export function PhotoGrid({
                     )}
                   </div>
                   
-                  <p className="text-xs text-gray-600 truncate">{photo.venue.name}</p>
+                  <p className="text-xs text-gray-600 truncate">{photo.venue?.name || 'Unknown Venue'}</p>
                   <p className="text-xs text-gray-500">{photo.capturedAt}</p>
                 </div>
               </motion.div>
@@ -286,7 +286,7 @@ export function PhotoGrid({
                     )}
                   </div>
                   
-                  <p className="text-sm text-gray-600 truncate">{photo.venue.name}</p>
+                  <p className="text-sm text-gray-600 truncate">{photo.venue?.name || 'Unknown Venue'}</p>
                   {photo.location && (
                     <p className="text-sm text-gray-500 truncate">{photo.location.zone}</p>
                   )}
