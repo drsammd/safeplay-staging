@@ -1,11 +1,17 @@
+import { PrismaClient } from '@prisma/client';
 
-import { NextRequest, NextResponse } from 'next/server';
+const prisma = new PrismaClient();
 
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
+async function createSubscriptionPlans() {
   try {
-    // Hardcoded subscription plans since SubscriptionPlan model doesn't exist
+    console.log('🌱 Creating subscription plans...');
+
+    // First, let's check if the SubscriptionPlan model exists
+    // Since it doesn't exist in the schema, we need to create it
+    
+    // For now, let's create a simple API response that returns hardcoded plans
+    console.log('💡 Since SubscriptionPlan model doesn\'t exist, we\'ll create hardcoded plans in the API');
+    
     const plans = [
       {
         id: 'basic',
@@ -121,14 +127,21 @@ export async function GET() {
       }
     ];
 
-    console.log('📋 Returning subscription plans:', plans.map(p => `${p.name}: $${p.planType === 'LIFETIME' ? p.lifetimePrice : p.price}`));
+    console.log('📋 Plan data prepared:', plans.map(p => `${p.name}: $${p.planType === 'LIFETIME' ? p.lifetimePrice : p.price}`));
+    console.log('✅ Plans ready for API response');
+    
+    return plans;
 
-    return NextResponse.json({ plans });
   } catch (error) {
-    console.error('Error fetching subscription plans:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch plans' },
-      { status: 500 }
-    );
+    console.error('❌ Error creating subscription plans:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
   }
 }
+
+// Run the function
+createSubscriptionPlans().catch((error) => {
+  console.error('Failed to create subscription plans:', error);
+  process.exit(1);
+});

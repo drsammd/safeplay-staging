@@ -46,7 +46,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Check if user has 2FA enabled
-          if (user.twoFactorEnabled && !credentials.twoFactorVerified) {
+          if (user.twoFactorEnabled && credentials.twoFactorVerified !== 'true') {
             console.log("🔒 2FA required for user:", user.email);
             throw new Error("2FA_REQUIRED");
           }
