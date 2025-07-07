@@ -208,16 +208,16 @@ export default function FamilyMemberDashboard({
                   {/* Member Info */}
                   <div className="flex items-start space-x-4 flex-1">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={member.memberUser.name} />
+                      <AvatarImage src={member.member?.name} />
                       <AvatarFallback>
-                        {member.memberUser.name?.charAt(0) || member.memberUser.email.charAt(0)}
+                        {member.member?.name?.charAt(0) || member.member?.email?.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 space-y-2">
                       <div className="flex items-center space-x-3">
                         <h3 className="font-semibold text-gray-900">
-                          {member.displayName || member.memberUser.name}
+                          {member.displayName || member.member?.name}
                         </h3>
                         
                         <Badge className={getRoleColor(member.familyRole)}>
@@ -237,7 +237,7 @@ export default function FamilyMemberDashboard({
                       </div>
 
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>{member.memberUser.email}</p>
+                        <p>{member.member?.email}</p>
                         {member.relationship && (
                           <p className="italic">{member.relationship}</p>
                         )}

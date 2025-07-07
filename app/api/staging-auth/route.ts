@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ 
       success: true, 
       autoAuthenticated: !!demoUser,
-      redirectTo: demoUser ? '/parent' : '/',
+      redirectTo: '/', // Always redirect to home page
       message: demoUser ? `Auto-authenticated as ${demoUser.name}` : 'Stakeholder access granted'
     });
     

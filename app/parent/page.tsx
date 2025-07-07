@@ -134,13 +134,13 @@ export default function ParentDashboard() {
       </div>
 
       {/* Emergency Button */}
-      <div className="card bg-red-50 border-2 border-red-200">
+      <div className="card bg-orange-50 border-2 border-orange-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <AlertTriangle className="h-8 w-8 text-red-600" />
             <div>
-              <h3 className="text-lg font-semibold text-red-900">Emergency Alert</h3>
-              <p className="text-sm text-red-700">Tap to report an emergency for any of your children</p>
+              <h3 className="text-lg font-semibold text-orange-900">Emergency Alert</h3>
+              <p className="text-sm text-orange-700">Tap to report an emergency for any of your children</p>
             </div>
           </div>
           <button className="btn-accent text-lg px-6 py-3">
