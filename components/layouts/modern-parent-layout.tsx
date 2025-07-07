@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import ModernSidebar from "@/components/navigation/modern-sidebar";
 import ModernHeader from "@/components/navigation/modern-header";
 import { VerificationBadge } from "@/components/verification/verification-badge";
+import { Footer } from "@/components/ui/footer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Shield, CheckCircle } from "lucide-react";
@@ -82,7 +83,7 @@ export default function ModernParentLayout({ children }: ModernParentLayoutProps
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ paddingTop: '60px' }}>
       {/* Sidebar */}
       <ModernSidebar 
         userRole="parent"
@@ -159,6 +160,7 @@ export default function ModernParentLayout({ children }: ModernParentLayoutProps
             </div>
           </div>
         </main>
+        <Footer />
       </div>
     </div>
   );

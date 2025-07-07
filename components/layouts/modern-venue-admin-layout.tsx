@@ -17,7 +17,7 @@ export default function ModernVenueAdminLayout({ children }: ModernVenueAdminLay
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={{ paddingTop: '60px' }}>
       {/* Sidebar */}
       <ModernSidebar 
         userRole="venue-admin"

@@ -9,27 +9,28 @@ async function main() {
   console.log('🌱 Starting database seed...');
 
   // Clear existing data in correct order to avoid foreign key constraints
-  await prisma.venueAnalytics.deleteMany();
-  await prisma.alert.deleteMany();
-  await prisma.memory.deleteMany();
-  await prisma.trackingEvent.deleteMany();
-  
-  // Delete family-related data first
   try {
+    await prisma.venueAnalytics.deleteMany();
+    await prisma.alert.deleteMany();
+    await prisma.memory.deleteMany();
+    await prisma.trackingEvent.deleteMany();
+    
+    // Delete dependent tables in correct order
+    await prisma.childAccess.deleteMany();
+    await prisma.familyPermission.deleteMany();
     await prisma.familyMember.deleteMany();
-    await prisma.family.deleteMany();
+    
+    // Delete children and other dependent data
+    await prisma.child.deleteMany();
+    await prisma.venue.deleteMany();
+    await prisma.account.deleteMany();
+    await prisma.session.deleteMany();
+    
+    // Finally delete users
+    await prisma.user.deleteMany();
   } catch (error) {
-    console.log('⚠️ Family tables may not exist yet:', error.message);
+    console.log('⚠️ Some tables may not exist yet:', error.message);
   }
-  
-  // Delete other dependent data
-  await prisma.child.deleteMany();
-  await prisma.venue.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.session.deleteMany();
-  
-  // Finally delete users
-  await prisma.user.deleteMany();
 
   console.log('🧹 Cleared existing data');
 

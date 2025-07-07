@@ -12,10 +12,21 @@ export function BetaBanner() {
   if (!isVisible) return null;
 
   return (
-    <div className="w-full bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200 relative z-50" 
-         style={{ position: 'sticky', top: 0 }}>
-      <div className="w-full max-w-none px-4 py-3">
-        <div className="flex items-center justify-between w-full">
+    <div 
+      className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200" 
+      style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0,
+        width: '100vw',
+        zIndex: 9999,
+        margin: 0,
+        padding: 0
+      }}
+    >
+      <div className="w-full px-4 py-3" style={{ margin: 0, maxWidth: 'none' }}>
+        <div className="flex items-center justify-between w-full max-w-7xl mx-auto">
           <div className="flex items-center space-x-3 flex-1">
             <div className="flex items-center space-x-2 flex-shrink-0">
               <Shield className="h-5 w-5 text-amber-600" />
