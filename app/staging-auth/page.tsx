@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
+import { VersionTracker, getVersionInfo } from "@/components/version-tracker";
 
 export default function StagingAuthPage() {
   const [password, setPassword] = useState("");
@@ -314,12 +315,13 @@ export default function StagingAuthPage() {
         {/* Footer */}
         <div style={{ marginTop: '2rem', textAlign: 'center' }}>
           <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
-            © 2025 mySafePlay™. Secure Beta Environment v0.5.1
+            © 2025 mySafePlay™. Secure Beta Environment v{getVersionInfo().version}
           </p>
           <p style={{ fontSize: '0.75rem', color: '#d1d5db', marginTop: '0.25rem' }}>
             Protected by enterprise-grade security measures
           </p>
         </div>
+        <VersionTracker placement="console" />
       </div>
       
       <style jsx>{`
