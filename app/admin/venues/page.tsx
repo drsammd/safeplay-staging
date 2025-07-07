@@ -1,11 +1,11 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { MapPin, Users, Plus, Settings, Trash2, Edit } from "lucide-react";
 
 export default function VenueManagementPage() {
-  const [venues, setVenues] = useState([
+  const [venues] = useState([
     {
       id: 1,
       name: "Adventure Playground",
@@ -41,7 +41,8 @@ export default function VenueManagementPage() {
     }
   ]);
 
-  const [showAddModal, setShowAddModal] = useState(false);
+  // Modal state available for future implementation
+  // const [showAddModal, setShowAddModal] = useState(false);
 
   return (
     <div className="min-h-full bg-venue bg-overlay-light">

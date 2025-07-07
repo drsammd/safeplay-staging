@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TrendingUp, DollarSign, Users, Camera, Calendar } from "lucide-react";
 
 export default function AnalyticsPage() {
   const [timeframe, setTimeframe] = useState("month");
-  const [metrics, setMetrics] = useState({
+  const [metrics] = useState({
     totalRevenue: 28750,
     totalUsers: 1247,
     totalMemories: 5432,
@@ -19,16 +19,17 @@ export default function AnalyticsPage() {
     }
   });
 
-  const [chartData, setChartData] = useState([
-    { month: "Jan", revenue: 2400, users: 89, memories: 412 },
-    { month: "Feb", revenue: 2100, users: 95, memories: 398 },
-    { month: "Mar", revenue: 2800, users: 102, memories: 456 },
-    { month: "Apr", revenue: 3200, users: 118, memories: 502 },
-    { month: "May", revenue: 2900, users: 125, memories: 489 },
-    { month: "Jun", revenue: 3100, users: 132, memories: 528 },
-  ]);
+  // Chart data available for future implementation
+  // const chartData = [
+  //   { month: "Jan", revenue: 2400, users: 89, memories: 412 },
+  //   { month: "Feb", revenue: 2100, users: 95, memories: 398 },
+  //   { month: "Mar", revenue: 2800, users: 102, memories: 456 },
+  //   { month: "Apr", revenue: 3200, users: 118, memories: 502 },
+  //   { month: "May", revenue: 2900, users: 125, memories: 489 },
+  //   { month: "Jun", revenue: 3100, users: 132, memories: 528 },
+  // ];
 
-  const [topVenues, setTopVenues] = useState([
+  const [topVenues] = useState([
     { name: "Adventure Playground", revenue: 8450, visits: 342, growth: 18.5 },
     { name: "Happy Kids Zone", revenue: 7890, visits: 298, growth: 12.3 },
     { name: "Fun City", revenue: 6650, visits: 276, growth: 8.7 },
