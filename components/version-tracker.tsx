@@ -5,10 +5,10 @@ import { useEffect } from "react";
 
 // Version configuration - update this with each deployment
 const VERSION_CONFIG = {
-  version: "1.0.2-staging",
+  version: "1.0.3-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "bea454f", // Latest commit with UX fixes and version tracking
+  commit: "pending", // BETA banner & family data fixes applied
   branch: "main"
 };
 

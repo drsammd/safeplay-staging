@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
 
     let whereClause: any = {
       OR: [
-        { familyOwnerId: session.user.id },
-        { memberUserId: session.user.id }
+        { familyId: session.user.id },
+        { memberId: session.user.id }
       ]
     }
 
@@ -81,14 +81,14 @@ export async function GET(request: NextRequest) {
     const familyMembers = await prisma.familyMember.findMany({
       where: whereClause,
       include: {
-        familyOwner: {
+        family: {
           select: {
             id: true,
             name: true,
             email: true
           }
         },
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -121,8 +121,8 @@ export async function GET(request: NextRequest) {
     })
 
     // Separate into families I own vs families I'm a member of
-    const ownedFamilies = familyMembers.filter(member => member.familyOwnerId === session.user.id)
-    const memberOfFamilies = familyMembers.filter(member => member.memberUserId === session.user.id)
+    const ownedFamilies = familyMembers.filter(member => member.familyId === session.user.id)
+    const memberOfFamilies = familyMembers.filter(member => member.memberId === session.user.id)
 
     return NextResponse.json({
       ownedFamilies,
@@ -174,9 +174,9 @@ export async function POST(request: NextRequest) {
     // Check if family relationship already exists
     const existingMember = await prisma.familyMember.findUnique({
       where: {
-        familyOwnerId_memberUserId: {
-          familyOwnerId: session.user.id,
-          memberUserId: data.memberUserId
+        familyId_memberId: {
+          familyId: session.user.id,
+          memberId: data.memberUserId
         }
       }
     })
@@ -185,40 +185,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'This person is already a family member' }, { status: 400 })
     }
 
-    // Create family member
+    // Create family member - using only fields that exist in schema
     const familyMember = await prisma.familyMember.create({
       data: {
-        familyOwnerId: session.user.id,
-        memberUserId: data.memberUserId,
-        familyRole: data.familyRole,
-        displayName: data.displayName || memberUser.name,
-        relationship: data.relationship,
-        canViewAllChildren: data.canViewAllChildren || false,
-        canEditChildren: data.canEditChildren || false,
-        canCheckInOut: data.canCheckInOut || false,
-        canViewPhotos: data.canViewPhotos ?? true,
-        canViewVideos: data.canViewVideos ?? true,
-        canPurchaseMedia: data.canPurchaseMedia || false,
-        canReceiveAlerts: data.canReceiveAlerts ?? true,
-        canViewLocation: data.canViewLocation ?? true,
-        canViewReports: data.canViewReports || false,
-        canManageFamily: data.canManageFamily || false,
-        canMakePayments: data.canMakePayments || false,
-        photoAccess: data.photoAccess || 'FULL',
-        videoAccess: data.videoAccess || 'FULL',
-        alertTypes: data.alertTypes || [],
-        allowedVenues: data.allowedVenues || [],
-        timeRestrictions: data.timeRestrictions || {},
-        emergencyContact: data.emergencyContact || false,
-        emergencyContactOrder: data.emergencyContactOrder,
-        notificationChannels: data.notificationChannels || [],
-        quietHoursStart: data.quietHoursStart,
-        quietHoursEnd: data.quietHoursEnd,
-        notificationFrequency: data.notificationFrequency || 'REAL_TIME',
-        notes: data.notes
+        familyId: session.user.id,
+        memberId: data.memberUserId,
+        relationship: data.familyRole, // Map familyRole to relationship enum
+        notes: data.notes,
+        invitedBy: session.user.id
       },
       include: {
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -228,22 +205,22 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Log the activity
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: session.user.id,
-        actorId: session.user.id,
-        targetId: data.memberUserId,
-        actionType: 'INVITE_MEMBER',
-        resourceType: 'FAMILY_MEMBER',
-        resourceId: familyMember.id,
-        actionDescription: `Added ${memberUser.name} as ${data.familyRole.toLowerCase()}`,
-        actionData: { 
-          familyRole: data.familyRole,
-          memberEmail: memberUser.email
+    // Log the activity (simplified for now)
+    try {
+      await prisma.familyActivityLog.create({
+        data: {
+          familyId: session.user.id,
+          actorId: session.user.id,
+          targetId: data.memberUserId,
+          actionType: 'INVITE_MEMBER',
+          actionDescription: `Added ${memberUser.name} as family member`,
+          resourceId: familyMember.id
         }
-      }
-    })
+      })
+    } catch (error) {
+      console.log('Activity log creation failed:', error)
+      // Don't fail the request if activity log fails
+    }
 
     return NextResponse.json({
       familyMember,
