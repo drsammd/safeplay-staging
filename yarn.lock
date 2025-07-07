@@ -7329,7 +7329,7 @@ preact-render-to-string@^5.1.19:
   dependencies:
     pretty-format "^3.8.0"
 
-preact@^10.6.3:
+preact@^10.26.9, preact@^10.6.3:
   version "10.26.9"
   resolved "https://registry.npmjs.org/preact/-/preact-10.26.9.tgz"
   integrity sha512-SSjF9vcnF27mJK1XyFMNJzFd5u3pQiATFqoaDy03XuN00u4ziveVVEGt5RKJrDR8MHE/wJo9Nnad56RLzS2RMA==
