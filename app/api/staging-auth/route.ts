@@ -79,49 +79,32 @@ export async function POST(request: NextRequest) {
       path: '/'
     });
 
-    // Auto-authenticate with NextAuth if demo user exists
+    // For single sign-on, we'll redirect to a special endpoint that auto-signs in
     if (demoUser) {
       try {
-        const tokenPayload = {
-          sub: demoUser.id,
-          email: demoUser.email,
-          name: demoUser.name,
-          role: demoUser.role,
-          phoneVerified: demoUser.phoneVerified || false,
-          identityVerified: demoUser.identityVerified || false,
-          twoFactorEnabled: demoUser.twoFactorEnabled || false,
-          verificationLevel: demoUser.verificationLevel || 'UNVERIFIED',
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60) // 30 days
-        };
-
-        const jwt = await encode({
-          token: tokenPayload,
+        // Store demo user info in a temporary secure token for auto-signin
+        const autoSigninToken = await encode({
+          token: {
+            autoSignin: true,
+            userId: demoUser.id,
+            email: demoUser.email,
+            exp: Math.floor(Date.now() / 1000) + (60 * 5) // 5 minutes expiry
+          },
           secret: process.env.NEXTAUTH_SECRET!
         });
 
-        // Set NextAuth session token with proper configuration
-        response.cookies.set('next-auth.session-token', jwt, {
+        // Set temporary auto-signin cookie
+        response.cookies.set('auto-signin-token', autoSigninToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 30 * 24 * 60 * 60, // 30 days
+          sameSite: 'strict',
+          maxAge: 60 * 5, // 5 minutes
           path: '/'
         });
 
-        // Also set legacy session token for compatibility
-        response.cookies.set('__Secure-next-auth.session-token', jwt, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 30 * 24 * 60 * 60, // 30 days
-          path: '/'
-        });
-
-        console.log('✅ Auto-authenticated stakeholder into demo account:', demoUser.email);
-        console.log('✅ Session token set for auto-authentication');
+        console.log('✅ Auto-signin token created for:', demoUser.email);
       } catch (error) {
-        console.error('❌ Error creating NextAuth session:', error);
+        console.error('❌ Error creating auto-signin token:', error);
         // Continue without failing the stakeholder auth
       }
     }

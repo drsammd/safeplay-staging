@@ -44,7 +44,7 @@ export default function ModernParentLayout({ children }: ModernParentLayoutProps
 
     return (
       <div className={`p-4 rounded-lg border mb-6 ${
-        urgency === 'high' ? 'bg-red-50 border-red-200' :
+        urgency === 'high' ? 'bg-orange-50 border-orange-200' :
         urgency === 'medium' ? 'bg-orange-50 border-orange-200' :
         'bg-blue-50 border-blue-200'
       }`}>
@@ -57,14 +57,14 @@ export default function ModernParentLayout({ children }: ModernParentLayoutProps
             }`} />
             <div>
               <h3 className={`text-sm font-semibold ${
-                urgency === 'high' ? 'text-red-800' :
+                urgency === 'high' ? 'text-orange-800' :
                 urgency === 'medium' ? 'text-orange-800' :
                 'text-blue-800'
               }`}>
                 Security Enhancement Required
               </h3>
               <p className={`text-sm ${
-                urgency === 'high' ? 'text-red-700' :
+                urgency === 'high' ? 'text-orange-700' :
                 urgency === 'medium' ? 'text-orange-700' :
                 'text-blue-700'
               }`}>
@@ -83,7 +83,7 @@ export default function ModernParentLayout({ children }: ModernParentLayoutProps
   };
 
   return (
-    <div className="min-h-screen bg-gray-50" style={{ paddingTop: '60px' }}>
+    <div className="min-h-screen bg-gray-50 beta-banner-responsive">
       {/* Sidebar */}
       <ModernSidebar 
         userRole="parent"

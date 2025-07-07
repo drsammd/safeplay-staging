@@ -3,6 +3,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Beta Banner Responsive Layout */
+.beta-banner-responsive {
+  padding-top: 0px;
+  transition: padding-top 0.3s ease-in-out;
+}
+
+html.beta-banner-visible .beta-banner-responsive {
+  padding-top: 60px;
+}
+
+html.beta-banner-hidden .beta-banner-responsive {
+  padding-top: 0px;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
