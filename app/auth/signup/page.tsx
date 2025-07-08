@@ -6,15 +6,18 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { Eye, EyeOff, User, Mail, Lock, Building, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, Building, ArrowRight, ArrowLeft, CheckCircle, MapPin, Home } from "lucide-react";
 import SubscriptionPlans from "@/components/subscription/subscription-plans";
 import PaymentSetup from "@/components/subscription/payment-setup";
+import { AddressAutocomplete } from "@/components/verification/address-autocomplete";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type RegistrationStep = 'basic-info' | 'plan-selection' | 'payment-setup' | 'account-creation' | 'complete';
+type RegistrationStep = 'basic-info' | 'address-collection' | 'plan-selection' | 'payment-setup' | 'account-creation' | 'verification-prompt' | 'complete';
 
 interface SelectedPlan {
   id: string;
@@ -34,8 +37,13 @@ export default function SignUpPage() {
     confirmPassword: "",
     role: "PARENT",
     agreeToTerms: false,
-    agreeToPrivacy: false
+    agreeToPrivacy: false,
+    homeAddress: "",
+    useDifferentBillingAddress: false,
+    billingAddress: ""
   });
+  const [homeAddressValidation, setHomeAddressValidation] = useState<any>(null);
+  const [billingAddressValidation, setBillingAddressValidation] = useState<any>(null);
   const [selectedPlan, setSelectedPlan] = useState<SelectedPlan | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -45,9 +53,11 @@ export default function SignUpPage() {
 
   const steps = [
     { key: 'basic-info', title: 'Basic Information', description: 'Create your account' },
+    { key: 'address-collection', title: 'Address Information', description: 'Verify your address' },
     { key: 'plan-selection', title: 'Choose Plan', description: 'Select subscription plan' },
     { key: 'payment-setup', title: 'Payment Setup', description: 'Add payment method' },
     { key: 'account-creation', title: 'Account Creation', description: 'Finalizing your account' },
+    { key: 'verification-prompt', title: 'Verification', description: 'Complete your profile' },
     { key: 'complete', title: 'Complete', description: 'Welcome to SafePlay!' }
   ];
 
@@ -108,13 +118,44 @@ export default function SignUpPage() {
         return;
       }
 
-      // Proceed to plan selection
-      setCurrentStep('plan-selection');
+      // Proceed to address collection
+      setCurrentStep('address-collection');
     } catch (error: any) {
       setError(error.message || "Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAddressSubmit = () => {
+    setError("");
+
+    // Validate home address
+    if (!formData.homeAddress.trim()) {
+      setError("Home address is required");
+      return;
+    }
+
+    if (!homeAddressValidation?.isValid) {
+      setError("Please enter a valid home address");
+      return;
+    }
+
+    // Validate billing address if different billing address is used
+    if (formData.useDifferentBillingAddress) {
+      if (!formData.billingAddress.trim()) {
+        setError("Billing address is required when using a different billing address");
+        return;
+      }
+
+      if (!billingAddressValidation?.isValid) {
+        setError("Please enter a valid billing address");
+        return;
+      }
+    }
+
+    // Proceed to plan selection
+    setCurrentStep('plan-selection');
   };
 
   const handlePlanSelect = (stripePriceId: string, billingInterval: 'monthly' | 'yearly' | 'lifetime', planId: string) => {
@@ -173,6 +214,11 @@ export default function SignUpPage() {
           role: formData.role,
           agreeToTerms: formData.agreeToTerms,
           agreeToPrivacy: formData.agreeToPrivacy,
+          homeAddress: formData.homeAddress,
+          homeAddressValidation: homeAddressValidation,
+          useDifferentBillingAddress: formData.useDifferentBillingAddress,
+          billingAddress: formData.billingAddress,
+          billingAddressValidation: billingAddressValidation,
           selectedPlan: selectedPlan,
           subscriptionData: subscriptionData,
         }),
@@ -196,7 +242,7 @@ export default function SignUpPage() {
         // Still proceed to success, user can login manually
       }
 
-      setCurrentStep('complete');
+      setCurrentStep('verification-prompt');
     } catch (error: any) {
       setError(error.message || "Something went wrong. Please try again.");
       setCurrentStep('plan-selection'); // Go back to plan selection on error
@@ -210,6 +256,13 @@ export default function SignUpPage() {
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
+  const handleAddressChange = (field: 'homeAddress' | 'billingAddress', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
@@ -438,6 +491,109 @@ export default function SignUpPage() {
           </div>
         );
 
+      case 'address-collection':
+        return (
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-white mb-2">Address Information</h3>
+              <p className="text-gray-300">Verify your address for account security and service delivery</p>
+            </div>
+            
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm mb-6">
+                {error}
+              </div>
+            )}
+
+            <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleAddressSubmit(); }}>
+              {/* Home Address */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  <Home className="inline h-4 w-4 mr-2" />
+                  Home Address *
+                </label>
+                <AddressAutocomplete
+                  value={formData.homeAddress}
+                  onChange={(value) => handleAddressChange('homeAddress', value)}
+                  onValidationChange={setHomeAddressValidation}
+                  placeholder="Enter your home address"
+                  required
+                  countryRestriction={['us', 'ca']}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  This address will be used for identity verification and service delivery
+                </p>
+              </div>
+
+              {/* Different Billing Address Checkbox */}
+              <div className="flex items-start space-x-3">
+                <Checkbox
+                  id="useDifferentBillingAddress"
+                  checked={formData.useDifferentBillingAddress}
+                  onCheckedChange={(checked) => 
+                    setFormData(prev => ({ ...prev, useDifferentBillingAddress: !!checked }))
+                  }
+                  className="mt-1"
+                />
+                <label htmlFor="useDifferentBillingAddress" className="text-sm text-white leading-relaxed">
+                  Use a different billing address for payments
+                </label>
+              </div>
+
+              {/* Billing Address (conditional) */}
+              {formData.useDifferentBillingAddress && (
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    <MapPin className="inline h-4 w-4 mr-2" />
+                    Billing Address *
+                  </label>
+                  <AddressAutocomplete
+                    value={formData.billingAddress}
+                    onChange={(value) => handleAddressChange('billingAddress', value)}
+                    onValidationChange={setBillingAddressValidation}
+                    placeholder="Enter your billing address"
+                    required
+                    countryRestriction={['us', 'ca']}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    This address will be used for billing and payment processing
+                  </p>
+                </div>
+              )}
+
+              {/* Address Information Alert */}
+              <Alert className="bg-blue-900/30 border border-blue-400/20">
+                <MapPin className="h-4 w-4" />
+                <AlertDescription className="text-blue-100">
+                  <strong>Important:</strong> Your address information helps us verify your identity and ensure the safety of your children. This information is encrypted and stored securely.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex gap-4">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={handleBackStep}
+                  className="flex-1 text-white border-white/20 hover:bg-white/10"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={!formData.homeAddress || !homeAddressValidation?.isValid}
+                  className="flex-1 btn-primary"
+                >
+                  Continue to Plans
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </form>
+          </div>
+        );
+
       case 'plan-selection':
         return (
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
@@ -526,6 +682,102 @@ export default function SignUpPage() {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'verification-prompt':
+        return (
+          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
+            <div className="text-center space-y-6">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-white mb-2">Account Created Successfully!</h3>
+                <p className="text-gray-300">
+                  Welcome to SafePlay! To unlock all features and enhance your account security, 
+                  we recommend completing additional verification steps.
+                </p>
+              </div>
+              
+              {selectedPlan && (
+                <div className="bg-green-900/30 border border-green-400/20 rounded-lg p-4">
+                  <p className="text-green-100">
+                    <strong>Plan:</strong> {selectedPlan.name}
+                    {selectedPlan.billingInterval !== 'lifetime' && (
+                      <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
+                        7 day free trial
+                      </Badge>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                <Card className="bg-white/5 border-white/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <h4 className="font-medium text-white">Identity Verification</h4>
+                    </div>
+                    <p className="text-sm text-gray-300 mb-3">
+                      Upload your ID for enhanced security and full feature access
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full text-white border-white/20 hover:bg-white/10"
+                      onClick={() => router.push('/verification')}
+                    >
+                      Complete Verification
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white/5 border-white/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                        <MapPin className="w-4 h-4 text-green-600" />
+                      </div>
+                      <h4 className="font-medium text-white">Address Verified</h4>
+                    </div>
+                    <p className="text-sm text-gray-300 mb-3">
+                      Your address has been successfully verified
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full text-green-400 border-green-400/20 cursor-default"
+                      disabled
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Completed
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="space-y-3 mt-8">
+                <Button 
+                  onClick={() => {
+                    setCurrentStep('complete');
+                  }}
+                  className="w-full btn-primary"
+                >
+                  Continue to Dashboard
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => router.push('/verification')}
+                  className="w-full text-blue-400 hover:text-blue-300"
+                >
+                  Complete Identity Verification First
+                </Button>
               </div>
             </div>
           </div>

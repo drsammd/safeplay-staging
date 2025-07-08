@@ -16,6 +16,22 @@ const signupSchema = z.object({
   role: z.enum(["PARENT", "VENUE_ADMIN", "SUPER_ADMIN"]).default("PARENT"),
   agreeToTerms: z.boolean().refine(val => val === true, "You must agree to the Terms of Service"),
   agreeToPrivacy: z.boolean().refine(val => val === true, "You must agree to the Privacy Policy"),
+  // Enhanced address information
+  homeAddress: z.string().min(10, "Home address must be at least 10 characters"),
+  homeAddressValidation: z.object({
+    isValid: z.boolean(),
+    confidence: z.number(),
+    standardizedAddress: z.any().optional(),
+    originalInput: z.string(),
+  }).optional(),
+  useDifferentBillingAddress: z.boolean().default(false),
+  billingAddress: z.string().optional(),
+  billingAddressValidation: z.object({
+    isValid: z.boolean(),
+    confidence: z.number(),
+    standardizedAddress: z.any().optional(),
+    originalInput: z.string(),
+  }).optional(),
   selectedPlan: z.object({
     id: z.string(),
     name: z.string(),
@@ -42,7 +58,21 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     );
   }
 
-  const { email: rawEmail, password, name, role, agreeToTerms, agreeToPrivacy, selectedPlan, subscriptionData } = validation.data;
+  const { 
+    email: rawEmail, 
+    password, 
+    name, 
+    role, 
+    agreeToTerms, 
+    agreeToPrivacy, 
+    homeAddress,
+    homeAddressValidation,
+    useDifferentBillingAddress,
+    billingAddress,
+    billingAddressValidation,
+    selectedPlan, 
+    subscriptionData 
+  } = validation.data;
   
   // Normalize email to lowercase for consistency
   const email = rawEmail.toLowerCase().trim();
@@ -71,6 +101,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
                    "unknown";
   const userAgent = request.headers.get("user-agent") || "unknown";
 
+  // Get current time for timestamps
+  const currentTime = new Date();
+
   // Create user and legal agreements in a transaction
   const user = await prisma.$transaction(async (tx) => {
     // Create user
@@ -83,8 +116,76 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       },
     });
 
+    // Store address information
+    if (homeAddress) {
+      console.log('✅ Storing home address for user:', newUser.id);
+      
+      // Create home address record
+      await tx.userAddress.create({
+        data: {
+          userId: newUser.id,
+          type: 'HOME',
+          address: homeAddress,
+          isVerified: homeAddressValidation?.isValid || false,
+          verificationData: homeAddressValidation ? JSON.stringify(homeAddressValidation) : null,
+          isPrimary: true,
+          metadata: {
+            confidence: homeAddressValidation?.confidence,
+            standardizedAddress: homeAddressValidation?.standardizedAddress,
+            originalInput: homeAddressValidation?.originalInput,
+            createdAt: currentTime.toISOString(),
+            source: 'registration'
+          }
+        }
+      });
+
+      // Create billing address record if different from home address
+      if (useDifferentBillingAddress && billingAddress) {
+        console.log('✅ Storing separate billing address for user:', newUser.id);
+        
+        await tx.userAddress.create({
+          data: {
+            userId: newUser.id,
+            type: 'BILLING',
+            address: billingAddress,
+            isVerified: billingAddressValidation?.isValid || false,
+            verificationData: billingAddressValidation ? JSON.stringify(billingAddressValidation) : null,
+            isPrimary: false,
+            metadata: {
+              confidence: billingAddressValidation?.confidence,
+              standardizedAddress: billingAddressValidation?.standardizedAddress,
+              originalInput: billingAddressValidation?.originalInput,
+              createdAt: currentTime.toISOString(),
+              source: 'registration'
+            }
+          }
+        });
+      } else {
+        console.log('ℹ️ Using home address as billing address for user:', newUser.id);
+        
+        // Create billing address record that references the same address as home
+        await tx.userAddress.create({
+          data: {
+            userId: newUser.id,
+            type: 'BILLING',
+            address: homeAddress,
+            isVerified: homeAddressValidation?.isValid || false,
+            verificationData: homeAddressValidation ? JSON.stringify(homeAddressValidation) : null,
+            isPrimary: false,
+            metadata: {
+              confidence: homeAddressValidation?.confidence,
+              standardizedAddress: homeAddressValidation?.standardizedAddress,
+              originalInput: homeAddressValidation?.originalInput,
+              createdAt: currentTime.toISOString(),
+              source: 'registration',
+              sameAsHome: true
+            }
+          }
+        });
+      }
+    }
+
     // Create legal agreement records
-    const currentTime = new Date();
     const agreementVersion = "1.0"; // Current version of legal documents
 
     // Terms of Service agreement
