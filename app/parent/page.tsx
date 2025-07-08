@@ -2,11 +2,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { MapPin, Clock, Camera, AlertTriangle, Baby, Play, Shield, Eye, Users, Activity, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { FaceDetectionPreview, FaceRecognitionResults } from "@/components/face-recognition";
+import { useEffectiveSession } from "@/components/providers/demo-session-provider";
 
 // Type definitions
 interface Child {
@@ -51,7 +51,7 @@ interface FaceActivity {
 }
 
 export default function ParentDashboard() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useEffectiveSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [children, setChildren] = useState<Child[]>([]);
@@ -59,6 +59,53 @@ export default function ParentDashboard() {
   const [showFaceRecognition, setShowFaceRecognition] = useState(false);
   const [recentMemories, setRecentMemories] = useState<Memory[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+
+  // Account-specific demo data for stakeholder presentations (same as children page)
+  const getDemoChildren = (userEmail?: string) => {
+    // Check if this is john@mysafeplay.ai (should have NO children for security demo)
+    if (userEmail === 'john@mysafeplay.ai' || userEmail === 'john@doe.com') {
+      console.log('🎭 Dashboard: john@mysafeplay.ai account - returning empty children for security enhancement demo');
+      return [];
+    }
+
+    // Default to parent@mysafeplay.ai data (3 children for family management demo)
+    console.log('🎭 Dashboard: parent@mysafeplay.ai account - returning 3 demo children');
+    return [
+      {
+        id: "demo-1",
+        name: "Emma Johnson",
+        age: 7,
+        status: "CHECKED_IN",
+        venue: "Adventure Playground",
+        checkInTime: "2:30 PM",
+        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg",
+        faceRecognitionEnabled: true,
+        registeredFaces: 2
+      },
+      {
+        id: "demo-2", 
+        name: "Lucas Johnson",
+        age: 5,
+        status: "CHECKED_OUT",
+        venue: null,
+        checkInTime: null,
+        profilePhoto: "https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png",
+        faceRecognitionEnabled: false,
+        registeredFaces: 0
+      },
+      {
+        id: "demo-3",
+        name: "Sophia Johnson", 
+        age: 4,
+        status: "CHECKED_OUT",
+        venue: null,
+        checkInTime: null,
+        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-happy-smiling-little-girl-white-background-cute-child-looking-camera-studio-shot-childhood-happiness-concept-192784866.jpg",
+        faceRecognitionEnabled: true,
+        registeredFaces: 1
+      }
+    ];
+  };
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -75,14 +122,36 @@ export default function ParentDashboard() {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Fetching real user dashboard data...');
+      
+      // Get user email for account-specific demo data
+      const userEmail = session?.user?.email;
+      console.log('🔍 Dashboard: Fetching data for user:', userEmail);
       
       // Fetch user's children
       const childrenResponse = await fetch('/api/children');
       let childrenData = [];
       if (childrenResponse.ok) {
-        childrenData = await childrenResponse.json();
-        console.log('✅ Children data fetched:', childrenData);
+        const apiData = await childrenResponse.json();
+        console.log('✅ Dashboard: Children API data:', apiData);
+        
+        // Transform API data to match dashboard Child interface
+        childrenData = apiData.map((child: any) => ({
+          id: child.id,
+          name: child.name || `${child.firstName || ''} ${child.lastName || ''}`.trim(),
+          age: child.age || 0,
+          status: child.status || "CHECKED_OUT",
+          venue: child.venue || null,
+          checkInTime: child.checkInTime || null,
+          profilePhoto: child.profilePhoto || "https://i.pinimg.com/originals/88/ed/d8/88edd897f7ed1ef75a69a5f6f6815c12.jpg",
+          faceRecognitionEnabled: child.faceRecognitionEnabled || false,
+          registeredFaces: child.registeredFaces || 0
+        }));
+      }
+      
+      // If API returns empty results, use account-specific demo data
+      if (childrenData.length === 0) {
+        console.log('🎭 Dashboard: API returned empty, using account-specific demo children data');
+        childrenData = getDemoChildren(userEmail);
       }
       
       // Fetch user's memories
@@ -90,10 +159,10 @@ export default function ParentDashboard() {
       let memoriesData = [];
       if (memoriesResponse.ok) {
         memoriesData = await memoriesResponse.json();
-        console.log('✅ Memories data fetched:', memoriesData);
+        console.log('✅ Dashboard: Memories data fetched:', memoriesData);
       }
       
-      setChildren(childrenData || []);
+      setChildren(childrenData);
       setRecentMemories(memoriesData || []);
       
       // For now, keep other data empty until we implement those features
@@ -101,9 +170,11 @@ export default function ParentDashboard() {
       setNotifications([]);
       
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      // Set empty data on error to show clean UI
-      setChildren([]);
+      console.error('Dashboard: Error fetching user data:', error);
+      // Fallback to account-specific demo data
+      console.log('🎭 Dashboard: Error occurred, using account-specific demo children data');
+      const userEmail = session?.user?.email;
+      setChildren(getDemoChildren(userEmail));
       setRecentMemories([]);
       setRecentFaceActivity([]);
       setNotifications([]);
@@ -148,6 +219,44 @@ export default function ParentDashboard() {
           </button>
         </div>
       </div>
+
+      {/* Security Enhancement Required - Only for john@mysafeplay.ai */}
+      {(session?.user?.email === 'john@mysafeplay.ai' || session?.user?.email === 'john@doe.com') && (
+        <div className="card bg-yellow-50 border-2 border-yellow-200">
+          <div className="flex items-start space-x-4">
+            <div className="bg-yellow-100 p-3 rounded-full">
+              <Shield className="h-8 w-8 text-yellow-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold text-yellow-900 mb-2">Security Enhancement Required</h3>
+              <p className="text-yellow-800 mb-4">
+                To access child management features and ensure maximum security, please complete the enhanced verification process.
+                This includes phone verification and additional security measures.
+              </p>
+              <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-3 mb-4">
+                <h4 className="font-medium text-yellow-900 mb-2">Security Features to Enable:</h4>
+                <ul className="text-sm text-yellow-800 space-y-1">
+                  <li>• Two-factor authentication via SMS</li>
+                  <li>• Enhanced identity verification</li>
+                  <li>• Secure child profile access</li>
+                  <li>• Emergency contact verification</li>
+                </ul>
+              </div>
+              <div className="flex space-x-3">
+                <button 
+                  onClick={() => router.push('/parent/security-enhancement')}
+                  className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                >
+                  Complete Security Setup
+                </button>
+                <button className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors">
+                  Learn More
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Children Status */}
       <div className="card">

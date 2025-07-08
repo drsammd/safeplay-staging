@@ -42,17 +42,24 @@ export async function POST(request: NextRequest) {
     // Auto-authenticate into demo account to eliminate double credential entry
     let demoUser;
     try {
-      // Try both demo accounts for better flexibility
+      // Default to parent@mysafeplay.ai as primary demo account
       demoUser = await prisma.user.findFirst({
         where: { 
-          email: { 
-            in: ['parent@mysafeplay.ai', 'john@mysafeplay.ai'] 
-          }
+          email: 'parent@mysafeplay.ai'
         }
       });
       
+      // Fallback to john@mysafeplay.ai if parent account not found
       if (!demoUser) {
-        console.log('⚠️ No demo users found, will require manual login');
+        demoUser = await prisma.user.findFirst({
+          where: { 
+            email: 'john@mysafeplay.ai'
+          }
+        });
+      }
+      
+      if (!demoUser) {
+        console.log('⚠️ No demo users found, creating fallback demo user');
       } else {
         console.log('✅ Found demo user for auto-authentication:', demoUser.email);
       }

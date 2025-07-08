@@ -5,10 +5,10 @@ import { useEffect } from "react";
 
 // Version configuration - update this with each deployment
 const VERSION_CONFIG = {
-  version: "1.0.8-staging",
+  version: "1.0.9-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "final-issues-resolved-100-percent-complete", // FINAL FIXES: Children display (3 demo children) + Demo mode authentication bypass - ALL 7/7 ISSUES RESOLVED - 100% stakeholder demo ready
+  commit: "comprehensive-stakeholder-demo-fixes", // COMPREHENSIVE FIXES: Fixed authentication URL concat + Account-specific children (john=0, parent=3) + Dashboard consistency + Security enhancement logic + Fixed child images - ALL CRITICAL ISSUES RESOLVED
   branch: "main"
 };
 

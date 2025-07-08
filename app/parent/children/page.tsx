@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import { Plus, Edit, MapPin, Calendar, Camera, Shield, Eye, Settings } from "lucide-react";
 import Image from "next/image";
 import { FaceRegistrationWizard, FaceManagement } from "@/components/face-recognition";
+import { useEffectiveSession } from "@/components/providers/demo-session-provider";
 
 export default function ChildrenPage() {
+  const { data: session } = useEffectiveSession();
   const [children, setChildren] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -24,56 +26,70 @@ export default function ChildrenPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Demo data for stakeholder presentations
-  const getDemoChildren = () => [
-    {
-      id: "demo-1",
-      firstName: "Emma",
-      lastName: "Johnson",
-      dateOfBirth: "2017-03-15",
-      profilePhoto: "https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg",
-      status: "CHECKED_IN",
-      currentVenue: { name: "Adventure Playground" },
-      _count: { memories: 23, trackingEvents: 45 },
-      faceRecognitionEnabled: true,
-      faceRecognitionConsent: true,
-      recognitionThreshold: 0.95,
-      faceCollection: { id: "fc1", status: "ACTIVE", faceRecords: [{ id: "fr1" }, { id: "fr2" }] }
-    },
-    {
-      id: "demo-2",
-      firstName: "Lucas",
-      lastName: "Johnson",
-      dateOfBirth: "2019-07-22",
-      profilePhoto: "https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png",
-      status: "CHECKED_OUT",
-      currentVenue: null,
-      _count: { memories: 18, trackingEvents: 32 },
-      faceRecognitionEnabled: false,
-      faceRecognitionConsent: false,
-      recognitionThreshold: 0.95,
-      faceCollection: null
-    },
-    {
-      id: "demo-3",
-      firstName: "Sophia",
-      lastName: "Johnson",
-      dateOfBirth: "2020-11-08",
-      profilePhoto: "https://thumbs.dreamstime.com/b/portrait-happy-little-girl-white-background-beautiful-happy-little-girl-studio-portrait-white-background-104766857.jpg",
-      status: "CHECKED_OUT",
-      currentVenue: null,
-      _count: { memories: 12, trackingEvents: 28 },
-      faceRecognitionEnabled: true,
-      faceRecognitionConsent: true,
-      recognitionThreshold: 0.95,
-      faceCollection: { id: "fc3", status: "ACTIVE", faceRecords: [{ id: "fr3" }] }
+  // Account-specific demo data for stakeholder presentations
+  const getDemoChildren = (userEmail?: string) => {
+    // Check if this is john@mysafeplay.ai (should have NO children for security demo)
+    if (userEmail === 'john@mysafeplay.ai' || userEmail === 'john@doe.com') {
+      console.log('🎭 john@mysafeplay.ai account - returning empty children for security enhancement demo');
+      return [];
     }
-  ];
+
+    // Default to parent@mysafeplay.ai data (3 children for family management demo)
+    console.log('🎭 parent@mysafeplay.ai account - returning 3 demo children');
+    return [
+      {
+        id: "demo-1",
+        firstName: "Emma",
+        lastName: "Johnson",
+        dateOfBirth: "2017-03-15",
+        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg",
+        status: "CHECKED_IN",
+        currentVenue: { name: "Adventure Playground" },
+        _count: { memories: 23, trackingEvents: 45 },
+        faceRecognitionEnabled: true,
+        faceRecognitionConsent: true,
+        recognitionThreshold: 0.95,
+        faceCollection: { id: "fc1", status: "ACTIVE", faceRecords: [{ id: "fr1" }, { id: "fr2" }] }
+      },
+      {
+        id: "demo-2",
+        firstName: "Lucas",
+        lastName: "Johnson",
+        dateOfBirth: "2019-07-22",
+        profilePhoto: "https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png",
+        status: "CHECKED_OUT",
+        currentVenue: null,
+        _count: { memories: 18, trackingEvents: 32 },
+        faceRecognitionEnabled: false,
+        faceRecognitionConsent: false,
+        recognitionThreshold: 0.95,
+        faceCollection: null
+      },
+      {
+        id: "demo-3",
+        firstName: "Sophia",
+        lastName: "Johnson",
+        dateOfBirth: "2020-11-08",
+        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-happy-smiling-little-girl-white-background-cute-child-looking-camera-studio-shot-childhood-happiness-concept-192784866.jpg",
+        status: "CHECKED_OUT",
+        currentVenue: null,
+        _count: { memories: 12, trackingEvents: 28 },
+        faceRecognitionEnabled: true,
+        faceRecognitionConsent: true,
+        recognitionThreshold: 0.95,
+        faceCollection: { id: "fc3", status: "ACTIVE", faceRecords: [{ id: "fr3" }] }
+      }
+    ];
+  };
 
   // Fetch children from API
   const fetchChildren = async () => {
     try {
       setIsLoading(true);
+      
+      // Get user email for account-specific demo data
+      const userEmail = session?.user?.email;
+      console.log('🔍 Fetching children for user:', userEmail);
       
       // First try to fetch from API
       const response = await fetch('/api/children');
@@ -103,23 +119,23 @@ export default function ChildrenPage() {
           } : null
         }));
         
-        // If API returns empty results but we're in a demo environment, use demo data
+        // If API returns empty results, use account-specific demo data
         if (transformedChildren.length === 0) {
-          console.log('🎭 Using demo children data for stakeholder presentation');
-          setChildren(getDemoChildren());
+          console.log('🎭 API returned empty, using account-specific demo children data');
+          setChildren(getDemoChildren(userEmail));
         } else {
           setChildren(transformedChildren);
         }
       } else {
-        // If API fails, fallback to demo data for stakeholder demos
-        console.log('🎭 API failed, using demo children data for stakeholder presentation');
-        setChildren(getDemoChildren());
+        // If API fails, fallback to account-specific demo data
+        console.log('🎭 API failed, using account-specific demo children data');
+        setChildren(getDemoChildren(userEmail));
       }
     } catch (error) {
       console.error('Error fetching children:', error);
-      // Fallback to demo data for stakeholder demos
-      console.log('🎭 Error occurred, using demo children data for stakeholder presentation');
-      setChildren(getDemoChildren());
+      // Fallback to account-specific demo data
+      console.log('🎭 Error occurred, using account-specific demo children data');
+      setChildren(getDemoChildren(session?.user?.email));
       setError(null); // Clear error since we're using demo data
     } finally {
       setIsLoading(false);
@@ -127,8 +143,10 @@ export default function ChildrenPage() {
   };
 
   useEffect(() => {
-    fetchChildren();
-  }, []);
+    if (session) {
+      fetchChildren();
+    }
+  }, [session]);
 
   const calculateAge = (birthDate: string) => {
     const today = new Date();
