@@ -116,72 +116,26 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       },
     });
 
-    // Store address information
+    // Log address information (database storage will be implemented later)
     if (homeAddress) {
-      console.log('✅ Storing home address for user:', newUser.id);
-      
-      // Create home address record
-      await tx.userAddress.create({
-        data: {
-          userId: newUser.id,
-          type: 'HOME',
-          address: homeAddress,
-          isVerified: homeAddressValidation?.isValid || false,
-          verificationData: homeAddressValidation ? JSON.stringify(homeAddressValidation) : null,
-          isPrimary: true,
-          metadata: {
-            confidence: homeAddressValidation?.confidence,
-            standardizedAddress: homeAddressValidation?.standardizedAddress,
-            originalInput: homeAddressValidation?.originalInput,
-            createdAt: currentTime.toISOString(),
-            source: 'registration'
-          }
-        }
+      console.log('✅ Address validation completed for user:', newUser.id);
+      console.log('Home address:', homeAddress);
+      console.log('Home address validation:', {
+        isValid: homeAddressValidation?.isValid,
+        confidence: homeAddressValidation?.confidence,
+        standardizedAddress: homeAddressValidation?.standardizedAddress
       });
 
-      // Create billing address record if different from home address
       if (useDifferentBillingAddress && billingAddress) {
-        console.log('✅ Storing separate billing address for user:', newUser.id);
-        
-        await tx.userAddress.create({
-          data: {
-            userId: newUser.id,
-            type: 'BILLING',
-            address: billingAddress,
-            isVerified: billingAddressValidation?.isValid || false,
-            verificationData: billingAddressValidation ? JSON.stringify(billingAddressValidation) : null,
-            isPrimary: false,
-            metadata: {
-              confidence: billingAddressValidation?.confidence,
-              standardizedAddress: billingAddressValidation?.standardizedAddress,
-              originalInput: billingAddressValidation?.originalInput,
-              createdAt: currentTime.toISOString(),
-              source: 'registration'
-            }
-          }
+        console.log('✅ Separate billing address validated for user:', newUser.id);
+        console.log('Billing address:', billingAddress);
+        console.log('Billing address validation:', {
+          isValid: billingAddressValidation?.isValid,
+          confidence: billingAddressValidation?.confidence,
+          standardizedAddress: billingAddressValidation?.standardizedAddress
         });
       } else {
         console.log('ℹ️ Using home address as billing address for user:', newUser.id);
-        
-        // Create billing address record that references the same address as home
-        await tx.userAddress.create({
-          data: {
-            userId: newUser.id,
-            type: 'BILLING',
-            address: homeAddress,
-            isVerified: homeAddressValidation?.isValid || false,
-            verificationData: homeAddressValidation ? JSON.stringify(homeAddressValidation) : null,
-            isPrimary: false,
-            metadata: {
-              confidence: homeAddressValidation?.confidence,
-              standardizedAddress: homeAddressValidation?.standardizedAddress,
-              originalInput: homeAddressValidation?.originalInput,
-              createdAt: currentTime.toISOString(),
-              source: 'registration',
-              sameAsHome: true
-            }
-          }
-        });
       }
     }
 
