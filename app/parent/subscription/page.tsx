@@ -100,7 +100,7 @@ export default function SubscriptionPage() {
       
       // Fetch plan details for payment setup
       try {
-        const response = await fetch('/api/stripe/plans');
+        const response = await fetch('/api/stripe/plans-fixed');
         const data = await response.json();
         const plan = data.plans?.find((p: any) => p.id === planId);
         
@@ -139,12 +139,12 @@ export default function SubscriptionPage() {
       console.log('📡 Sending request to modify subscription...');
       console.log('📋 Request body:', JSON.stringify(requestBody, null, 2));
       
-      const response = await fetch('/api/stripe/subscription/modify', {
+      const response = await fetch('/api/stripe/subscription/modify-fixed', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ priceId: stripePriceId }),
       });
 
       console.log('📥 Response received:', { 

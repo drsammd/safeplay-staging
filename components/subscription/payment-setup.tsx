@@ -314,7 +314,7 @@ function PaymentFormContent({
         billingInterval
       });
       
-      const response = await fetch('/api/stripe/subscription/create', {
+      const response = await fetch('/api/stripe/subscription/create-fixed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

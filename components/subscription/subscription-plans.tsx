@@ -54,7 +54,7 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch('/api/stripe/plans');
+      const response = await fetch('/api/stripe/plans-fixed');
       const data = await response.json();
       if (data.plans) {
         // FIXED: Sort plans by price (ascending) - Basic, Premium, Family, Lifetime
