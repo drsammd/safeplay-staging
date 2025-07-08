@@ -64,6 +64,12 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ 
       success: true, 
       autoAuthenticated: !!demoUser,
+      demoUser: demoUser ? {
+        id: demoUser.id,
+        email: demoUser.email,
+        name: demoUser.name,
+        role: demoUser.role
+      } : null,
       redirectTo: '/', // Always redirect to home page
       message: demoUser ? `Auto-authenticated as ${demoUser.name}` : 'Stakeholder access granted'
     });

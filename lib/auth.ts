@@ -87,10 +87,23 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            user.password
-          );
+          // Special handling for demo accounts during stakeholder access
+          const isDemoAccount = user.email === 'john@mysafeplay.ai' || user.email === 'parent@mysafeplay.ai';
+          const isDemoPassword = credentials.password === 'demo-password';
+          
+          let isPasswordValid = false;
+          
+          if (isDemoAccount && isDemoPassword) {
+            // Allow demo password for stakeholder presentations
+            console.log("🎭 Demo account authentication for stakeholder access");
+            isPasswordValid = true;
+          } else {
+            // Normal password validation
+            isPasswordValid = await bcrypt.compare(
+              credentials.password,
+              user.password
+            );
+          }
 
           if (!isPasswordValid) {
             console.log("❌ Invalid password");
