@@ -63,15 +63,23 @@ export async function POST(request: NextRequest) {
     // Set secure cookies
     const response = NextResponse.json({ 
       success: true, 
+      demoMode: true,
       autoAuthenticated: !!demoUser,
       demoUser: demoUser ? {
         id: demoUser.id,
         email: demoUser.email,
         name: demoUser.name,
-        role: demoUser.role
-      } : null,
-      redirectTo: '/', // Always redirect to home page
-      message: demoUser ? `Auto-authenticated as ${demoUser.name}` : 'Stakeholder access granted'
+        role: demoUser.role,
+        isDemo: true
+      } : {
+        id: "demo-user-fallback",
+        email: "john@mysafeplay.ai", 
+        name: "John Doe",
+        role: "PARENT",
+        isDemo: true
+      },
+      redirectTo: '/parent', // Direct redirect to parent dashboard
+      message: demoUser ? `Demo mode enabled for ${demoUser.name}` : 'Demo mode enabled for stakeholder presentation'
     });
     
     const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 24 hours
