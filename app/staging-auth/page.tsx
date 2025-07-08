@@ -34,15 +34,43 @@ export default function StagingAuthPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Check if user was auto-authenticated
-        if (data.autoAuthenticated) {
-          console.log('✅ Staging password verified, auto-signin available');
-          // Redirect directly to NextAuth signin - the authorize function will detect the auto-signin token
-          setTimeout(() => {
-            window.location.href = '/api/auth/signin?callbackUrl=/';
-          }, 500);
+        console.log('✅ Staging password verified, implementing direct authentication');
+        
+        // Direct authentication approach - bypass login form entirely
+        if (data.autoAuthenticated && data.demoUser) {
+          console.log('🚀 Auto-authenticating demo user:', data.demoUser.email);
+          
+          // Use NextAuth's signIn function with credentials
+          const { signIn } = await import('next-auth/react');
+          
+          try {
+            const result = await signIn('credentials', {
+              email: data.demoUser.email,
+              password: 'demo-password', // Demo accounts use standardized password
+              redirect: false
+            });
+            
+            if (result?.ok) {
+              console.log('✅ Direct authentication successful');
+              setTimeout(() => {
+                window.location.href = '/parent';
+              }, 500);
+            } else {
+              console.log('⚠️ Direct authentication failed, using fallback approach');
+              // Fallback to auto-signin token approach
+              setTimeout(() => {
+                window.location.href = '/api/auth/signin?callbackUrl=/parent';
+              }, 500);
+            }
+          } catch (signInError) {
+            console.log('⚠️ Direct signIn failed, using redirect approach');
+            // Ultimate fallback - direct redirect with auto-signin token
+            setTimeout(() => {
+              window.location.href = '/api/auth/signin?callbackUrl=/parent';
+            }, 500);
+          }
         } else {
-          console.log('⚠️ Staging password verified, but auto-signin not available');
+          console.log('⚠️ Auto-authentication not available, using standard flow');
           // Fallback to home page
           setTimeout(() => {
             router.push('/');
