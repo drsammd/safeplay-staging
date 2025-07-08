@@ -7329,6 +7329,11 @@ preact-render-to-string@^5.1.19:
   dependencies:
     pretty-format "^3.8.0"
 
+preact-render-to-string@^6.5.13:
+  version "6.5.13"
+  resolved "https://registry.npmjs.org/preact-render-to-string/-/preact-render-to-string-6.5.13.tgz"
+  integrity sha512-iGPd+hKPMFKsfpR2vL4kJ6ZPcFIoWZEcBf0Dpm3zOpdVvj77aY8RlLiQji5OMrngEyaxGogeakTb54uS2FvA6w==
+
 preact@^10.26.9, preact@^10.6.3:
   version "10.26.9"
   resolved "https://registry.npmjs.org/preact/-/preact-10.26.9.tgz"
