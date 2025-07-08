@@ -50,15 +50,17 @@ export default function StagingAuthPage() {
           
           console.log('✅ Demo session created, redirecting to dashboard');
           
-          // Direct redirect to parent dashboard without any login forms
+          // Fix URL concatenation issue and ensure clean redirect
           setTimeout(() => {
-            window.location.href = '/parent';
+            // Use window.location.replace to avoid URL concatenation issues
+            window.location.replace('/parent');
           }, 500);
         } else {
-          console.log('⚠️ Demo mode not available, using standard NextAuth flow');
-          // Fallback to NextAuth signin with auto-signin token
+          console.log('⚠️ Demo mode not available, using auto-login mechanism');
+          
+          // Auto-login approach: redirect to a special auto-signin endpoint
           setTimeout(() => {
-            window.location.href = '/api/auth/signin?callbackUrl=/parent';
+            window.location.replace('/api/auth/auto-signin?callbackUrl=/parent');
           }, 500);
         }
       } else {
