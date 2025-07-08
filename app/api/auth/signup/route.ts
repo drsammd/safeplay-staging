@@ -16,6 +16,15 @@ const signupSchema = z.object({
   role: z.enum(["PARENT", "VENUE_ADMIN", "SUPER_ADMIN"]).default("PARENT"),
   agreeToTerms: z.boolean().refine(val => val === true, "You must agree to the Terms of Service"),
   agreeToPrivacy: z.boolean().refine(val => val === true, "You must agree to the Privacy Policy"),
+  selectedPlan: z.object({
+    id: z.string(),
+    name: z.string(),
+    stripePriceId: z.string(),
+    billingInterval: z.enum(["monthly", "yearly", "lifetime"]),
+    amount: z.number(),
+    planType: z.string(),
+  }).optional(),
+  subscriptionData: z.any().optional(),
 });
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
@@ -33,7 +42,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     );
   }
 
-  const { email: rawEmail, password, name, role, agreeToTerms, agreeToPrivacy } = validation.data;
+  const { email: rawEmail, password, name, role, agreeToTerms, agreeToPrivacy, selectedPlan, subscriptionData } = validation.data;
   
   // Normalize email to lowercase for consistency
   const email = rawEmail.toLowerCase().trim();
@@ -132,6 +141,41 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       });
     }
 
+    // Create subscription if plan was selected
+    if (selectedPlan) {
+      console.log('✅ Creating subscription for user:', newUser.id, 'Plan:', selectedPlan.planType);
+      
+      // Map plan type to subscription enum
+      const subscriptionPlan = selectedPlan.planType.toUpperCase() as 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
+      
+      const subscriptionData: any = {
+        userId: newUser.id,
+        planType: subscriptionPlan,
+        status: selectedPlan.planType === 'FREE' ? 'ACTIVE' : 'TRIALING',
+        startDate: currentTime,
+        autoRenew: selectedPlan.billingInterval !== 'lifetime',
+        metadata: {
+          selectedPlan: selectedPlan,
+          registrationFlow: true,
+          createdAt: currentTime.toISOString()
+        }
+      };
+
+      // Add trial period for non-free plans
+      if (selectedPlan.planType !== 'FREE') {
+        subscriptionData.trialStart = currentTime;
+        subscriptionData.trialEnd = new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days trial
+      }
+
+      await tx.userSubscription.create({
+        data: subscriptionData,
+      });
+
+      console.log('✅ Subscription created successfully for user:', newUser.id);
+    } else {
+      console.log('ℹ️ No plan selected, creating user without subscription');
+    }
+
     return newUser;
   });
 
@@ -154,8 +198,34 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // Remove password from response
   const { password: _, ...userWithoutPassword } = user;
 
+  // Get subscription information if it exists
+  let subscriptionInfo = null;
+  if (selectedPlan) {
+    try {
+      const subscription = await prisma.userSubscription.findUnique({
+        where: { userId: user.id },
+        select: {
+          planType: true,
+          status: true,
+          startDate: true,
+          trialStart: true,
+          trialEnd: true,
+          autoRenew: true,
+          metadata: true
+        }
+      });
+      subscriptionInfo = subscription;
+    } catch (error) {
+      console.error('Error fetching subscription info:', error);
+    }
+  }
+
   return apiErrorHandler.createSuccessResponse({
     user: userWithoutPassword,
-    message: "Account created successfully with legal compliance tracking"
+    subscription: subscriptionInfo,
+    selectedPlan: selectedPlan,
+    message: selectedPlan 
+      ? `Account created successfully with ${selectedPlan.name} plan`
+      : "Account created successfully with legal compliance tracking"
   });
 });

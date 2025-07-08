@@ -257,13 +257,13 @@ async function main() {
 
   // Create Children
   const children = await Promise.all([
-    // Emily Johnson's children
+    // Emily Johnson's children (parent@mysafeplay.ai) - Match frontend demo expectations
     prisma.child.create({
       data: {
         firstName: 'Emma',
         lastName: 'Johnson',
         dateOfBirth: new Date('2017-03-15'),
-        profilePhoto: 'https://images.unsplash.com/photo-1544717297-fa95b6ee9643?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+        profilePhoto: 'https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg',
         parentId: parents[0].id,
         status: 'ACTIVE',
         currentVenueId: venues[0].id,
@@ -275,10 +275,21 @@ async function main() {
         firstName: 'Lucas',
         lastName: 'Johnson',
         dateOfBirth: new Date('2019-07-22'),
-        profilePhoto: 'https://images.unsplash.com/photo-1566004100631-35d015d6a491?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+        profilePhoto: 'https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png',
         parentId: parents[0].id,
         status: 'ACTIVE',
         biometricId: 'bio_lucas_001',
+      },
+    }),
+    prisma.child.create({
+      data: {
+        firstName: 'Sophia',
+        lastName: 'Johnson',
+        dateOfBirth: new Date('2020-02-14'),
+        profilePhoto: 'https://thumbs.dreamstime.com/z/portrait-happy-smiling-little-girl-white-background-cute-child-looking-camera-studio-shot-childhood-happiness-concept-192784866.jpg',
+        parentId: parents[0].id,
+        status: 'ACTIVE',
+        biometricId: 'bio_sophia_001',
       },
     }),
     // David Chen's children
@@ -319,42 +330,9 @@ async function main() {
         biometricId: 'bio_noah_001',
       },
     }),
-    // John Doe's children (john@mysafeplay.ai)
-    prisma.child.create({
-      data: {
-        firstName: 'Olivia',
-        lastName: 'Doe',
-        dateOfBirth: new Date('2016-05-12'),
-        profilePhoto: 'https://c8.alamy.com/comp/2K2B53C/serious-about-looking-ahead-profile-portrait-of-a-young-girl-against-a-white-background-2K2B53C.jpg',
-        parentId: johnDoe.id,
-        status: 'ACTIVE',
-        currentVenueId: venues[0].id,
-        biometricId: 'bio_olivia_001'
-      },
-    }),
-    prisma.child.create({
-      data: {
-        firstName: 'Ethan',
-        lastName: 'Doe',
-        dateOfBirth: new Date('2018-11-08'),
-        profilePhoto: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        parentId: johnDoe.id,
-        status: 'ACTIVE',
-        currentVenueId: venues[0].id,
-        biometricId: 'bio_ethan_001'
-      },
-    }),
-    prisma.child.create({
-      data: {
-        firstName: 'Ava',
-        lastName: 'Doe',
-        dateOfBirth: new Date('2020-02-14'),
-        profilePhoto: 'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        parentId: johnDoe.id,
-        status: 'ACTIVE',
-        biometricId: 'bio_ava_001'
-      },
-    }),
+    // NOTE: John Doe (john@mysafeplay.ai) gets NO children 
+    // This is intentional for the security enhancement demo
+    // The frontend expects john@mysafeplay.ai to have no children to show security prompts
   ]);
 
   console.log('👶 Created children');
@@ -363,54 +341,10 @@ async function main() {
   console.log('👨‍👩‍👧‍👦 Creating comprehensive family member data...');
 
   // Create additional users for family members
+  // NOTE: John Doe (john@mysafeplay.ai) gets NO family members
+  // This is intentional for the security enhancement demo
   const familyUsers = await Promise.all([
-    // John Doe's family members
-    prisma.user.create({
-      data: {
-        email: 'sarah.doe@email.com',
-        password: hashedPassword,
-        name: 'Sarah Doe',
-        role: 'PARENT',
-        phone: '+1 (555) 004-0001',
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'mary.doe@email.com',
-        password: hashedPassword,
-        name: 'Mary Doe',
-        role: 'PARENT',
-        phone: '+1 (555) 004-0002',
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'michael.doe@email.com',
-        password: hashedPassword,
-        name: 'Michael Doe',
-        role: 'PARENT',
-        phone: '+1 (555) 004-0003',
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'jennifer.smith@email.com',
-        password: hashedPassword,
-        name: 'Jennifer Smith',
-        role: 'PARENT',
-        phone: '+1 (555) 004-0004',
-      },
-    }),
-    prisma.user.create({
-      data: {
-        email: 'david.wilson@email.com',
-        password: hashedPassword,
-        name: 'David Wilson',
-        role: 'PARENT',
-        phone: '+1 (555) 004-0005',
-      },
-    }),
-    // Emily Johnson's family members
+    // Emily Johnson's family members (parent@mysafeplay.ai)
     prisma.user.create({
       data: {
         email: 'alex.johnson@email.com',
@@ -461,58 +395,12 @@ async function main() {
   console.log('👥 Created family member user accounts');
 
   // Map family users for easier reference
-  const [sarahDoe, maryDoe, michaelDoe, jenniferSmith, davidWilson, 
-         alexJohnson, lindaJohnson, robertJohnson, mariaGarcia, susanBrown] = familyUsers;
+  const [alexJohnson, lindaJohnson, robertJohnson, mariaGarcia, susanBrown] = familyUsers;
 
   // Create Family Member relationships
+  // NOTE: John Doe (john@mysafeplay.ai) gets NO family member relationships
+  // This is intentional for the security enhancement demo
   const familyMembers = await Promise.all([
-    // John Doe's family
-    prisma.familyMember.create({
-      data: {
-        familyId: johnDoe.id,
-        memberId: sarahDoe.id,
-        relationship: 'SPOUSE',
-        status: 'ACTIVE',
-        notes: 'Wife and co-parent, full access to all children',
-      },
-    }),
-    prisma.familyMember.create({
-      data: {
-        familyId: johnDoe.id,
-        memberId: maryDoe.id,
-        relationship: 'GRANDPARENT',
-        status: 'ACTIVE',
-        notes: 'Grandmother (John\'s mother), trusted caregiver',
-      },
-    }),
-    prisma.familyMember.create({
-      data: {
-        familyId: johnDoe.id,
-        memberId: michaelDoe.id,
-        relationship: 'AUNT_UNCLE',
-        status: 'ACTIVE',
-        notes: 'Uncle (John\'s brother), emergency contact',
-      },
-    }),
-    prisma.familyMember.create({
-      data: {
-        familyId: johnDoe.id,
-        memberId: jenniferSmith.id,
-        relationship: 'CAREGIVER',
-        status: 'ACTIVE',
-        notes: 'Trusted babysitter, authorized for pickup',
-      },
-    }),
-    prisma.familyMember.create({
-      data: {
-        familyId: johnDoe.id,
-        memberId: davidWilson.id,
-        relationship: 'OTHER',
-        status: 'ACTIVE',
-        notes: 'Close family friend, emergency contact only',
-      },
-    }),
-
     // Emily Johnson's family (parent@mysafeplay.ai)
     prisma.familyMember.create({
       data: {
@@ -564,135 +452,16 @@ async function main() {
   console.log('👨‍👩‍👧‍👦 Created family member relationships');
 
   // Create Family Permissions
+  // NOTE: John Doe (john@mysafeplay.ai) gets NO family permissions
+  // This is intentional for the security enhancement demo
   const familyPermissions = await Promise.all([
-    // John Doe's family permissions
-    // Sarah Doe (spouse) - Full permissions
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: sarahDoe.id,
-        familyMemberId: familyMembers[0].id,
-        permissionType: 'FULL_ACCESS',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: sarahDoe.id,
-        familyMemberId: familyMembers[0].id,
-        permissionType: 'PICKUP_AUTHORIZATION',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: sarahDoe.id,
-        familyMemberId: familyMembers[0].id,
-        permissionType: 'EMERGENCY_CONTACT',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-
-    // Mary Doe (grandmother) - Limited permissions
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: maryDoe.id,
-        familyMemberId: familyMembers[1].id,
-        permissionType: 'PICKUP_AUTHORIZATION',
-        resourceType: 'CHILD',
-        isActive: true,
-      },
-    }),
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: maryDoe.id,
-        familyMemberId: familyMembers[1].id,
-        permissionType: 'VIEW_CHILD_INFO',
-        resourceType: 'CHILD',
-        isActive: true,
-      },
-    }),
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: maryDoe.id,
-        familyMemberId: familyMembers[1].id,
-        permissionType: 'RECEIVE_ALERTS',
-        resourceType: 'CHILD',
-        isActive: true,
-      },
-    }),
-
-    // Michael Doe (uncle) - Emergency contact only
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: michaelDoe.id,
-        familyMemberId: familyMembers[2].id,
-        permissionType: 'EMERGENCY_CONTACT',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: michaelDoe.id,
-        familyMemberId: familyMembers[2].id,
-        permissionType: 'RECEIVE_ALERTS',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-
-    // Jennifer Smith (babysitter) - Pickup and basic permissions
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: jenniferSmith.id,
-        familyMemberId: familyMembers[3].id,
-        permissionType: 'PICKUP_AUTHORIZATION',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: jenniferSmith.id,
-        familyMemberId: familyMembers[3].id,
-        permissionType: 'VIEW_CHILD_INFO',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-
-    // David Wilson (family friend) - Emergency contact only
-    prisma.familyPermission.create({
-      data: {
-        granterId: johnDoe.id,
-        granteeId: davidWilson.id,
-        familyMemberId: familyMembers[4].id,
-        permissionType: 'EMERGENCY_CONTACT',
-        resourceType: 'ALL',
-        isActive: true,
-      },
-    }),
-
-    // Emily Johnson's family permissions
+    // Emily Johnson's family permissions (parent@mysafeplay.ai)
     // Alex Johnson (spouse) - Full permissions  
     prisma.familyPermission.create({
       data: {
         granterId: parents[0].id,
         granteeId: alexJohnson.id,
-        familyMemberId: familyMembers[5].id,
+        familyMemberId: familyMembers[0].id,
         permissionType: 'FULL_ACCESS',
         resourceType: 'ALL',
         isActive: true,
@@ -702,7 +471,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: alexJohnson.id,
-        familyMemberId: familyMembers[5].id,
+        familyMemberId: familyMembers[0].id,
         permissionType: 'PICKUP_AUTHORIZATION',
         resourceType: 'ALL',
         isActive: true,
@@ -714,7 +483,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: lindaJohnson.id,
-        familyMemberId: familyMembers[6].id,
+        familyMemberId: familyMembers[1].id,
         permissionType: 'PICKUP_AUTHORIZATION',
         resourceType: 'ALL',
         isActive: true,
@@ -724,7 +493,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: lindaJohnson.id,
-        familyMemberId: familyMembers[6].id,
+        familyMemberId: familyMembers[1].id,
         permissionType: 'VIEW_CHILD_INFO',
         resourceType: 'ALL',
         isActive: true,
@@ -736,7 +505,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: robertJohnson.id,
-        familyMemberId: familyMembers[7].id,
+        familyMemberId: familyMembers[2].id,
         permissionType: 'EMERGENCY_CONTACT',
         resourceType: 'ALL',
         isActive: true,
@@ -748,7 +517,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: mariaGarcia.id,
-        familyMemberId: familyMembers[8].id,
+        familyMemberId: familyMembers[3].id,
         permissionType: 'PICKUP_AUTHORIZATION',
         resourceType: 'ALL',
         isActive: true,
@@ -758,7 +527,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: mariaGarcia.id,
-        familyMemberId: familyMembers[8].id,
+        familyMemberId: familyMembers[3].id,
         permissionType: 'VIEW_CHILD_INFO',
         resourceType: 'ALL',
         isActive: true,
@@ -768,7 +537,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: mariaGarcia.id,
-        familyMemberId: familyMembers[8].id,
+        familyMemberId: familyMembers[3].id,
         permissionType: 'RECEIVE_ALERTS',
         resourceType: 'ALL',
         isActive: true,
@@ -780,7 +549,7 @@ async function main() {
       data: {
         granterId: parents[0].id,
         granteeId: susanBrown.id,
-        familyMemberId: familyMembers[9].id,
+        familyMemberId: familyMembers[4].id,
         permissionType: 'EMERGENCY_CONTACT',
         resourceType: 'ALL',
         isActive: true,
@@ -791,177 +560,17 @@ async function main() {
   console.log('🔐 Created family permissions');
 
   // Create Child Access permissions
+  // NOTE: John Doe (john@mysafeplay.ai) gets NO child access permissions
+  // This is intentional for the security enhancement demo
   const childAccess = await Promise.all([
-    // John Doe's children access
-    // Sarah Doe (spouse) - Full access to all children
-    prisma.childAccess.create({
-      data: {
-        childId: children[5].id, // Olivia Doe
-        granterId: johnDoe.id,
-        granteeId: sarahDoe.id,
-        familyMemberId: familyMembers[0].id,
-        accessLevel: 'FULL_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: true,
-          canReceiveAlerts: true,
-          emergencyContact: true,
-        },
-        isActive: true,
-      },
-    }),
-    prisma.childAccess.create({
-      data: {
-        childId: children[6].id, // Ethan Doe
-        granterId: johnDoe.id,
-        granteeId: sarahDoe.id,
-        familyMemberId: familyMembers[0].id,
-        accessLevel: 'FULL_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: true,
-          canReceiveAlerts: true,
-          emergencyContact: true,
-        },
-        isActive: true,
-      },
-    }),
-    prisma.childAccess.create({
-      data: {
-        childId: children[7].id, // Ava Doe
-        granterId: johnDoe.id,
-        granteeId: sarahDoe.id,
-        familyMemberId: familyMembers[0].id,
-        accessLevel: 'FULL_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: true,
-          canReceiveAlerts: true,
-          emergencyContact: true,
-        },
-        isActive: true,
-      },
-    }),
-
-    // Mary Doe (grandmother) - Limited access to Olivia and Ethan
-    prisma.childAccess.create({
-      data: {
-        childId: children[5].id, // Olivia Doe
-        granterId: johnDoe.id,
-        granteeId: maryDoe.id,
-        familyMemberId: familyMembers[1].id,
-        accessLevel: 'LIMITED_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: false,
-          canReceiveAlerts: true,
-          emergencyContact: false,
-        },
-        isActive: true,
-      },
-    }),
-    prisma.childAccess.create({
-      data: {
-        childId: children[6].id, // Ethan Doe
-        granterId: johnDoe.id,
-        granteeId: maryDoe.id,
-        familyMemberId: familyMembers[1].id,
-        accessLevel: 'LIMITED_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: false,
-          canReceiveAlerts: true,
-          emergencyContact: false,
-        },
-        isActive: true,
-      },
-    }),
-
-    // Michael Doe (uncle) - Emergency access to Ava
-    prisma.childAccess.create({
-      data: {
-        childId: children[7].id, // Ava Doe
-        granterId: johnDoe.id,
-        granteeId: michaelDoe.id,
-        familyMemberId: familyMembers[2].id,
-        accessLevel: 'EMERGENCY_ONLY',
-        permissions: {
-          canPickup: true,
-          canViewLocation: false,
-          canViewPhotos: false,
-          canReceiveAlerts: true,
-          emergencyContact: true,
-        },
-        isActive: true,
-      },
-    }),
-
-    // Jennifer Smith (babysitter) - Full access to all children
-    prisma.childAccess.create({
-      data: {
-        childId: children[5].id, // Olivia Doe
-        granterId: johnDoe.id,
-        granteeId: jenniferSmith.id,
-        familyMemberId: familyMembers[3].id,
-        accessLevel: 'FULL_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: false,
-          canReceiveAlerts: true,
-          emergencyContact: false,
-        },
-        isActive: true,
-      },
-    }),
-    prisma.childAccess.create({
-      data: {
-        childId: children[6].id, // Ethan Doe
-        granterId: johnDoe.id,
-        granteeId: jenniferSmith.id,
-        familyMemberId: familyMembers[3].id,
-        accessLevel: 'FULL_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: false,
-          canReceiveAlerts: true,
-          emergencyContact: false,
-        },
-        isActive: true,
-      },
-    }),
-    prisma.childAccess.create({
-      data: {
-        childId: children[7].id, // Ava Doe
-        granterId: johnDoe.id,
-        granteeId: jenniferSmith.id,
-        familyMemberId: familyMembers[3].id,
-        accessLevel: 'FULL_ACCESS',
-        permissions: {
-          canPickup: true,
-          canViewLocation: true,
-          canViewPhotos: false,
-          canReceiveAlerts: true,
-          emergencyContact: false,
-        },
-        isActive: true,
-      },
-    }),
-
-    // Emily Johnson's children access
-    // Alex Johnson (spouse) - Full access to Emma and Lucas
+    // Emily Johnson's children access (parent@mysafeplay.ai)
+    // Alex Johnson (spouse) - Full access to Emma, Lucas, and Sophia
     prisma.childAccess.create({
       data: {
         childId: children[0].id, // Emma Johnson
         granterId: parents[0].id,
         granteeId: alexJohnson.id,
-        familyMemberId: familyMembers[5].id,
+        familyMemberId: familyMembers[0].id,
         accessLevel: 'FULL_ACCESS',
         permissions: {
           canPickup: true,
@@ -978,7 +587,24 @@ async function main() {
         childId: children[1].id, // Lucas Johnson
         granterId: parents[0].id,
         granteeId: alexJohnson.id,
-        familyMemberId: familyMembers[5].id,
+        familyMemberId: familyMembers[0].id,
+        accessLevel: 'FULL_ACCESS',
+        permissions: {
+          canPickup: true,
+          canViewLocation: true,
+          canViewPhotos: true,
+          canReceiveAlerts: true,
+          emergencyContact: true,
+        },
+        isActive: true,
+      },
+    }),
+    prisma.childAccess.create({
+      data: {
+        childId: children[2].id, // Sophia Johnson
+        granterId: parents[0].id,
+        granteeId: alexJohnson.id,
+        familyMemberId: familyMembers[0].id,
         accessLevel: 'FULL_ACCESS',
         permissions: {
           canPickup: true,
@@ -991,13 +617,13 @@ async function main() {
       },
     }),
 
-    // Linda Johnson (grandmother) - Limited access to both children
+    // Linda Johnson (grandmother) - Limited access to all children
     prisma.childAccess.create({
       data: {
         childId: children[0].id, // Emma Johnson
         granterId: parents[0].id,
         granteeId: lindaJohnson.id,
-        familyMemberId: familyMembers[6].id,
+        familyMemberId: familyMembers[1].id,
         accessLevel: 'LIMITED_ACCESS',
         permissions: {
           canPickup: true,
@@ -1014,7 +640,24 @@ async function main() {
         childId: children[1].id, // Lucas Johnson
         granterId: parents[0].id,
         granteeId: lindaJohnson.id,
-        familyMemberId: familyMembers[6].id,
+        familyMemberId: familyMembers[1].id,
+        accessLevel: 'LIMITED_ACCESS',
+        permissions: {
+          canPickup: true,
+          canViewLocation: true,
+          canViewPhotos: true,
+          canReceiveAlerts: true,
+          emergencyContact: false,
+        },
+        isActive: true,
+      },
+    }),
+    prisma.childAccess.create({
+      data: {
+        childId: children[2].id, // Sophia Johnson
+        granterId: parents[0].id,
+        granteeId: lindaJohnson.id,
+        familyMemberId: familyMembers[1].id,
         accessLevel: 'LIMITED_ACCESS',
         permissions: {
           canPickup: true,
@@ -1027,13 +670,13 @@ async function main() {
       },
     }),
 
-    // Maria Garcia (nanny) - Full access to both children
+    // Maria Garcia (nanny) - Full access to all children
     prisma.childAccess.create({
       data: {
         childId: children[0].id, // Emma Johnson
         granterId: parents[0].id,
         granteeId: mariaGarcia.id,
-        familyMemberId: familyMembers[8].id,
+        familyMemberId: familyMembers[3].id,
         accessLevel: 'FULL_ACCESS',
         permissions: {
           canPickup: true,
@@ -1050,7 +693,24 @@ async function main() {
         childId: children[1].id, // Lucas Johnson
         granterId: parents[0].id,
         granteeId: mariaGarcia.id,
-        familyMemberId: familyMembers[8].id,
+        familyMemberId: familyMembers[3].id,
+        accessLevel: 'FULL_ACCESS',
+        permissions: {
+          canPickup: true,
+          canViewLocation: true,
+          canViewPhotos: false,
+          canReceiveAlerts: true,
+          emergencyContact: false,
+        },
+        isActive: true,
+      },
+    }),
+    prisma.childAccess.create({
+      data: {
+        childId: children[2].id, // Sophia Johnson
+        granterId: parents[0].id,
+        granteeId: mariaGarcia.id,
+        familyMemberId: familyMembers[3].id,
         accessLevel: 'FULL_ACCESS',
         permissions: {
           canPickup: true,
@@ -1215,85 +875,8 @@ async function main() {
       },
     }),
     // John Doe's children memories
-    // Olivia's memories
-    prisma.memory.create({
-      data: {
-        type: 'PHOTO',
-        fileName: 'olivia_climbing_adventure.jpg',
-        fileUrl: 'https://i.pinimg.com/originals/b1/97/41/b197412fa22de84f8c55d5a0cd0aeee2.jpg',
-        originalUrl: 'https://i.ytimg.com/vi/Jpnmwk4K36s/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGFkgZSgsMA8=&rs=AOn4CLB2jsdvR1A81cK6w2saDjVTTquIHA',
-        thumbnailUrl: 'https://i.pinimg.com/736x/24/37/d3/2437d36c8732fb95061be94fe6c9a804.jpg',
-        capturedAt: new Date(now.getTime() - 1 * 60 * 60 * 1000), // 1 hour ago
-        price: 2.99,
-        status: 'PURCHASED',
-        childId: children[5].id, // Olivia
-        venueId: venues[0].id,
-        purchaserId: johnDoe.id,
-        purchasedAt: new Date(now.getTime() - 30 * 60 * 1000), // 30 minutes ago
-      },
-    }),
-    prisma.memory.create({
-      data: {
-        type: 'VIDEO',
-        fileName: 'olivia_playground_fun.mp4',
-        fileUrl: 'https://media.gettyimages.com/id/158990601/vector/children-playing-on-playground.jpg?s=1024x1024&w=gi&k=20&c=kq19P7kx0JMb_5HxuvQAK11nFGzGMxC6BMzREdZGbTA=',
-        originalUrl: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-        thumbnailUrl: 'https://i.pinimg.com/736x/ca/06/2a/ca062a0bcd1387cb9083613c67e54512.jpg',
-        capturedAt: new Date(now.getTime() - 2 * 60 * 60 * 1000), // 2 hours ago
-        price: 9.99,
-        status: 'AVAILABLE',
-        childId: children[5].id, // Olivia
-        venueId: venues[0].id,
-      },
-    }),
-    // Ethan's memories
-    prisma.memory.create({
-      data: {
-        type: 'PHOTO',
-        fileName: 'ethan_ballpit_joy.jpg',
-        fileUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        originalUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=100',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-        capturedAt: new Date(now.getTime() - 45 * 60 * 1000), // 45 minutes ago
-        price: 2.99,
-        status: 'AVAILABLE',
-        childId: children[6].id, // Ethan
-        venueId: venues[0].id,
-      },
-    }),
-    prisma.memory.create({
-      data: {
-        type: 'PHOTO',
-        fileName: 'ethan_interactive_game.jpg',
-        fileUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        originalUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=100',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-        capturedAt: new Date(now.getTime() - 90 * 60 * 1000), // 90 minutes ago
-        price: 2.99,
-        status: 'PURCHASED',
-        childId: children[6].id, // Ethan
-        venueId: venues[0].id,
-        purchaserId: johnDoe.id,
-        purchasedAt: new Date(now.getTime() - 60 * 60 * 1000), // 1 hour ago
-      },
-    }),
-    // Ava's memories (from previous visit)
-    prisma.memory.create({
-      data: {
-        type: 'PHOTO',
-        fileName: 'ava_toddler_play.jpg',
-        fileUrl: 'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-        originalUrl: 'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=100',
-        thumbnailUrl: 'https://images.unsplash.com/photo-1518717758536-85ae29035b6d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
-        capturedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
-        price: 2.99,
-        status: 'PURCHASED',
-        childId: children[7].id, // Ava
-        venueId: venues[1].id,
-        purchaserId: johnDoe.id,
-        purchasedAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // 2 days ago + 1 hour
-      },
-    }),
+    // NOTE: John Doe's children (Olivia, Ethan, Ava) have been removed
+    // This is intentional for the security enhancement demo
   ]);
 
   console.log('📸 Created memories');
