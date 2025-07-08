@@ -136,8 +136,9 @@ export default function SignUpPage() {
       return;
     }
 
-    if (!homeAddressValidation?.isValid) {
-      setError("Please enter a valid home address");
+    // Allow proceeding if address is provided and either validated or has reasonable confidence
+    if (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.3) {
+      setError("Please enter a valid home address or correct the format");
       return;
     }
 
@@ -148,8 +149,8 @@ export default function SignUpPage() {
         return;
       }
 
-      if (!billingAddressValidation?.isValid) {
-        setError("Please enter a valid billing address");
+      if (billingAddressValidation && !billingAddressValidation.isValid && billingAddressValidation.confidence < 0.3) {
+        setError("Please enter a valid billing address or correct the format");
         return;
       }
     }
@@ -583,7 +584,7 @@ export default function SignUpPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!formData.homeAddress || !homeAddressValidation?.isValid}
+                  disabled={!formData.homeAddress || (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.3)}
                   className="flex-1 btn-primary"
                 >
                   Continue to Plans

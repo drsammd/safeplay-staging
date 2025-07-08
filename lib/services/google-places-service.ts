@@ -55,7 +55,7 @@ export class GooglePlacesService {
     this.client = new Client({});
     
     if (!this.apiKey) {
-      console.warn('Google Places API key not configured');
+      console.warn('Google Places API key not configured - address validation will use fallback mode');
     }
   }
 
@@ -65,7 +65,8 @@ export class GooglePlacesService {
   ): Promise<PlaceAutocompleteResult[]> {
     try {
       if (!this.apiKey) {
-        throw new Error('Google Places API key not configured');
+        console.warn('Google Places API key not configured - using fallback mode');
+        return [];
       }
 
       const response = await this.client.placeAutocomplete({
@@ -91,12 +92,8 @@ export class GooglePlacesService {
   ): Promise<AddressValidationResult> {
     try {
       if (!this.apiKey) {
-        return {
-          isValid: false,
-          confidence: 0,
-          originalInput: address,
-          error: 'Google Places API key not configured'
-        };
+        // Use fallback validation when API key is not available
+        return this.fallbackAddressValidation(address, countryRestriction);
       }
 
       // First try geocoding the address directly
@@ -139,19 +136,16 @@ export class GooglePlacesService {
 
     } catch (error) {
       console.error('Address validation error:', error);
-      return {
-        isValid: false,
-        confidence: 0,
-        originalInput: address,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      };
+      // Fall back to basic validation if API fails
+      return this.fallbackAddressValidation(address, countryRestriction);
     }
   }
 
   async getPlaceDetails(placeId: string): Promise<StandardizedAddress | null> {
     try {
       if (!this.apiKey) {
-        throw new Error('Google Places API key not configured');
+        console.warn('Google Places API key not configured - cannot retrieve place details');
+        return null;
       }
 
       const response = await this.client.placeDetails({
@@ -275,6 +269,99 @@ export class GooglePlacesService {
     }
     
     return matrix[str2.length][str1.length];
+  }
+
+  // Fallback address validation when Google Places API is not available
+  private fallbackAddressValidation(
+    address: string,
+    countryRestriction: string[] = ['us', 'ca']
+  ): AddressValidationResult {
+    const trimmedAddress = address.trim();
+    
+    if (!trimmedAddress || trimmedAddress.length < 10) {
+      return {
+        isValid: false,
+        confidence: 0,
+        originalInput: address,
+        error: 'Address too short - please provide a complete address'
+      };
+    }
+
+    // Basic regex patterns for US/CA addresses
+    const addressPatterns = {
+      // US: 123 Main St, City, State 12345
+      us: /^.+,\s*.+,\s*[A-Za-z]{2}\s*\d{5}(-\d{4})?$/,
+      // CA: 123 Main St, City, Province A1A 1A1
+      ca: /^.+,\s*.+,\s*[A-Za-z]{2}\s*[A-Za-z]\d[A-Za-z]\s*\d[A-Za-z]\d$/,
+      // General pattern: Has commas and some structure
+      general: /^.+,\s*.+,\s*.+$/
+    };
+
+    const hasNumbers = /\d/.test(trimmedAddress);
+    const hasCommas = (trimmedAddress.match(/,/g) || []).length >= 2;
+    const hasStateOrProvince = /\b[A-Z]{2}\b/.test(trimmedAddress);
+    const hasPostalCode = /\b\d{5}(-\d{4})?\b|\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b/.test(trimmedAddress);
+
+    let confidence = 0.3; // Base confidence for fallback mode
+    let isValid = false;
+
+    // Check if it matches basic address patterns
+    if (addressPatterns.general.test(trimmedAddress)) {
+      confidence += 0.2;
+      isValid = true;
+    }
+
+    // Boost confidence for various address components
+    if (hasNumbers) confidence += 0.1;
+    if (hasCommas) confidence += 0.1;
+    if (hasStateOrProvince) confidence += 0.1;
+    if (hasPostalCode) confidence += 0.2;
+
+    // Check for specific country patterns
+    if (countryRestriction.includes('us') && addressPatterns.us.test(trimmedAddress)) {
+      confidence += 0.2;
+      isValid = true;
+    }
+    if (countryRestriction.includes('ca') && addressPatterns.ca.test(trimmedAddress)) {
+      confidence += 0.2;
+      isValid = true;
+    }
+
+    // Create a basic standardized address (best effort)
+    let standardizedAddress: StandardizedAddress | undefined;
+    if (isValid) {
+      const parts = trimmedAddress.split(',').map(part => part.trim());
+      standardizedAddress = {
+        formatted_address: trimmedAddress,
+        place_id: `fallback_${Date.now()}`,
+        geometry: {
+          location: { lat: 0, lng: 0 }
+        },
+        address_components: []
+      };
+
+      // Try to parse basic components
+      if (parts.length >= 3) {
+        standardizedAddress.route = parts[0];
+        standardizedAddress.locality = parts[1];
+        
+        // Try to extract state/province and postal code from the last part
+        const lastPart = parts[parts.length - 1];
+        const statePostalMatch = lastPart.match(/([A-Z]{2})\s*(.+)/);
+        if (statePostalMatch) {
+          standardizedAddress.administrative_area_level_1 = statePostalMatch[1];
+          standardizedAddress.postal_code = statePostalMatch[2];
+        }
+      }
+    }
+
+    return {
+      isValid,
+      confidence: Math.min(confidence, 1.0),
+      standardizedAddress,
+      originalInput: address,
+      error: isValid ? undefined : 'Address format not recognized - please check your address format'
+    };
   }
 
   // Compare two addresses and calculate match score
