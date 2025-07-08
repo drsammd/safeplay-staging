@@ -36,37 +36,13 @@ export default function StagingAuthPage() {
       if (response.ok && data.success) {
         // Check if user was auto-authenticated
         if (data.autoAuthenticated) {
-          // Trigger NextAuth signin with empty credentials to use auto-signin token
-          try {
-            const { signIn } = await import('next-auth/react');
-            const result = await signIn('credentials', {
-              email: '',
-              password: '',
-              redirect: false
-            });
-
-            if (result?.ok) {
-              console.log('✅ Auto-signin successful, redirecting to dashboard');
-              setTimeout(() => {
-                router.push(data.redirectTo || '/');
-                router.refresh();
-              }, 500);
-            } else {
-              console.log('⚠️ Auto-signin failed, redirecting anyway');
-              setTimeout(() => {
-                router.push(data.redirectTo || '/');
-                router.refresh();
-              }, 500);
-            }
-          } catch (error) {
-            console.error('❌ Auto-signin error:', error);
-            // Fallback to regular redirect
-            setTimeout(() => {
-              router.push(data.redirectTo || '/');
-              router.refresh();
-            }, 500);
-          }
+          console.log('✅ Staging password verified, auto-signin available');
+          // Redirect directly to NextAuth signin - the authorize function will detect the auto-signin token
+          setTimeout(() => {
+            window.location.href = '/api/auth/signin?callbackUrl=/';
+          }, 500);
         } else {
+          console.log('⚠️ Staging password verified, but auto-signin not available');
           // Fallback to home page
           setTimeout(() => {
             router.push('/');

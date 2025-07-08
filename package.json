@@ -72,6 +72,7 @@
     "nodemailer": "^7.0.4",
     "papaparse": "5.5.3",
     "preact": "^10.26.9",
+    "preact-render-to-string": "^6.5.13",
     "qrcode": "1.5.4",
     "react": "18.2.0",
     "react-day-picker": "^9.7.0",

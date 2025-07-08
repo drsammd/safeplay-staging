@@ -67,11 +67,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (!includeBlocked) {
-      whereClause.isBlocked = false
+      // Filter out blocked/suspended statuses instead of using non-existent isBlocked field
+      whereClause.status = {
+        notIn: ['SUSPENDED', 'REMOVED']
+      }
     }
 
     if (role) {
-      whereClause.familyRole = role.toUpperCase()
+      // Map familyRole to relationship since that's the actual field in schema
+      whereClause.relationship = role.toUpperCase()
     }
 
     if (status !== 'all') {
@@ -134,7 +138,7 @@ export async function GET(request: NextRequest) {
         // Calculate permission flags from permissions array
         emergencyContact: isEmergencyContact,
         emergencyContactOrder: isEmergencyContact ? 1 : null,
-        isBlocked: member.status === 'BLOCKED' || member.status === 'SUSPENDED',
+        isBlocked: member.status === 'SUSPENDED' || member.status === 'REMOVED',
         canViewAllChildren: hasPermission('VIEW_ALL_CHILDREN') || hasPermission('FULL_ACCESS'),
         canEditChildren: hasPermission('EDIT_CHILDREN') || hasPermission('FULL_ACCESS'),
         canCheckInOut: hasPermission('CHECK_IN_OUT') || hasPermission('FULL_ACCESS'),
