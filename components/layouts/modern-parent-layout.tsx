@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSession } from "next-auth/react";
+import { useEffectiveSession } from "@/components/providers/demo-session-provider";
 import ModernSidebar from "@/components/navigation/modern-sidebar";
 import ModernHeader from "@/components/navigation/modern-header";
 import { VerificationBadge } from "@/components/verification/verification-badge";
@@ -16,11 +16,14 @@ interface ModernParentLayoutProps {
 }
 
 export default function ModernParentLayout({ children }: ModernParentLayoutProps) {
-  const { data: session } = useSession();
+  const { data: session, isDemoMode } = useEffectiveSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const getVerificationPrompt = () => {
     if (!session?.user) return null;
+
+    // Skip verification prompts in demo mode for stakeholder presentations
+    if (isDemoMode) return null;
 
     const { phoneVerified, identityVerified, twoFactorEnabled, verificationLevel } = session.user;
     

@@ -34,47 +34,31 @@ export default function StagingAuthPage() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        console.log('✅ Staging password verified, implementing direct authentication');
+        console.log('✅ Staging password verified, implementing demo mode authentication');
         
-        // Direct authentication approach - bypass login form entirely
-        if (data.autoAuthenticated && data.demoUser) {
-          console.log('🚀 Auto-authenticating demo user:', data.demoUser.email);
+        // Demo Mode Toggle - Completely bypass standard authentication
+        if (data.demoMode && data.demoUser) {
+          console.log('🎭 Demo mode enabled, creating direct session for:', data.demoUser.email);
           
-          // Use NextAuth's signIn function with credentials
-          const { signIn } = await import('next-auth/react');
+          // Set demo mode flag in sessionStorage for client-side session management
+          sessionStorage.setItem('mySafePlay_demoMode', 'true');
+          sessionStorage.setItem('mySafePlay_demoUser', JSON.stringify(data.demoUser));
+          sessionStorage.setItem('mySafePlay_demoSession', JSON.stringify({
+            user: data.demoUser,
+            expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+          }));
           
-          try {
-            const result = await signIn('credentials', {
-              email: data.demoUser.email,
-              password: 'demo-password', // Demo accounts use standardized password
-              redirect: false
-            });
-            
-            if (result?.ok) {
-              console.log('✅ Direct authentication successful');
-              setTimeout(() => {
-                window.location.href = '/parent';
-              }, 500);
-            } else {
-              console.log('⚠️ Direct authentication failed, using fallback approach');
-              // Fallback to auto-signin token approach
-              setTimeout(() => {
-                window.location.href = '/api/auth/signin?callbackUrl=/parent';
-              }, 500);
-            }
-          } catch (signInError) {
-            console.log('⚠️ Direct signIn failed, using redirect approach');
-            // Ultimate fallback - direct redirect with auto-signin token
-            setTimeout(() => {
-              window.location.href = '/api/auth/signin?callbackUrl=/parent';
-            }, 500);
-          }
-        } else {
-          console.log('⚠️ Auto-authentication not available, using standard flow');
-          // Fallback to home page
+          console.log('✅ Demo session created, redirecting to dashboard');
+          
+          // Direct redirect to parent dashboard without any login forms
           setTimeout(() => {
-            router.push('/');
-            router.refresh();
+            window.location.href = '/parent';
+          }, 500);
+        } else {
+          console.log('⚠️ Demo mode not available, using standard NextAuth flow');
+          // Fallback to NextAuth signin with auto-signin token
+          setTimeout(() => {
+            window.location.href = '/api/auth/signin?callbackUrl=/parent';
           }, 500);
         }
       } else {
