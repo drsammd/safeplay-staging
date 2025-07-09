@@ -9,210 +9,155 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-// import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { toast } from 'sonner';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { TrendingUp, TrendingDown, Activity, Users, Shield, AlertTriangle, CheckCircle, Target, Brain, Zap } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Users, 
+  Clock, 
+  Activity,
+  Target,
+  Zap,
+  PieChart,
+  Calendar,
+  Download
+} from 'lucide-react';
 
 interface ZoneAnalytics {
-  zoneId: string;
-  zoneName: string;
-  zoneType: string;
-  analytics: {
-    avgUtilization: number;
-    totalEntries: number;
-    totalExits: number;
-    avgStayTime: number;
-    safetyScore: number;
-    totalViolations: number;
-    totalRevenue: number;
-  };
-  currentMetrics: {
-    violations: number;
-    activeAlerts: number;
-  };
-}
-
-interface PerformanceRanking {
-  zoneId: string;
-  zoneName: string;
-  zoneType: string;
-  score: number;
-  metrics: {
-    utilization: number;
-    safety: number;
-    efficiency: number;
-    revenue: number;
-    violations: number;
-  };
-}
-
-interface OptimizationRecommendation {
   id: string;
+  name: string;
   type: string;
-  zoneId: string;
-  zoneName: string;
-  title: string;
-  description: string;
-  priority: string;
-  impact: number;
-  effort: number;
-  estimatedCost: number;
-  estimatedSavings: number;
-  paybackPeriod: number;
-  recommendations: string[];
-  metrics: any;
+  totalVisitors: number;
+  averageStayTime: number;
+  peakHours: string[];
+  utilizationRate: number;
+  revenueGenerated: number;
+  satisfactionScore: number;
+  incidentRate: number;
+  popularityTrend: number;
 }
 
-interface Insight {
-  type: string;
-  title: string;
-  message: string;
-  zones: string[];
-  actionable: boolean;
-  recommendation: string;
+interface TimeSlotData {
+  hour: string;
+  visitors: number;
+  capacity: number;
+  utilization: number;
 }
+
+const ZONE_ANALYTICS: ZoneAnalytics[] = [
+  {
+    id: '1',
+    name: 'Main Play Area',
+    type: 'PLAY_AREA',
+    totalVisitors: 1247,
+    averageStayTime: 45,
+    peakHours: ['11:00-12:00', '15:00-16:00'],
+    utilizationRate: 78,
+    revenueGenerated: 3450,
+    satisfactionScore: 88,
+    incidentRate: 0.02,
+    popularityTrend: 12
+  },
+  {
+    id: '2',
+    name: 'Toddler Zone',
+    type: 'TODDLER_AREA',
+    totalVisitors: 456,
+    averageStayTime: 35,
+    peakHours: ['10:00-11:00', '14:00-15:00'],
+    utilizationRate: 65,
+    revenueGenerated: 1890,
+    satisfactionScore: 92,
+    incidentRate: 0.01,
+    popularityTrend: 8
+  },
+  {
+    id: '3',
+    name: 'Party Room A',
+    type: 'PARTY_ROOM',
+    totalVisitors: 234,
+    averageStayTime: 120,
+    peakHours: ['13:00-14:00', '16:00-17:00'],
+    utilizationRate: 45,
+    revenueGenerated: 2100,
+    satisfactionScore: 85,
+    incidentRate: 0.00,
+    popularityTrend: -5
+  },
+  {
+    id: '4',
+    name: 'Food Court',
+    type: 'FOOD_COURT',
+    totalVisitors: 890,
+    averageStayTime: 25,
+    peakHours: ['12:00-13:00', '17:00-18:00'],
+    utilizationRate: 82,
+    revenueGenerated: 4200,
+    satisfactionScore: 79,
+    incidentRate: 0.03,
+    popularityTrend: 15
+  }
+];
+
+const HOURLY_DATA: TimeSlotData[] = [
+  { hour: '09:00', visitors: 45, capacity: 200, utilization: 23 },
+  { hour: '10:00', visitors: 78, capacity: 200, utilization: 39 },
+  { hour: '11:00', visitors: 145, capacity: 200, utilization: 73 },
+  { hour: '12:00', visitors: 189, capacity: 200, utilization: 95 },
+  { hour: '13:00', visitors: 167, capacity: 200, utilization: 84 },
+  { hour: '14:00', visitors: 198, capacity: 200, utilization: 99 },
+  { hour: '15:00', visitors: 176, capacity: 200, utilization: 88 },
+  { hour: '16:00', visitors: 156, capacity: 200, utilization: 78 },
+  { hour: '17:00', visitors: 134, capacity: 200, utilization: 67 },
+  { hour: '18:00', visitors: 98, capacity: 200, utilization: 49 }
+];
 
 export default function ZoneAnalyticsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [optimizations, setOptimizations] = useState<OptimizationRecommendation[]>([]);
-  const [intelligence, setIntelligence] = useState<any>(null);
-  const [selectedVenue, setSelectedVenue] = useState<string>('');
-  const [venues, setVenues] = useState<any[]>([]);
+  const [selectedZone, setSelectedZone] = useState('all');
+  const [selectedPeriod, setSelectedPeriod] = useState('today');
   const [activeTab, setActiveTab] = useState('overview');
-  const [timeRange, setTimeRange] = useState('30');
-  const [analysisType, setAnalysisType] = useState('comprehensive');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
-    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    to: new Date()
-  });
+  const [loading, setLoading] = useState(false);
 
+  // Authorization check
   useEffect(() => {
     if (status === 'loading') return;
+    
     if (!session) {
       router.push('/auth/signin');
       return;
     }
-    if (session.user?.role !== 'VENUE_ADMIN' && session.user?.role !== 'SUPER_ADMIN') {
+    
+    if (!['VENUE_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(session.user?.role)) {
       router.push('/unauthorized');
       return;
     }
 
-    fetchVenues();
+    setLoading(false);
   }, [session, status, router]);
 
-  useEffect(() => {
-    if (selectedVenue) {
-      fetchAnalyticsData();
-    }
-  }, [selectedVenue, timeRange, analysisType]);
-
-  const fetchVenues = async () => {
-    try {
-      const response = await fetch('/api/venues');
-      if (response.ok) {
-        const data = await response.json();
-        setVenues(data.venues || []);
-        if (data.venues?.length > 0) {
-          setSelectedVenue(data.venues[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching venues:', error);
-      setError('Failed to load venues');
-    }
+  const getTrendColor = (trend: number) => {
+    if (trend > 0) return 'text-green-600';
+    if (trend < 0) return 'text-red-600';
+    return 'text-gray-600';
   };
 
-  const fetchAnalyticsData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch zone analytics
-      const analyticsResponse = await fetch(`/api/zones/analytics?venueId=${selectedVenue}&period=${timeRange}&includeComparisons=true`);
-      if (analyticsResponse.ok) {
-        const analyticsData = await analyticsResponse.json();
-        setAnalytics(analyticsData);
-      }
-
-      // Fetch optimization recommendations
-      const optimizationResponse = await fetch(`/api/zones/optimization?venueId=${selectedVenue}&includeImplementationPlan=true`);
-      if (optimizationResponse.ok) {
-        const optimizationData = await optimizationResponse.json();
-        setOptimizations(optimizationData.optimizations || []);
-      }
-
-      // Fetch AI intelligence insights
-      const intelligenceResponse = await fetch(`/api/zones/intelligence?venueId=${selectedVenue}&type=${analysisType}&horizon=${timeRange}&includeForecasts=true&includePredictive=true`);
-      if (intelligenceResponse.ok) {
-        const intelligenceData = await intelligenceResponse.json();
-        setIntelligence(intelligenceData);
-      }
-
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching analytics data:', error);
-      setError('Failed to load analytics data');
-    } finally {
-      setLoading(false);
-    }
+  const getTrendIcon = (trend: number) => {
+    if (trend > 0) return '↗';
+    if (trend < 0) return '↘';
+    return '→';
   };
 
-  const handleApplyOptimization = async (optimizationId: string) => {
-    try {
-      const response = await fetch('/api/zones/optimization', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'mark_implemented',
-          optimizationId
-        })
-      });
-
-      if (response.ok) {
-        toast.success('Optimization marked as implemented');
-        fetchAnalyticsData();
-      } else {
-        throw new Error('Failed to apply optimization');
-      }
-    } catch (error) {
-      console.error('Error applying optimization:', error);
-      toast.error('Failed to apply optimization');
-    }
+  const getUtilizationColor = (utilization: number) => {
+    if (utilization >= 90) return 'text-red-600';
+    if (utilization >= 70) return 'text-yellow-600';
+    return 'text-green-600';
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'CRITICAL': return 'bg-red-100 text-red-800';
-      case 'HIGH': return 'bg-orange-100 text-orange-800';
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
-      case 'LOW': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const filteredZones = selectedZone === 'all' ? ZONE_ANALYTICS : ZONE_ANALYTICS.filter(z => z.id === selectedZone);
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    if (score >= 40) return 'text-orange-600';
-    return 'text-red-600';
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  if (loading) {
+  if (status === 'loading') {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
@@ -225,224 +170,214 @@ export default function ZoneAnalyticsPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button onClick={fetchAnalyticsData}>Try Again</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  const utilizationData = analytics?.analytics?.byZone?.map((zone: any) => ({
-    name: zone.name.substring(0, 15) + (zone.name.length > 15 ? '...' : ''),
-    utilization: zone.analytics?.avgUtilization || 0,
-    safety: zone.analytics?.safetyScore || 0,
-    revenue: zone.analytics?.totalRevenue || 0
-  })) || [];
-
-  const performanceData = analytics?.performance?.rankings?.slice(0, 10).map((ranking: PerformanceRanking) => ({
-    name: ranking.zoneName.substring(0, 12) + (ranking.zoneName.length > 12 ? '...' : ''),
-    score: ranking.score,
-    utilization: ranking.metrics.utilization,
-    safety: ranking.metrics.safety,
-    efficiency: ranking.metrics.efficiency
-  })) || [];
-
-  const trendsData = analytics?.performance?.trends?.map((trend: any) => ({
-    date: trend.date,
-    utilization: trend.utilization
-  })) || [];
-
-  const pieColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#F97316'];
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Zone Analytics & Intelligence</h1>
-          <p className="text-gray-600">Advanced analytics and AI-powered insights for zone optimization</p>
+          <h1 className="text-2xl font-bold text-gray-900">Zone Analytics</h1>
+          <p className="text-gray-600">Detailed analytics and insights for all zones</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <Select value={selectedVenue} onValueChange={setSelectedVenue}>
+          <Select value={selectedZone} onValueChange={setSelectedZone}>
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select venue" />
+              <SelectValue placeholder="Select zone" />
             </SelectTrigger>
             <SelectContent>
-              {venues.map((venue) => (
-                <SelectItem key={venue.id} value={venue.id}>
-                  {venue.name}
+              <SelectItem value="all">All Zones</SelectItem>
+              {ZONE_ANALYTICS.map((zone) => (
+                <SelectItem key={zone.id} value={zone.id}>
+                  {zone.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
             <SelectTrigger className="w-32">
-              <SelectValue placeholder="Time range" />
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7">7 days</SelectItem>
-              <SelectItem value="30">30 days</SelectItem>
-              <SelectItem value="90">90 days</SelectItem>
-              <SelectItem value="365">1 year</SelectItem>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
             </SelectContent>
           </Select>
-
-          <Button onClick={fetchAnalyticsData} disabled={loading}>
-            {loading ? 'Refreshing...' : 'Refresh'}
+          <Button onClick={() => alert('Export feature coming soon!')}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
           </Button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <Activity className="h-8 w-8 text-blue-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Avg Utilization</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {Math.round(analytics.analytics.aggregated.averageUtilization * 100)}%
-                  </p>
-                </div>
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Total Visitors</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {ZONE_ANALYTICS.reduce((sum, zone) => sum + zone.totalVisitors, 0)}
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <Shield className="h-8 w-8 text-green-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Safety Score</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {Math.round(analytics.safety.overallSafetyScore * 20)}/100
-                  </p>
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Avg Utilization</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {Math.round(ZONE_ANALYTICS.reduce((sum, zone) => sum + zone.utilizationRate, 0) / ZONE_ANALYTICS.length)}%
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <Users className="h-8 w-8 text-purple-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Visits</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {analytics.analytics.aggregated.totalEntries.toLocaleString()}
-                  </p>
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Avg Stay Time</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {Math.round(ZONE_ANALYTICS.reduce((sum, zone) => sum + zone.averageStayTime, 0) / ZONE_ANALYTICS.length)}min
+                </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <TrendingUp className="h-8 w-8 text-orange-600" />
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Revenue</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {formatCurrency(analytics.analytics.aggregated.totalRevenue)}
-                  </p>
-                </div>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <BarChart3 className="h-5 w-5 text-orange-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Revenue</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  ${ZONE_ANALYTICS.reduce((sum, zone) => sum + zone.revenueGenerated, 0)}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Zone Overview</TabsTrigger>
+          <TabsTrigger value="utilization">Utilization</TabsTrigger>
           <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="intelligence">AI Insights</TabsTrigger>
-          <TabsTrigger value="optimization">Optimization</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Zone Utilization Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Zone Utilization Overview</CardTitle>
-                <CardDescription>Average utilization rates across all zones</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={utilizationData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="utilization" fill="#3B82F6" name="Utilization %" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredZones.map((zone) => (
+              <Card key={zone.id} className="relative overflow-hidden">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{zone.name}</CardTitle>
+                    <Badge variant="outline">{zone.type.replace('_', ' ')}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Utilization */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Utilization</span>
+                        <span className={`font-medium ${getUtilizationColor(zone.utilizationRate)}`}>
+                          {zone.utilizationRate}%
+                        </span>
+                      </div>
+                      <Progress value={zone.utilizationRate} className="h-2" />
+                    </div>
 
-            {/* Utilization Trends */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Utilization Trends</CardTitle>
-                <CardDescription>Daily utilization trends over time</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={trendsData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="utilization" stroke="#10B981" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Zone Performance Rankings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Zone Performance Rankings</CardTitle>
-                <CardDescription>Top performing zones by composite score</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {analytics?.performance?.rankings?.slice(0, 10).map((ranking: PerformanceRanking, index: number) => (
-                    <div key={ranking.zoneId} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
-                          {index + 1}
+                    {/* Key Metrics */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3 text-gray-500" />
+                          <span className="text-gray-600">Visitors</span>
                         </div>
-                        <div>
-                          <p className="font-medium">{ranking.zoneName}</p>
-                          <p className="text-sm text-gray-600">{ranking.zoneType}</p>
+                        <p className="font-medium">{zone.totalVisitors}</p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-gray-500" />
+                          <span className="text-gray-600">Avg Stay</span>
+                        </div>
+                        <p className="font-medium">{zone.averageStayTime}min</p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <BarChart3 className="h-3 w-3 text-gray-500" />
+                          <span className="text-gray-600">Revenue</span>
+                        </div>
+                        <p className="font-medium">${zone.revenueGenerated}</p>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1">
+                          <Target className="h-3 w-3 text-gray-500" />
+                          <span className="text-gray-600">Satisfaction</span>
+                        </div>
+                        <p className="font-medium">{zone.satisfactionScore}%</p>
+                      </div>
+                    </div>
+
+                    {/* Trend */}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-sm text-gray-600">Trend</span>
+                      <span className={`text-sm font-medium ${getTrendColor(zone.popularityTrend)}`}>
+                        {getTrendIcon(zone.popularityTrend)} {Math.abs(zone.popularityTrend)}%
+                      </span>
+                    </div>
+
+                    {/* Peak Hours */}
+                    <div className="space-y-1">
+                      <span className="text-sm text-gray-600">Peak Hours</span>
+                      <div className="flex flex-wrap gap-1">
+                        {zone.peakHours.map((hour) => (
+                          <Badge key={hour} variant="secondary" className="text-xs">
+                            {hour}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="utilization" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Hourly Utilization</CardTitle>
+                <CardDescription>Real-time utilization throughout the day</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {HOURLY_DATA.map((data) => (
+                    <div key={data.hour} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium w-12">{data.hour}</span>
+                        <div className="flex-1 w-32">
+                          <Progress value={data.utilization} className="h-2" />
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-lg font-bold ${getScoreColor(ranking.score)}`}>
-                          {ranking.score}
-                        </p>
-                        <p className="text-xs text-gray-500">Performance Score</p>
+                        <span className="text-sm font-medium">{data.visitors}</span>
+                        <span className="text-xs text-gray-500">/{data.capacity}</span>
                       </div>
                     </div>
                   ))}
@@ -450,43 +385,28 @@ export default function ZoneAnalyticsPage() {
               </CardContent>
             </Card>
 
-            {/* Safety Metrics */}
             <Card>
               <CardHeader>
-                <CardTitle>Safety Overview</CardTitle>
-                <CardDescription>Safety metrics and trends</CardDescription>
+                <CardTitle>Zone Comparison</CardTitle>
+                <CardDescription>Compare utilization across all zones</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Safety Score</p>
-                      <p className="text-2xl font-bold text-green-600">
-                        {Math.round((analytics?.safety?.overallSafetyScore || 0) * 20)}
-                      </p>
+                  {ZONE_ANALYTICS.map((zone) => (
+                    <div key={zone.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium w-24 truncate">{zone.name}</span>
+                        <div className="flex-1 w-32">
+                          <Progress value={zone.utilizationRate} className="h-2" />
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`text-sm font-medium ${getUtilizationColor(zone.utilizationRate)}`}>
+                          {zone.utilizationRate}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Total Violations</p>
-                      <p className="text-2xl font-bold text-yellow-600">
-                        {analytics?.safety?.totalViolations || 0}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Avg Response Time</p>
-                      <p className="text-2xl font-bold text-blue-600">
-                        {Math.round((analytics?.safety?.averageResponseTime || 0) / 60)}m
-                      </p>
-                    </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <p className="text-sm text-gray-600">Risk Level</p>
-                      <p className="text-2xl font-bold text-purple-600">
-                        {analytics?.safety?.riskLevel || 'LOW'}
-                      </p>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -495,351 +415,63 @@ export default function ZoneAnalyticsPage() {
 
         <TabsContent value="performance" className="mt-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Performance Chart */}
             <Card>
               <CardHeader>
-                <CardTitle>Multi-Metric Performance</CardTitle>
-                <CardDescription>Utilization, safety, and efficiency by zone</CardDescription>
+                <CardTitle>Performance Metrics</CardTitle>
+                <CardDescription>Key performance indicators by zone</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" angle={-45} textAnchor="end" height={80} />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="utilization" fill="#3B82F6" name="Utilization" />
-                      <Bar dataKey="safety" fill="#10B981" name="Safety" />
-                      <Bar dataKey="efficiency" fill="#F59E0B" name="Efficiency" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Zone Type Distribution */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Performance by Zone Type</CardTitle>
-                <CardDescription>Average performance scores by zone category</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={analytics?.performance?.rankings?.reduce((acc: any[], ranking: PerformanceRanking) => {
-                          const existing = acc.find(item => item.name === ranking.zoneType);
-                          if (existing) {
-                            existing.value += ranking.score;
-                            existing.count += 1;
-                          } else {
-                            acc.push({ name: ranking.zoneType, value: ranking.score, count: 1 });
-                          }
-                          return acc;
-                        }, []).map((item: any) => ({ ...item, value: Math.round(item.value / item.count) })) || []}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, value }) => `${name}: ${value}`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {analytics?.performance?.rankings?.map((_: any, index: number) => (
-                          <Cell key={`cell-${index}`} fill={pieColors[index % pieColors.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Detailed Performance Table */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Detailed Performance Metrics</CardTitle>
-                <CardDescription>Comprehensive performance breakdown by zone</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Zone</th>
-                        <th className="text-left p-2">Type</th>
-                        <th className="text-center p-2">Score</th>
-                        <th className="text-center p-2">Utilization</th>
-                        <th className="text-center p-2">Safety</th>
-                        <th className="text-center p-2">Efficiency</th>
-                        <th className="text-center p-2">Revenue</th>
-                        <th className="text-center p-2">Violations</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {analytics?.performance?.rankings?.map((ranking: PerformanceRanking) => (
-                        <tr key={ranking.zoneId} className="border-b hover:bg-gray-50">
-                          <td className="p-2 font-medium">{ranking.zoneName}</td>
-                          <td className="p-2">
-                            <Badge variant="outline">{ranking.zoneType}</Badge>
-                          </td>
-                          <td className="p-2 text-center">
-                            <span className={`font-bold ${getScoreColor(ranking.score)}`}>
-                              {ranking.score}
-                            </span>
-                          </td>
-                          <td className="p-2 text-center">{ranking.metrics.utilization}%</td>
-                          <td className="p-2 text-center">{ranking.metrics.safety}/100</td>
-                          <td className="p-2 text-center">{ranking.metrics.efficiency}/100</td>
-                          <td className="p-2 text-center">{formatCurrency(ranking.metrics.revenue)}</td>
-                          <td className="p-2 text-center">
-                            <span className={ranking.metrics.violations > 5 ? 'text-red-600' : 'text-green-600'}>
-                              {ranking.metrics.violations}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="intelligence" className="mt-6">
-          <div className="space-y-6">
-            {/* AI Insights Summary */}
-            {intelligence && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center">
-                      <Brain className="h-8 w-8 text-purple-600" />
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">AI Insights</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {intelligence.insights?.patterns?.length || 0}
-                        </p>
+                <div className="space-y-6">
+                  {ZONE_ANALYTICS.map((zone) => (
+                    <div key={zone.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{zone.name}</h4>
+                        <Badge variant="outline">{zone.type.replace('_', ' ')}</Badge>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center">
-                      <Target className="h-8 w-8 text-blue-600" />
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Confidence Score</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {Math.round((intelligence.metadata?.confidenceScore || 0) * 100)}%
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardContent className="pt-6">
-                    <div className="flex items-center">
-                      <Activity className="h-8 w-8 text-green-600" />
-                      <div className="ml-4">
-                        <p className="text-sm font-medium text-gray-600">Data Points</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {intelligence.metadata?.dataPointsProcessed?.toLocaleString() || 0}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Insights and Patterns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Key Insights</CardTitle>
-                  <CardDescription>AI-generated insights from zone data analysis</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {intelligence?.insights?.map((insight: Insight, index: number) => (
-                      <div key={index} className="p-4 border rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                          <div>
-                            <h4 className="font-medium text-gray-900">{insight.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{insight.message}</p>
-                            {insight.actionable && (
-                              <p className="text-sm text-blue-600 mt-2">{insight.recommendation}</p>
-                            )}
-                          </div>
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-600">Revenue</p>
+                          <p className="font-medium">${zone.revenueGenerated}</p>
                         </div>
-                      </div>
-                    )) || (
-                      <div className="text-center py-8">
-                        <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600">AI insights will appear here once data analysis is complete</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Predictive Analytics</CardTitle>
-                  <CardDescription>Forecasts and trend predictions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-12">
-                    <Zap className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">Predictive analytics coming soon</p>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Advanced ML models for capacity forecasting and trend prediction
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="optimization" className="mt-6">
-          <div className="space-y-6">
-            {/* Optimization Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">Total Recommendations</p>
-                    <p className="text-2xl font-bold text-gray-900">{optimizations.length}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">Potential Savings</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {formatCurrency(optimizations.reduce((sum, opt) => sum + opt.estimatedSavings, 0))}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">Implementation Cost</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {formatCurrency(optimizations.reduce((sum, opt) => sum + opt.estimatedCost, 0))}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">Avg ROI</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {optimizations.length > 0 
-                        ? Math.round(optimizations.reduce((sum, opt) => sum + ((opt.estimatedSavings - opt.estimatedCost) / opt.estimatedCost * 100), 0) / optimizations.length)
-                        : 0}%
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Optimization Recommendations */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Optimization Recommendations</CardTitle>
-                <CardDescription>AI-powered recommendations to improve zone performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {optimizations.map((optimization) => (
-                    <div key={optimization.id} className="border rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-semibold text-gray-900">{optimization.title}</h4>
-                            <Badge className={getPriorityColor(optimization.priority)}>
-                              {optimization.priority}
-                            </Badge>
-                            <Badge variant="outline">{optimization.type}</Badge>
-                          </div>
-                          
-                          <p className="text-sm text-gray-600 mb-3">{optimization.description}</p>
-                          
-                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-3 text-sm">
-                            <div>
-                              <p className="text-gray-600">Zone</p>
-                              <p className="font-medium">{optimization.zoneName}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Impact</p>
-                              <p className="font-medium">{optimization.impact}/10</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Effort</p>
-                              <p className="font-medium">{optimization.effort}/10</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Cost</p>
-                              <p className="font-medium">{formatCurrency(optimization.estimatedCost)}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600">Payback</p>
-                              <p className="font-medium">{optimization.paybackPeriod} months</p>
-                            </div>
-                          </div>
-
-                          <div className="text-sm">
-                            <p className="text-gray-600 mb-1">Recommendations:</p>
-                            <ul className="list-disc list-inside space-y-1 text-gray-700">
-                              {optimization.recommendations.map((rec, index) => (
-                                <li key={index}>{rec}</li>
-                              ))}
-                            </ul>
-                          </div>
+                        <div>
+                          <p className="text-gray-600">Satisfaction</p>
+                          <p className="font-medium">{zone.satisfactionScore}%</p>
                         </div>
-                        
-                        <div className="ml-4">
-                          <Button 
-                            size="sm" 
-                            onClick={() => handleApplyOptimization(optimization.id)}
-                            className="mb-2"
-                          >
-                            Apply
-                          </Button>
-                          <p className="text-xs text-center text-gray-500">
-                            ROI: {Math.round(((optimization.estimatedSavings - optimization.estimatedCost) / optimization.estimatedCost) * 100)}%
-                          </p>
+                        <div>
+                          <p className="text-gray-600">Incidents</p>
+                          <p className="font-medium">{(zone.incidentRate * 100).toFixed(1)}%</p>
                         </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
 
-                  {optimizations.length === 0 && (
-                    <div className="text-center py-12">
-                      <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">No optimization recommendations available</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Check back later for AI-generated optimization suggestions
-                      </p>
+            <Card>
+              <CardHeader>
+                <CardTitle>Trends Analysis</CardTitle>
+                <CardDescription>Performance trends and insights</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <Activity className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Advanced Analytics</h3>
+                  <p className="text-gray-600 mb-4">
+                    Comprehensive trend analysis and predictive insights
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <TrendingUp className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                      <h4 className="font-medium">Growth Trends</h4>
+                      <p className="text-sm text-gray-600">Track visitor growth patterns</p>
                     </div>
-                  )}
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <PieChart className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                      <h4 className="font-medium">Revenue Analysis</h4>
+                      <p className="text-sm text-gray-600">Analyze revenue by zone and time</p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

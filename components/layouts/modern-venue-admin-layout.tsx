@@ -18,32 +18,42 @@ export default function ModernVenueAdminLayout({ children }: ModernVenueAdminLay
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Authorization check
   useEffect(() => {
-    if (status === 'loading') return; // Still loading
+    const checkAuthorization = async () => {
+      if (status === 'loading') return;
 
-    if (!session?.user) {
-      router.push('/auth/signin');
-      return;
-    }
+      if (!session?.user) {
+        router.push('/auth/signin');
+        return;
+      }
 
-    const userRole = session.user.role;
-    if (userRole !== 'VENUE_ADMIN' && userRole !== 'SUPER_ADMIN') {
-      router.push('/unauthorized');
-      return;
-    }
+      const userRole = session.user.role;
+      
+      // Allow VENUE_ADMIN, SUPER_ADMIN, and ADMIN roles
+      if (!['VENUE_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(userRole)) {
+        router.push('/unauthorized');
+        return;
+      }
 
-    setIsAuthorized(true);
+      setIsAuthorized(true);
+      setIsLoading(false);
+    };
+
+    checkAuthorization();
   }, [session, status, router]);
 
   // Show loading state while checking authorization
-  if (status === 'loading' || !isAuthorized) {
+  if (status === 'loading' || isLoading || !isAuthorized) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verifying access...</p>
+          <p className="mt-4 text-gray-600">
+            {status === 'loading' ? 'Loading...' : 'Verifying access...'}
+          </p>
         </div>
       </div>
     );

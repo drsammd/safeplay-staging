@@ -37,10 +37,19 @@ interface AddressValidationResult {
   error?: string;
 }
 
+interface AddressFields {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  fullAddress: string;
+}
+
 interface AddressAutocompleteProps {
   value: string;
   onChange: (address: string) => void;
   onValidationChange: (validation: AddressValidationResult | null) => void;
+  onFieldsChange?: (fields: AddressFields) => void;
   placeholder?: string;
   required?: boolean;
   countryRestriction?: string[];
@@ -51,6 +60,7 @@ export function AddressAutocomplete({
   value,
   onChange,
   onValidationChange,
+  onFieldsChange,
   placeholder = "Enter your address",
   required = false,
   countryRestriction = ['us', 'ca'],
@@ -73,11 +83,11 @@ export function AddressAutocomplete({
       clearTimeout(debounceRef.current);
     }
 
-    if (value.length >= 3 && !selectedSuggestion) {
+    if (value.length >= 2 && !selectedSuggestion) {
       debounceRef.current = setTimeout(async () => {
         await fetchSuggestions(value);
-      }, 300);
-    } else if (value.length < 3) {
+      }, 250);
+    } else if (value.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
     }
@@ -95,10 +105,10 @@ export function AddressAutocomplete({
       clearTimeout(debounceRef.current);
     }
 
-    if (value.length >= 5) { // Reduced from 10 to 5 for better UX
+    if (value.length >= 5) {
       debounceRef.current = setTimeout(async () => {
         await validateAddress(value, selectedSuggestion?.place_id);
-      }, 800); // Reduced from 1000ms to 800ms for faster response
+      }, 600);
     } else if (value.length === 0) {
       setValidationResult(null);
       onValidationChange(null);
@@ -169,12 +179,33 @@ export function AddressAutocomplete({
         const validation = data.validation as AddressValidationResult;
         setValidationResult(validation);
         onValidationChange(validation);
+
+        // Extract address fields if validation was successful
+        if (validation.isValid && validation.standardizedAddress) {
+          const fields = parseAddressFields(validation.standardizedAddress);
+          onFieldsChange?.(fields);
+        }
       }
     } catch (error) {
       console.error('Error validating address:', error);
     } finally {
       setIsValidating(false);
     }
+  };
+
+  const parseAddressFields = (standardizedAddress: StandardizedAddress): AddressFields => {
+    const street = [
+      standardizedAddress.street_number,
+      standardizedAddress.route
+    ].filter(Boolean).join(' ');
+
+    return {
+      street: street || '',
+      city: standardizedAddress.locality || '',
+      state: standardizedAddress.administrative_area_level_1 || '',
+      zipCode: standardizedAddress.postal_code || '',
+      fullAddress: standardizedAddress.formatted_address || ''
+    };
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,8 +228,10 @@ export function AddressAutocomplete({
     }
     
     if (validationResult) {
-      if (validationResult.isValid && validationResult.confidence > 0.7) {
+      if (validationResult.isValid && validationResult.confidence > 0.6) {
         return <Check className="h-4 w-4 text-green-500" />;
+      } else if (validationResult.confidence > 0.3) {
+        return <Check className="h-4 w-4 text-yellow-500" />;
       } else {
         return <AlertCircle className="h-4 w-4 text-orange-500" />;
       }
@@ -211,9 +244,9 @@ export function AddressAutocomplete({
     if (!validationResult) return null;
     
     if (validationResult.isValid) {
-      if (validationResult.confidence > 0.9) {
+      if (validationResult.confidence > 0.8) {
         return "Address verified with high confidence";
-      } else if (validationResult.confidence > 0.7) {
+      } else if (validationResult.confidence > 0.6) {
         return "Address verified";
       } else if (validationResult.confidence > 0.3) {
         return "Address accepted - format looks good";
@@ -235,7 +268,8 @@ export function AddressAutocomplete({
     
     if (validationResult.isValid) {
       if (validationResult.confidence > 0.8) return "text-green-600";
-      if (validationResult.confidence > 0.3) return "text-blue-600";
+      if (validationResult.confidence > 0.6) return "text-green-600";
+      if (validationResult.confidence > 0.3) return "text-yellow-600";
       return "text-yellow-600";
     }
     // More forgiving - even "invalid" addresses show as yellow (acceptable)

@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { googlePlacesService } from '@/lib/services/google-places-service';
+import { geoapifyService } from '@/lib/services/geoapify-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,13 +15,13 @@ export async function POST(request: NextRequest) {
 
     const { input, countryRestriction } = await request.json();
 
-    if (!input || input.trim().length < 3) {
+    if (!input || input.trim().length < 2) {
       return NextResponse.json({ 
-        error: 'Input must be at least 3 characters' 
+        error: 'Input must be at least 2 characters' 
       }, { status: 400 });
     }
 
-    const suggestions = await googlePlacesService.autocompleteAddress(
+    const suggestions = await geoapifyService.autocompleteAddress(
       input.trim(),
       countryRestriction || ['us', 'ca']
     );
@@ -31,8 +31,8 @@ export async function POST(request: NextRequest) {
       suggestions: suggestions.map(suggestion => ({
         place_id: suggestion.place_id,
         description: suggestion.description,
-        main_text: suggestion.structured_formatting.main_text,
-        secondary_text: suggestion.structured_formatting.secondary_text,
+        main_text: suggestion.main_text,
+        secondary_text: suggestion.secondary_text,
         types: suggestion.types
       }))
     });

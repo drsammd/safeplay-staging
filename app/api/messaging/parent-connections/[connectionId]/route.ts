@@ -2,9 +2,12 @@
 export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '../../../../../lib/db';
-import { ParentConnection } from '@prisma/client';
+import { ParentConnection, ConnectionStatus, ChatType } from '@prisma/client';
+
+type ParentConnectionStatus = ConnectionStatus;
 
 // PUT /api/messaging/parent-connections/[connectionId] - Respond to connection request
 export async function PUT(
@@ -12,7 +15,7 @@ export async function PUT(
   { params }: { params: { connectionId: string } }
 ) {
   try {
-    const session = await getSession({ req: request as any });
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -21,7 +24,7 @@ export async function PUT(
     const body = await request.json();
     const { status, notes } = body;
 
-    if (!status || !Object.values(ParentConnectionStatus).includes(status)) {
+    if (!status || !Object.values(ConnectionStatus).includes(status)) {
       return NextResponse.json(
         { error: 'Valid status is required' },
         { status: 400 }
@@ -46,7 +49,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    if (connection.status !== ParentConnectionStatus.PENDING) {
+    if (connection.status !== ConnectionStatus.PENDING) {
       return NextResponse.json(
         { error: 'Connection request is no longer pending' },
         { status: 400 }
@@ -63,7 +66,7 @@ export async function PUT(
     });
 
     // Send notification to requester
-    const notificationMessage = status === ParentConnectionStatus.ACCEPTED
+    const notificationMessage = status === ConnectionStatus.ACCEPTED
       ? `${connection.receiver.name} accepted your connection request!`
       : `${connection.receiver.name} declined your connection request.`;
 
@@ -79,17 +82,17 @@ export async function PUT(
           responderName: connection.receiver.name,
           status,
         },
-        priority: 'normal',
+        priority: 'NORMAL',
       },
     });
 
     // If accepted, create a direct chat for communication
-    if (status === ParentConnectionStatus.ACCEPTED) {
+    if (status === ConnectionStatus.ACCEPTED) {
       try {
         const { messagingInfrastructureService } = await import('../../../../../lib/services/messaging-infrastructure-service');
         
         await messagingInfrastructureService.createChat({
-          type: 'DIRECT',
+          type: ChatType.DIRECT,
           title: `${connection.requester.name} & ${connection.receiver.name}`,
           participantIds: [connection.requesterId, connection.receiverId],
           creatorId: session.user.id,
@@ -106,7 +109,7 @@ export async function PUT(
         id: updatedConnection.id,
         status: updatedConnection.status,
         respondedAt: updatedConnection.respondedAt,
-        notes: updatedConnection.notes,
+
       },
     });
   } catch (error: any) {
@@ -124,7 +127,7 @@ export async function DELETE(
   { params }: { params: { connectionId: string } }
 ) {
   try {
-    const session = await getSession({ req: request as any });
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -155,8 +158,7 @@ export async function DELETE(
       await prisma.parentConnection.update({
         where: { id: connectionId },
         data: {
-          status: ParentConnectionStatus.BLOCKED,
-          blockedAt: new Date(),
+          status: ConnectionStatus.BLOCKED,
         },
       });
 

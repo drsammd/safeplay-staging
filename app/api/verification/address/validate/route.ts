@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { googlePlacesService } from '@/lib/services/google-places-service';
+import { geoapifyService } from '@/lib/services/geoapify-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,27 +23,32 @@ export async function POST(request: NextRequest) {
 
     let validationResult;
 
-    if (placeId) {
-      // Get place details by place ID
-      const placeDetails = await googlePlacesService.getPlaceDetails(placeId);
+    if (placeId && placeId.startsWith('geoapify_')) {
+      // For Geoapify place IDs, we'll validate the address directly
+      validationResult = await geoapifyService.validateAndStandardizeAddress(
+        address || '',
+        countryRestriction || ['us', 'ca']
+      );
+    } else if (placeId) {
+      // Try to get place details by place ID (may not be available in Geoapify)
+      const placeDetails = await geoapifyService.getPlaceDetails(placeId);
       if (placeDetails) {
         validationResult = {
           isValid: true,
-          confidence: 0.95, // High confidence for place ID lookups
+          confidence: 0.95,
           standardizedAddress: placeDetails,
           originalInput: address || placeDetails.formatted_address
         };
       } else {
-        validationResult = {
-          isValid: false,
-          confidence: 0,
-          originalInput: address || '',
-          error: 'Place not found'
-        };
+        // Fall back to address validation
+        validationResult = await geoapifyService.validateAndStandardizeAddress(
+          address || '',
+          countryRestriction || ['us', 'ca']
+        );
       }
     } else {
       // Validate address string
-      validationResult = await googlePlacesService.validateAndStandardizeAddress(
+      validationResult = await geoapifyService.validateAndStandardizeAddress(
         address,
         countryRestriction || ['us', 'ca']
       );

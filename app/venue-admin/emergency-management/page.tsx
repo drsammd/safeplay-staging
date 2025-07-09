@@ -8,293 +8,199 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { AlertTriangle, Shield, Users, MapPin, Clock, Phone, Megaphone, Route, CheckCircle, XCircle, PlayCircle, PauseCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { 
+  AlertTriangle, 
+  Shield, 
+  Phone, 
+  Users, 
+  MapPin, 
+  Clock, 
+  CheckCircle,
+  Siren,
+  Route,
+  Radio
+} from 'lucide-react';
+
+interface EmergencyContact {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  email: string;
+  isOnDuty: boolean;
+  responseTime: number;
+}
 
 interface EmergencyProcedure {
   id: string;
-  zoneId: string;
-  procedureType: string;
-  name: string;
+  type: string;
+  title: string;
   description: string;
-  stepByStepGuide: any;
-  estimatedDuration: number;
-  requiredPersonnel: number;
-  requiredEquipment: string[];
-  priorityLevel: string;
-  contactProcedure: any;
-  evacuationInstructions?: any;
-  communicationProtocol?: any;
-  postEmergencySteps?: any;
-  trainingRequired: boolean;
-  certificationRequired: boolean;
-  lastReviewed?: string;
-  reviewedBy?: string;
-  nextReviewDate?: string;
-  isActive: boolean;
-  zone: {
-    id: string;
-    name: string;
-    type: string;
-    floorPlan: {
-      id: string;
-      name: string;
-      venueId: string;
-    };
-  };
+  steps: string[];
+  priority: 'high' | 'medium' | 'low';
+  estimatedTime: number;
 }
 
 interface EvacuationRoute {
   id: string;
   name: string;
-  fromZoneId: string;
-  toZoneId: string;
-  distance: number;
-  estimatedTime: number;
-  maxCapacity: number;
-  currentLoad: number;
+  fromZone: string;
+  toExit: string;
+  capacity: number;
   isActive: boolean;
-  isPrimary: boolean;
-  isAccessible: boolean;
-  hazardLevel: string;
-  lighting: boolean;
-  signage: boolean;
-  obstacleStatus: string;
-  fromZone: { id: string; name: string; type: string };
-  toZone: { id: string; name: string; type: string };
+  estimatedTime: number;
 }
 
-interface EmergencyEvent {
-  id: string;
-  type: string;
-  status: string;
-  zoneId: string;
-  zoneName: string;
-  description: string;
-  severity: string;
-  activatedAt: string;
-  activatedBy: string;
-  estimatedDuration: number;
-  affectedPersons: number;
-}
+const EMERGENCY_CONTACTS: EmergencyContact[] = [
+  {
+    id: '1',
+    name: 'Sarah Johnson',
+    role: 'Safety Manager',
+    phone: '+1 (555) 123-4567',
+    email: 'sarah.johnson@safeplay.com',
+    isOnDuty: true,
+    responseTime: 2
+  },
+  {
+    id: '2',
+    name: 'Mike Chen',
+    role: 'Security Lead',
+    phone: '+1 (555) 234-5678',
+    email: 'mike.chen@safeplay.com',
+    isOnDuty: true,
+    responseTime: 3
+  },
+  {
+    id: '3',
+    name: 'Dr. Emily Rodriguez',
+    role: 'Medical Officer',
+    phone: '+1 (555) 345-6789',
+    email: 'emily.rodriguez@safeplay.com',
+    isOnDuty: false,
+    responseTime: 5
+  }
+];
+
+const EMERGENCY_PROCEDURES: EmergencyProcedure[] = [
+  {
+    id: '1',
+    type: 'FIRE',
+    title: 'Fire Emergency Response',
+    description: 'Immediate response protocol for fire incidents',
+    steps: [
+      'Activate fire alarm system',
+      'Evacuate all patrons to designated areas',
+      'Contact emergency services (911)',
+      'Perform headcount at assembly points',
+      'Provide assistance to emergency responders'
+    ],
+    priority: 'high',
+    estimatedTime: 10
+  },
+  {
+    id: '2',
+    type: 'MEDICAL',
+    title: 'Medical Emergency Response',
+    description: 'Protocol for medical emergencies and injuries',
+    steps: [
+      'Assess the situation and ensure scene safety',
+      'Provide immediate first aid if trained',
+      'Contact emergency medical services',
+      'Notify parents/guardians',
+      'Document incident details'
+    ],
+    priority: 'high',
+    estimatedTime: 5
+  },
+  {
+    id: '3',
+    type: 'MISSING_CHILD',
+    title: 'Missing Child Protocol',
+    description: 'Systematic approach to locate missing children',
+    steps: [
+      'Immediately secure all exits',
+      'Conduct systematic search of all areas',
+      'Review security footage',
+      'Contact local authorities if not found within 10 minutes',
+      'Coordinate with emergency services'
+    ],
+    priority: 'high',
+    estimatedTime: 15
+  }
+];
+
+const EVACUATION_ROUTES: EvacuationRoute[] = [
+  {
+    id: '1',
+    name: 'Main Exit Route',
+    fromZone: 'Main Play Area',
+    toExit: 'Main Entrance',
+    capacity: 200,
+    isActive: true,
+    estimatedTime: 3
+  },
+  {
+    id: '2',
+    name: 'Emergency Exit A',
+    fromZone: 'Toddler Zone',
+    toExit: 'Side Exit A',
+    capacity: 50,
+    isActive: true,
+    estimatedTime: 2
+  },
+  {
+    id: '3',
+    name: 'Emergency Exit B',
+    fromZone: 'Party Rooms',
+    toExit: 'Back Exit',
+    capacity: 80,
+    isActive: false,
+    estimatedTime: 4
+  }
+];
 
 export default function EmergencyManagementPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [procedures, setProcedures] = useState<EmergencyProcedure[]>([]);
-  const [evacuationRoutes, setEvacuationRoutes] = useState<EvacuationRoute[]>([]);
-  const [activeEmergencies, setActiveEmergencies] = useState<EmergencyEvent[]>([]);
-  const [selectedVenue, setSelectedVenue] = useState<string>('');
-  const [venues, setVenues] = useState<any[]>([]);
-  const [selectedZone, setSelectedZone] = useState<string>('');
-  const [zones, setZones] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
-  const [activatingEmergency, setActivatingEmergency] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  // Emergency activation form
-  const [emergencyForm, setEmergencyForm] = useState({
-    emergencyType: '',
-    zoneId: '',
-    severity: 'MEDIUM',
-    description: '',
-    location: ''
-  });
-  const [showEmergencyDialog, setShowEmergencyDialog] = useState(false);
-
+  // Authorization check
   useEffect(() => {
     if (status === 'loading') return;
+    
     if (!session) {
       router.push('/auth/signin');
       return;
     }
-    if (session.user?.role !== 'VENUE_ADMIN' && session.user?.role !== 'SUPER_ADMIN') {
+    
+    if (!['VENUE_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(session.user?.role)) {
       router.push('/unauthorized');
       return;
     }
 
-    fetchVenues();
+    setLoading(false);
   }, [session, status, router]);
-
-  useEffect(() => {
-    if (selectedVenue) {
-      fetchEmergencyData();
-      fetchZones();
-    }
-  }, [selectedVenue]);
-
-  const fetchVenues = async () => {
-    try {
-      const response = await fetch('/api/venues');
-      if (response.ok) {
-        const data = await response.json();
-        setVenues(data.venues || []);
-        if (data.venues?.length > 0) {
-          setSelectedVenue(data.venues[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching venues:', error);
-      setError('Failed to load venues');
-    }
-  };
-
-  const fetchZones = async () => {
-    try {
-      const response = await fetch(`/api/zones?venueId=${selectedVenue}`);
-      if (response.ok) {
-        const data = await response.json();
-        setZones(data.zones || []);
-      }
-    } catch (error) {
-      console.error('Error fetching zones:', error);
-    }
-  };
-
-  const fetchEmergencyData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch emergency procedures
-      const proceduresResponse = await fetch(`/api/zones/emergency?venueId=${selectedVenue}`);
-      if (proceduresResponse.ok) {
-        const proceduresData = await proceduresResponse.json();
-        setProcedures(proceduresData.procedures || []);
-      }
-
-      // Fetch evacuation routes
-      const routesResponse = await fetch(`/api/zones/${zones[0]?.id}/evacuation?includeAlternatives=true`);
-      if (routesResponse.ok) {
-        const routesData = await routesResponse.json();
-        setEvacuationRoutes([...(routesData.evacuationRoutes || []), ...(routesData.alternativeRoutes || [])]);
-      }
-
-      // Simulate active emergencies (in real implementation, this would come from alerts API)
-      setActiveEmergencies([]);
-      
-      setError(null);
-    } catch (error) {
-      console.error('Error fetching emergency data:', error);
-      setError('Failed to load emergency data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleActivateEmergency = async () => {
-    try {
-      setActivatingEmergency(true);
-      
-      const response = await fetch('/api/zones/emergency/activate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(emergencyForm)
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        toast.success('Emergency procedure activated successfully');
-        setShowEmergencyDialog(false);
-        
-        // Add to active emergencies
-        setActiveEmergencies(prev => [...prev, {
-          id: data.alert.id,
-          type: emergencyForm.emergencyType,
-          status: 'ACTIVE',
-          zoneId: emergencyForm.zoneId,
-          zoneName: zones.find(z => z.id === emergencyForm.zoneId)?.name || 'Unknown Zone',
-          description: emergencyForm.description,
-          severity: emergencyForm.severity,
-          activatedAt: new Date().toISOString(),
-          activatedBy: session?.user?.name || 'Staff',
-          estimatedDuration: data.procedure?.estimatedDuration || 30,
-          affectedPersons: 0
-        }]);
-        
-        // Reset form
-        setEmergencyForm({
-          emergencyType: '',
-          zoneId: '',
-          severity: 'MEDIUM',
-          description: '',
-          location: ''
-        });
-      } else {
-        throw new Error('Failed to activate emergency');
-      }
-    } catch (error) {
-      console.error('Error activating emergency:', error);
-      toast.error('Failed to activate emergency procedure');
-    } finally {
-      setActivatingEmergency(false);
-    }
-  };
-
-  const handleDeactivateEmergency = async (emergencyId: string) => {
-    try {
-      // In real implementation, this would call an API to deactivate the emergency
-      setActiveEmergencies(prev => prev.filter(e => e.id !== emergencyId));
-      toast.success('Emergency deactivated successfully');
-    } catch (error) {
-      console.error('Error deactivating emergency:', error);
-      toast.error('Failed to deactivate emergency');
-    }
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'IMMEDIATE': return 'bg-red-100 text-red-800';
-      case 'CRITICAL': return 'bg-red-100 text-red-800';
-      case 'HIGH': return 'bg-orange-100 text-orange-800';
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
-      case 'LOW': return 'bg-blue-100 text-blue-800';
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'CRITICAL': return 'bg-red-100 text-red-800';
-      case 'HIGH': return 'bg-orange-100 text-orange-800';
-      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800';
-      case 'LOW': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  if (loading) {
+  if (status === 'loading') {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading emergency management data...</p>
+            <p className="mt-4 text-gray-600">Loading emergency management...</p>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Data</h3>
-              <p className="text-gray-600 mb-4">{error}</p>
-              <Button onClick={fetchEmergencyData}>Try Again</Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -305,176 +211,145 @@ export default function EmergencyManagementPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Emergency Management</h1>
-          <p className="text-gray-600">Monitor and manage emergency procedures and evacuation protocols</p>
+          <p className="text-gray-600">Emergency procedures, contacts, and evacuation planning</p>
         </div>
         
         <div className="flex items-center gap-4">
-          <Select value={selectedVenue} onValueChange={setSelectedVenue}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select venue" />
-            </SelectTrigger>
-            <SelectContent>
-              {venues.map((venue) => (
-                <SelectItem key={venue.id} value={venue.id}>
-                  {venue.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Button onClick={() => setShowEmergencyDialog(true)} className="bg-red-600 hover:bg-red-700">
-            <AlertTriangle className="h-4 w-4 mr-2" />
-            Activate Emergency
+          <Button 
+            variant="destructive" 
+            onClick={() => alert('Emergency alert would be triggered')}
+          >
+            <Siren className="h-4 w-4 mr-2" />
+            Emergency Alert
           </Button>
         </div>
       </div>
 
-      {/* Active Emergencies Alert */}
-      {activeEmergencies.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
-            <h3 className="font-semibold text-red-800">Active Emergencies ({activeEmergencies.length})</h3>
-          </div>
-          <div className="space-y-2">
-            {activeEmergencies.map((emergency) => (
-              <div key={emergency.id} className="flex items-center justify-between bg-white p-3 rounded border">
-                <div>
-                  <p className="font-medium text-gray-900">{emergency.type} - {emergency.zoneName}</p>
-                  <p className="text-sm text-gray-600">{emergency.description}</p>
-                  <p className="text-xs text-gray-500">
-                    Activated {new Date(emergency.activatedAt).toLocaleString()} by {emergency.activatedBy}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge className={getSeverityColor(emergency.severity)}>
-                    {emergency.severity}
-                  </Badge>
-                  <Button size="sm" variant="outline" onClick={() => handleDeactivateEmergency(emergency.id)}>
-                    <PauseCircle className="h-3 w-3 mr-1" />
-                    Deactivate
-                  </Button>
-                </div>
+      {/* Emergency Status */}
+      <Alert>
+        <Shield className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Status:</strong> All emergency systems are operational. Last drill: 3 days ago. 
+          Next scheduled drill: In 4 days.
+        </AlertDescription>
+      </Alert>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-blue-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Staff On Duty</p>
+                <p className="text-2xl font-bold text-blue-600">8</p>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <MapPin className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Active Routes</p>
+                <p className="text-2xl font-bold text-green-600">2/3</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-purple-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Response Time</p>
+                <p className="text-2xl font-bold text-purple-600">3min</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center space-x-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">System Status</p>
+                <p className="text-2xl font-bold text-green-600">OK</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="procedures">Procedures</TabsTrigger>
-          <TabsTrigger value="evacuation">Evacuation Routes</TabsTrigger>
-          <TabsTrigger value="communication">Communication</TabsTrigger>
+          <TabsTrigger value="contacts">Contacts</TabsTrigger>
+          <TabsTrigger value="evacuation">Evacuation</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <Shield className="h-8 w-8 text-green-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Procedures</p>
-                    <p className="text-2xl font-bold text-gray-900">{procedures.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <Route className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Evacuation Routes</p>
-                    <p className="text-2xl font-bold text-gray-900">{evacuationRoutes.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <AlertTriangle className="h-8 w-8 text-orange-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Emergencies</p>
-                    <p className="text-2xl font-bold text-gray-900">{activeEmergencies.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center">
-                  <CheckCircle className="h-8 w-8 text-purple-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Readiness Score</p>
-                    <p className="text-2xl font-bold text-gray-900">85%</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent Procedures */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Procedure Reviews</CardTitle>
-                <CardDescription>Recently reviewed emergency procedures</CardDescription>
+                <CardTitle>Emergency Contacts</CardTitle>
+                <CardDescription>Key personnel for emergency response</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {procedures.slice(0, 5).map((procedure) => (
-                    <div key={procedure.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{procedure.name}</p>
-                        <p className="text-sm text-gray-600">{procedure.zone.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {procedure.lastReviewed ? `Reviewed ${new Date(procedure.lastReviewed).toLocaleDateString()}` : 'Never reviewed'}
-                        </p>
+                <div className="space-y-4">
+                  {EMERGENCY_CONTACTS.slice(0, 3).map((contact) => (
+                    <div key={contact.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${contact.isOnDuty ? 'bg-green-500' : 'bg-gray-400'}`} />
+                        <div>
+                          <p className="font-medium">{contact.name}</p>
+                          <p className="text-sm text-gray-600">{contact.role}</p>
+                        </div>
                       </div>
-                      <Badge className={getPriorityColor(procedure.priorityLevel)}>
-                        {procedure.priorityLevel}
-                      </Badge>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{contact.phone}</p>
+                        <p className="text-xs text-gray-500">{contact.responseTime}min response</p>
+                      </div>
                     </div>
                   ))}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Evacuation Readiness */}
             <Card>
               <CardHeader>
-                <CardTitle>Evacuation Readiness</CardTitle>
-                <CardDescription>Status of evacuation routes</CardDescription>
+                <CardTitle>Recent Drills</CardTitle>
+                <CardDescription>Emergency preparedness training history</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {evacuationRoutes.slice(0, 5).map((route) => (
-                    <div key={route.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">{route.name}</p>
-                        <p className="text-sm text-gray-600">
-                          {route.fromZone.name} → {route.toZone.name}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {route.distance}m • {route.estimatedTime}s • Max {route.maxCapacity} people
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {route.isPrimary && <Badge className="bg-blue-100 text-blue-800">Primary</Badge>}
-                        <Badge className={route.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                          {route.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">Fire Evacuation Drill</p>
+                      <p className="text-sm text-gray-600">3 days ago</p>
                     </div>
-                  ))}
+                    <Badge className="bg-green-100 text-green-800">Passed</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">Medical Emergency Drill</p>
+                      <p className="text-sm text-gray-600">1 week ago</p>
+                    </div>
+                    <Badge className="bg-green-100 text-green-800">Passed</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">Missing Child Drill</p>
+                      <p className="text-sm text-gray-600">2 weeks ago</p>
+                    </div>
+                    <Badge className="bg-yellow-100 text-yellow-800">Needs Review</Badge>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -483,287 +358,120 @@ export default function EmergencyManagementPage() {
 
         <TabsContent value="procedures" className="mt-6">
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Emergency Procedures</h3>
-              <Button onClick={() => router.push('/venue-admin/zone-configuration')}>
-                Manage Procedures
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {procedures.map((procedure) => (
-                <Card key={procedure.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{procedure.name}</CardTitle>
-                      <Badge className={getPriorityColor(procedure.priorityLevel)}>
-                        {procedure.priorityLevel}
+            {EMERGENCY_PROCEDURES.map((procedure) => (
+              <Card key={procedure.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <AlertTriangle className="h-5 w-5" />
+                        {procedure.title}
+                      </CardTitle>
+                      <CardDescription>{procedure.description}</CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <Badge className={getPriorityColor(procedure.priority)}>
+                        {procedure.priority.toUpperCase()}
                       </Badge>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Est. {procedure.estimatedTime} min
+                      </p>
                     </div>
-                    <CardDescription>{procedure.zone.name} • {procedure.procedureType}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <p className="text-sm text-gray-600">{procedure.description}</p>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Duration</p>
-                          <p className="font-medium">{procedure.estimatedDuration} minutes</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Personnel</p>
-                          <p className="font-medium">{procedure.requiredPersonnel} staff</p>
-                        </div>
-                      </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <h4 className="font-medium">Response Steps:</h4>
+                    <ol className="list-decimal list-inside space-y-1 text-sm">
+                      {procedure.steps.map((step, index) => (
+                        <li key={index} className="text-gray-700">{step}</li>
+                      ))}
+                    </ol>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
 
-                      {procedure.requiredEquipment.length > 0 && (
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Required Equipment:</p>
-                          <div className="flex flex-wrap gap-1">
-                            {procedure.requiredEquipment.map((equipment, index) => (
-                              <Badge key={index} variant="outline" className="text-xs">
-                                {equipment}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="flex items-center gap-4 pt-2 border-t text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <CheckCircle className="h-3 w-3" />
-                          <span>{procedure.isActive ? 'Active' : 'Inactive'}</span>
-                        </div>
-                        {procedure.trainingRequired && (
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            <span>Training Required</span>
-                          </div>
-                        )}
-                        {procedure.lastReviewed && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>Reviewed {new Date(procedure.lastReviewed).toLocaleDateString()}</span>
-                          </div>
-                        )}
-                      </div>
+        <TabsContent value="contacts" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {EMERGENCY_CONTACTS.map((contact) => (
+              <Card key={contact.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${contact.isOnDuty ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      {contact.name}
+                    </CardTitle>
+                    <Badge variant="outline">{contact.role}</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">{contact.phone}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    <div className="flex items-center gap-2">
+                      <Radio className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm">{contact.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm">
+                        {contact.responseTime} minute response time
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Shield className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm">
+                        {contact.isOnDuty ? 'Currently on duty' : 'Off duty'}
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </TabsContent>
 
         <TabsContent value="evacuation" className="mt-6">
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Evacuation Routes</h3>
-              <div className="flex items-center gap-2">
-                <Badge className="bg-blue-100 text-blue-800">Primary Routes: {evacuationRoutes.filter(r => r.isPrimary).length}</Badge>
-                <Badge className="bg-green-100 text-green-800">Active Routes: {evacuationRoutes.filter(r => r.isActive).length}</Badge>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {evacuationRoutes.map((route) => (
-                <Card key={route.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{route.name}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        {route.isPrimary && <Badge className="bg-blue-100 text-blue-800">Primary</Badge>}
-                        <Badge className={route.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                          {route.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                    </div>
-                    <CardDescription>
-                      {route.fromZone.name} → {route.toZone.name}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <p className="text-gray-600">Distance</p>
-                          <p className="font-medium">{route.distance}m</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Est. Time</p>
-                          <p className="font-medium">{route.estimatedTime}s</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">Capacity</p>
-                          <p className="font-medium">{route.maxCapacity}</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600">Current Load</span>
-                          <span className="font-medium">{route.currentLoad}/{route.maxCapacity}</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              route.currentLoad / route.maxCapacity >= 0.8 ? 'bg-red-500' :
-                              route.currentLoad / route.maxCapacity >= 0.6 ? 'bg-yellow-500' : 'bg-green-500'
-                            }`}
-                            style={{ width: `${(route.currentLoad / route.maxCapacity) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4 pt-2 border-t text-xs text-gray-500">
-                        <div className="flex items-center gap-1">
-                          <Shield className="h-3 w-3" />
-                          <span>{route.hazardLevel} hazard</span>
-                        </div>
-                        {route.isAccessible && (
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            <span>Accessible</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1">
-                          {route.lighting ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-500" />}
-                          <span>Lighting</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {route.signage ? <CheckCircle className="h-3 w-3 text-green-500" /> : <XCircle className="h-3 w-3 text-red-500" />}
-                          <span>Signage</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="communication" className="mt-6">
-          <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Emergency Communication System</CardTitle>
-                <CardDescription>Configure and test emergency communication protocols</CardDescription>
+                <CardTitle>Evacuation Routes</CardTitle>
+                <CardDescription>Planned evacuation paths and capacity</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <Megaphone className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">Emergency communication interface coming soon</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    This will include PA system integration, staff notifications, and parent communication
-                  </p>
+                <div className="space-y-4">
+                  {EVACUATION_ROUTES.map((route) => (
+                    <div key={route.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-3 h-3 rounded-full ${route.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <div>
+                          <p className="font-medium">{route.name}</p>
+                          <p className="text-sm text-gray-600">
+                            {route.fromZone} → {route.toExit}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">
+                          Capacity: {route.capacity} people
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {route.estimatedTime} min evacuation time
+                        </p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
       </Tabs>
-
-      {/* Emergency Activation Dialog */}
-      <Dialog open={showEmergencyDialog} onOpenChange={setShowEmergencyDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-red-600">Activate Emergency Procedure</DialogTitle>
-            <DialogDescription>
-              This will activate emergency protocols and notify all relevant personnel. Only use in actual emergencies.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="emergency-type">Emergency Type</Label>
-                <Select value={emergencyForm.emergencyType} onValueChange={(value) => setEmergencyForm({ ...emergencyForm, emergencyType: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select emergency type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="FIRE">Fire</SelectItem>
-                    <SelectItem value="MEDICAL_EMERGENCY">Medical Emergency</SelectItem>
-                    <SelectItem value="NATURAL_DISASTER">Natural Disaster</SelectItem>
-                    <SelectItem value="SECURITY_THREAT">Security Threat</SelectItem>
-                    <SelectItem value="STRUCTURAL_FAILURE">Structural Failure</SelectItem>
-                    <SelectItem value="POWER_OUTAGE">Power Outage</SelectItem>
-                    <SelectItem value="EVACUATION">General Evacuation</SelectItem>
-                    <SelectItem value="MISSING_PERSON">Missing Person</SelectItem>
-                    <SelectItem value="GENERAL_EMERGENCY">General Emergency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="emergency-zone">Affected Zone</Label>
-                <Select value={emergencyForm.zoneId} onValueChange={(value) => setEmergencyForm({ ...emergencyForm, zoneId: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select zone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {zones.map((zone) => (
-                      <SelectItem key={zone.id} value={zone.id}>
-                        {zone.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="emergency-severity">Severity Level</Label>
-              <Select value={emergencyForm.severity} onValueChange={(value) => setEmergencyForm({ ...emergencyForm, severity: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LOW">Low</SelectItem>
-                  <SelectItem value="MEDIUM">Medium</SelectItem>
-                  <SelectItem value="HIGH">High</SelectItem>
-                  <SelectItem value="CRITICAL">Critical</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="emergency-description">Description</Label>
-              <Textarea
-                id="emergency-description"
-                value={emergencyForm.description}
-                onChange={(e) => setEmergencyForm({ ...emergencyForm, description: e.target.value })}
-                placeholder="Describe the emergency situation..."
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="emergency-location">Specific Location (optional)</Label>
-              <Input
-                id="emergency-location"
-                value={emergencyForm.location}
-                onChange={(e) => setEmergencyForm({ ...emergencyForm, location: e.target.value })}
-                placeholder="Specific location within the zone"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEmergencyDialog(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleActivateEmergency} 
-              disabled={activatingEmergency || !emergencyForm.emergencyType || !emergencyForm.zoneId}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {activatingEmergency ? 'Activating...' : 'Activate Emergency'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

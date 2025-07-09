@@ -5,13 +5,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import Image from "next/image";
 import { Eye, EyeOff, User, Mail, Lock, Building, ArrowRight, ArrowLeft, CheckCircle, MapPin, Home } from "lucide-react";
 import SubscriptionPlans from "@/components/subscription/subscription-plans";
 import PaymentSetup from "@/components/subscription/payment-setup";
 import { AddressAutocomplete } from "@/components/verification/address-autocomplete";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,6 +24,14 @@ interface SelectedPlan {
   billingInterval: 'monthly' | 'yearly' | 'lifetime';
   amount: number;
   planType: string;
+}
+
+interface AddressFields {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  fullAddress: string;
 }
 
 export default function SignUpPage() {
@@ -44,6 +50,12 @@ export default function SignUpPage() {
   });
   const [homeAddressValidation, setHomeAddressValidation] = useState<any>(null);
   const [billingAddressValidation, setBillingAddressValidation] = useState<any>(null);
+  const [homeAddressFields, setHomeAddressFields] = useState<AddressFields>({
+    street: '', city: '', state: '', zipCode: '', fullAddress: ''
+  });
+  const [billingAddressFields, setBillingAddressFields] = useState<AddressFields>({
+    street: '', city: '', state: '', zipCode: '', fullAddress: ''
+  });
   const [selectedPlan, setSelectedPlan] = useState<SelectedPlan | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -88,14 +100,8 @@ export default function SignUpPage() {
       return;
     }
 
-    if (!formData.agreeToTerms) {
-      setError("You must agree to the Terms of Service to create an account");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!formData.agreeToPrivacy) {
-      setError("You must agree to the Privacy Policy to create an account");
+    if (!formData.agreeToTerms || !formData.agreeToPrivacy) {
+      setError("You must agree to both Terms of Service and Privacy Policy");
       setIsLoading(false);
       return;
     }
@@ -136,9 +142,9 @@ export default function SignUpPage() {
       return;
     }
 
-    // More forgiving validation - allow proceeding with any reasonable address format
+    // More forgiving validation
     if (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.1) {
-      setError("Please enter a more complete address (include street number, street name, city, state)");
+      setError("Please enter a more complete address");
       return;
     }
 
@@ -150,7 +156,7 @@ export default function SignUpPage() {
       }
 
       if (billingAddressValidation && !billingAddressValidation.isValid && billingAddressValidation.confidence < 0.1) {
-        setError("Please enter a more complete billing address (include street number, street name, city, state)");
+        setError("Please enter a more complete billing address");
         return;
       }
     }
@@ -179,7 +185,7 @@ export default function SignUpPage() {
             planType: plan.planType
           });
 
-          // If free plan, skip payment and create account
+          // If free plan, create account directly
           if (plan.planType === 'FREE') {
             handleAccountCreation(null);
           } else {
@@ -193,8 +199,9 @@ export default function SignUpPage() {
       });
   };
 
-  const handlePaymentSuccess = () => {
-    setCurrentStep('complete');
+  const handlePaymentSuccess = (subscriptionData: any) => {
+    // Move to account creation with subscription data
+    handleAccountCreation(subscriptionData);
   };
 
   const handleAccountCreation = async (subscriptionData: any) => {
@@ -222,6 +229,9 @@ export default function SignUpPage() {
           billingAddressValidation: billingAddressValidation,
           selectedPlan: selectedPlan,
           subscriptionData: subscriptionData,
+          // Add parsed address fields
+          homeAddressFields: homeAddressFields,
+          billingAddressFields: billingAddressFields,
         }),
       });
 
@@ -265,6 +275,14 @@ export default function SignUpPage() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleAddressFieldsChange = (field: 'homeAddress' | 'billingAddress', fields: AddressFields) => {
+    if (field === 'homeAddress') {
+      setHomeAddressFields(fields);
+    } else {
+      setBillingAddressFields(fields);
+    }
   };
 
   const handleBackStep = () => {
@@ -475,7 +493,7 @@ export default function SignUpPage() {
                 disabled={isLoading || !formData.agreeToTerms || !formData.agreeToPrivacy}
                 className="w-full btn-primary py-3 text-lg font-semibold disabled:opacity-50"
               >
-                {isLoading ? "Validating..." : "Continue to Plan Selection"}
+                {isLoading ? "Validating..." : "Continue to Address"}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </button>
             </form>
@@ -517,6 +535,7 @@ export default function SignUpPage() {
                   value={formData.homeAddress}
                   onChange={(value) => handleAddressChange('homeAddress', value)}
                   onValidationChange={setHomeAddressValidation}
+                  onFieldsChange={(fields) => handleAddressFieldsChange('homeAddress', fields)}
                   placeholder="Enter your home address"
                   required
                   countryRestriction={['us', 'ca']}
@@ -553,6 +572,7 @@ export default function SignUpPage() {
                     value={formData.billingAddress}
                     onChange={(value) => handleAddressChange('billingAddress', value)}
                     onValidationChange={setBillingAddressValidation}
+                    onFieldsChange={(fields) => handleAddressFieldsChange('billingAddress', fields)}
                     placeholder="Enter your billing address"
                     required
                     countryRestriction={['us', 'ca']}
@@ -584,7 +604,7 @@ export default function SignUpPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!formData.homeAddress || (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.1)}
+                  disabled={!formData.homeAddress}
                   className="flex-1 btn-primary"
                 >
                   Continue to Plans
@@ -623,7 +643,7 @@ export default function SignUpPage() {
                 className="text-white border-white/20 hover:bg-white/10"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Basic Info
+                Back to Address
               </Button>
             </div>
           </div>
@@ -662,6 +682,11 @@ export default function SignUpPage() {
                     formData.useDifferentBillingAddress 
                       ? billingAddressValidation 
                       : homeAddressValidation
+                  }
+                  prefilledBillingFields={
+                    formData.useDifferentBillingAddress
+                      ? billingAddressFields
+                      : homeAddressFields
                   }
                 />
               </div>
@@ -708,8 +733,7 @@ export default function SignUpPage() {
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2">Account Created Successfully!</h3>
                 <p className="text-gray-300">
-                  Welcome to SafePlay! To unlock all features and enhance your account security, 
-                  we recommend completing additional verification steps.
+                  Welcome to SafePlay! Your account has been set up and is ready to use.
                 </p>
               </div>
               
@@ -726,53 +750,6 @@ export default function SignUpPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                <Card className="bg-white/5 border-white/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <User className="w-4 h-4 text-blue-600" />
-                      </div>
-                      <h4 className="font-medium text-white">Identity Verification</h4>
-                    </div>
-                    <p className="text-sm text-gray-300 mb-3">
-                      Upload your ID for enhanced security and full feature access
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full text-white border-white/20 hover:bg-white/10"
-                      onClick={() => router.push('/verification')}
-                    >
-                      Complete Verification
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white/5 border-white/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                        <MapPin className="w-4 h-4 text-green-600" />
-                      </div>
-                      <h4 className="font-medium text-white">Address Verified</h4>
-                    </div>
-                    <p className="text-sm text-gray-300 mb-3">
-                      Your address has been successfully verified
-                    </p>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full text-green-400 border-green-400/20 cursor-default"
-                      disabled
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Completed
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-
               <div className="space-y-3 mt-8">
                 <Button 
                   onClick={() => {
@@ -787,7 +764,7 @@ export default function SignUpPage() {
                   onClick={() => router.push('/verification')}
                   className="w-full text-blue-400 hover:text-blue-300"
                 >
-                  Complete Identity Verification First
+                  Complete Identity Verification
                 </Button>
               </div>
             </div>
@@ -804,38 +781,22 @@ export default function SignUpPage() {
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2">Welcome to SafePlay!</h3>
                 <p className="text-gray-300">
-                  Your account has been created successfully. You're now ready to start protecting your children.
+                  Your account is ready. You can now start using SafePlay to keep your children safe.
                 </p>
               </div>
-              {selectedPlan && (
-                <div className="bg-green-900/30 border border-green-400/20 rounded-lg p-4">
-                  <p className="text-green-100">
-                    <strong>Plan:</strong> {selectedPlan.name}
-                    {selectedPlan.billingInterval !== 'lifetime' && (
-                      <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
-                        7 day free trial
-                      </Badge>
-                    )}
-                  </p>
-                </div>
-              )}
-              <div className="space-y-3">
-                <Button 
-                  onClick={() => {
-                    router.push(formData.role === 'VENUE_ADMIN' ? '/venue-admin' : '/parent');
-                  }}
-                  className="w-full btn-primary"
-                >
-                  Go to Dashboard
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => router.push('/')}
-                  className="w-full text-white border-white/20 hover:bg-white/10"
-                >
-                  Back to Home
-                </Button>
-              </div>
+
+              <Button 
+                onClick={() => {
+                  if (formData.role === 'PARENT') {
+                    router.push('/parent');
+                  } else {
+                    router.push('/venue-admin');
+                  }
+                }}
+                className="w-full btn-primary"
+              >
+                Go to Dashboard
+              </Button>
             </div>
           </div>
         );
@@ -846,67 +807,37 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-auth bg-overlay-dark">
-      <div className="content-overlay">
-        <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl w-full space-y-8">
-            {/* Header */}
-            <div className="text-center">
-              <Link href="/" className="inline-block mb-8">
-                <Image
-                  src="/logos/safeplay_combined_logo5.png"
-                  alt="SafePlay"
-                  width={160}
-                  height={53}
-                  className="h-12 w-auto mx-auto"
-                />
-              </Link>
-              <h1 className="text-3xl font-bold text-white mb-2">
-                {steps[getCurrentStepIndex()]?.title || 'Create Account'}
-              </h1>
-              <p className="text-gray-300 mb-6">
-                {steps[getCurrentStepIndex()]?.description || 'Join SafePlay and start protecting your children'}
-              </p>
-              
-              {/* Progress Bar */}
-              <div className="max-w-md mx-auto mb-8">
-                <div className="flex justify-between text-sm text-gray-400 mb-2">
-                  <span>Step {getCurrentStepIndex() + 1} of {steps.length}</span>
-                  <span>{Math.round(getProgressPercentage())}% Complete</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-xl font-semibold text-white">Create Your Account</h2>
+            <span className="text-sm text-gray-300">
+              Step {getCurrentStepIndex() + 1} of {steps.length}
+            </span>
+          </div>
+          <Progress value={getProgressPercentage()} className="h-2" />
+          <div className="flex justify-between mt-2">
+            {steps.map((step, index) => (
+              <div key={step.key} className="flex flex-col items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                  index <= getCurrentStepIndex() 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-600 text-gray-400'
+                }`}>
+                  {index + 1}
                 </div>
-                <Progress value={getProgressPercentage()} className="h-2" />
+                <span className="text-xs text-gray-400 mt-1 text-center max-w-20">
+                  {step.title}
+                </span>
               </div>
-
-              {/* Step Indicators */}
-              <div className="flex justify-center space-x-2 mb-8">
-                {steps.map((step, index) => (
-                  <div
-                    key={step.key}
-                    className={`w-3 h-3 rounded-full ${
-                      index <= getCurrentStepIndex() 
-                        ? 'bg-blue-500' 
-                        : 'bg-gray-600'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Step Content */}
-            <div className="relative">
-              {renderStepContent()}
-            </div>
-
-            {/* Back to Home Link */}
-            {currentStep === 'basic-info' && (
-              <div className="text-center">
-                <Link href="/" className="text-gray-400 hover:text-white text-sm">
-                  ← Back to Home
-                </Link>
-              </div>
-            )}
+            ))}
           </div>
         </div>
+
+        {/* Step Content */}
+        {renderStepContent()}
       </div>
     </div>
   );

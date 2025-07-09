@@ -1,56 +1,47 @@
 
-import { Metadata } from 'next';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/db';
+'use client';
+
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import RevenueAnalytics from '@/components/venue/revenue-analytics';
 
-export const metadata: Metadata = {
-  title: 'Revenue Analytics | SafePlay Venue Admin',
-  description: 'Track your venue revenue and earnings',
-};
+export default function VenueRevenuePage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
 
-export const dynamic = 'force-dynamic';
+  useEffect(() => {
+    if (status === 'loading') return;
+    
+    if (!session) {
+      router.push('/auth/signin');
+      return;
+    }
+    
+    if (!['VENUE_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(session.user?.role)) {
+      router.push('/unauthorized');
+      return;
+    }
 
-export default async function RevenueAnalyticsPage() {
-  const session = await getServerSession(authOptions);
+    setLoading(false);
+  }, [session, status, router]);
 
-  if (!session?.user?.id) {
-    redirect('/auth/signin');
+  if (status === 'loading' || loading) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading revenue analytics...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
-
-  // Check if user is venue admin
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      managedVenues: {
-        include: {
-          paymentSettings: true,
-        },
-      },
-    },
-  });
-
-  if (!user || user.role !== 'VENUE_ADMIN') {
-    redirect('/unauthorized');
-  }
-
-  if (user.managedVenues.length === 0) {
-    redirect('/venue-admin');
-  }
-
-  const venue = user.managedVenues[0];
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Revenue Analytics</h1>
-        <p className="text-gray-600">
-          Track earnings and revenue sharing for {venue.name}
-        </p>
-      </div>
-
+    <div className="p-6">
       <RevenueAnalytics />
     </div>
   );
