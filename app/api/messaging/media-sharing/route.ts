@@ -297,9 +297,8 @@ export async function GET(request: NextRequest) {
         facialTagsConfirmed: toBooleanSafe(item.facialTagsConfirmed),
         watermarked: toBooleanSafe(item.watermarked),
         uploadedBy: item.uploadedBy,
-        hasPermission: item.uploadedById === session.user.id || 
-                       item.permissions.some(p => p.status === 'GRANTED'),
-        permissionStatus: item.permissions[0]?.status || null,
+        hasPermission: item.uploadedBy === session.user.id,
+        permissionStatus: null,
       };
     });
 

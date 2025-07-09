@@ -136,9 +136,9 @@ export default function SignUpPage() {
       return;
     }
 
-    // Allow proceeding if address is provided and either validated or has reasonable confidence
-    if (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.3) {
-      setError("Please enter a valid home address or correct the format");
+    // More forgiving validation - allow proceeding with any reasonable address format
+    if (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.1) {
+      setError("Please enter a more complete address (include street number, street name, city, state)");
       return;
     }
 
@@ -149,8 +149,8 @@ export default function SignUpPage() {
         return;
       }
 
-      if (billingAddressValidation && !billingAddressValidation.isValid && billingAddressValidation.confidence < 0.3) {
-        setError("Please enter a valid billing address or correct the format");
+      if (billingAddressValidation && !billingAddressValidation.isValid && billingAddressValidation.confidence < 0.1) {
+        setError("Please enter a more complete billing address (include street number, street name, city, state)");
         return;
       }
     }
@@ -584,7 +584,7 @@ export default function SignUpPage() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={!formData.homeAddress || (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.3)}
+                  disabled={!formData.homeAddress || (homeAddressValidation && !homeAddressValidation.isValid && homeAddressValidation.confidence < 0.1)}
                   className="flex-1 btn-primary"
                 >
                   Continue to Plans
@@ -653,6 +653,16 @@ export default function SignUpPage() {
                   amount={selectedPlan.amount}
                   onSuccess={handlePaymentSuccess}
                   onError={(error) => setError(error)}
+                  prefilledBillingAddress={
+                    formData.useDifferentBillingAddress 
+                      ? formData.billingAddress 
+                      : formData.homeAddress
+                  }
+                  billingAddressValidation={
+                    formData.useDifferentBillingAddress 
+                      ? billingAddressValidation 
+                      : homeAddressValidation
+                  }
                 />
               </div>
             )}

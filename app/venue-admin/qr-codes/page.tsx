@@ -214,6 +214,27 @@ export default function QRCodeManagement() {
         <div>
           <h1 className="text-3xl font-bold">QR Code Management</h1>
           <p className="text-muted-foreground">Generate and manage QR codes for secure check-in/out</p>
+          
+          {/* Purpose Explanation */}
+          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg max-w-4xl">
+            <div className="flex items-start space-x-3">
+              <QrCode className="h-5 w-5 text-green-600 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-green-900 mb-2">Quick Access & Identification System</h3>
+                <p className="text-sm text-green-800">
+                  <strong>Purpose:</strong> QR codes provide instant, secure identification for children and parents, enabling quick check-in/out processes, 
+                  pickup authorization, and emergency access. Each QR code can be customized with security levels, usage limits, and expiration dates 
+                  to ensure maximum security while maintaining convenience.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-green-700 border-green-300">Instant Check-in</Badge>
+                  <Badge variant="outline" className="text-green-700 border-green-300">Secure Identification</Badge>
+                  <Badge variant="outline" className="text-green-700 border-green-300">Usage Tracking</Badge>
+                  <Badge variant="outline" className="text-green-700 border-green-300">Expiration Control</Badge>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="flex space-x-2">
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

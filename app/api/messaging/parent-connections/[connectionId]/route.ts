@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from 'next-auth/react';
 import { prisma } from '../../../../../lib/db';
-import { ParentConnectionStatus } from '@prisma/client';
+import { ParentConnection } from '@prisma/client';
 
 // PUT /api/messaging/parent-connections/[connectionId] - Respond to connection request
 export async function PUT(
@@ -57,9 +57,8 @@ export async function PUT(
     const updatedConnection = await prisma.parentConnection.update({
       where: { id: connectionId },
       data: {
-        status: status as ParentConnectionStatus,
+        status: status as any,
         respondedAt: new Date(),
-        notes,
       },
     });
 

@@ -1,20 +1,53 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import ModernSidebar from "@/components/navigation/modern-sidebar";
 import ModernHeader from "@/components/navigation/modern-header";
 import { Badge } from "@/components/ui/badge";
-import { Building, Users, Shield, Activity } from "lucide-react";
+import { Building, Users, Shield, Activity, AlertCircle } from "lucide-react";
 
 interface ModernVenueAdminLayoutProps {
   children: React.ReactNode;
 }
 
 export default function ModernVenueAdminLayout({ children }: ModernVenueAdminLayoutProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
+  // Authorization check
+  useEffect(() => {
+    if (status === 'loading') return; // Still loading
+
+    if (!session?.user) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    const userRole = session.user.role;
+    if (userRole !== 'VENUE_ADMIN' && userRole !== 'SUPER_ADMIN') {
+      router.push('/unauthorized');
+      return;
+    }
+
+    setIsAuthorized(true);
+  }, [session, status, router]);
+
+  // Show loading state while checking authorization
+  if (status === 'loading' || !isAuthorized) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ paddingTop: '60px' }}>

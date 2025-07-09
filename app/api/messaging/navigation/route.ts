@@ -5,7 +5,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from 'next-auth/react';
 import { prisma } from '../../../../lib/db';
 import { enhancedNavigationService } from '../../../../lib/services/enhanced-navigation-service';
-import { NavigationMode } from '@prisma/client';
+// NavigationMode type definition
+type NavigationMode = 'WALKING' | 'WHEELCHAIR' | 'STROLLER' | 'EMERGENCY';
+
+// NavigationMode object for validation
+const NavigationModes = {
+  WALKING: 'WALKING',
+  WHEELCHAIR: 'WHEELCHAIR', 
+  STROLLER: 'STROLLER',
+  EMERGENCY: 'EMERGENCY'
+} as const;
 
 // POST /api/messaging/navigation - Generate navigation path
 export async function POST(request: NextRequest) {
@@ -33,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!Object.values(NavigationMode).includes(mode)) {
+    if (!Object.values(NavigationModes).includes(mode)) {
       return NextResponse.json(
         { error: 'Invalid navigation mode' },
         { status: 400 }
@@ -132,7 +141,6 @@ export async function GET(request: NextRequest) {
         venue: {
           select: { id: true, name: true },
         },
-        path: true,
       },
       orderBy: { requestedAt: 'desc' },
       take: limit,
@@ -140,23 +148,12 @@ export async function GET(request: NextRequest) {
 
     const formattedHistory = navigationHistory.map(request => ({
       id: request.id,
-      child: request.child,
-      venue: request.venue,
-      targetLocation: request.targetLocation,
-      mode: request.mode,
+      childId: request.childId,
+      venueId: request.venueId,
       estimatedTime: request.estimatedTime,
       actualTime: request.actualTime,
-      crowdFactor: request.crowdFactor,
       requestedAt: request.requestedAt,
       completedAt: request.completedAt,
-      abandoned: request.abandoned,
-      path: request.path ? {
-        waypoints: request.path.waypoints,
-        totalDistance: request.path.totalDistance,
-        estimatedTime: request.path.estimatedTime,
-        crowdAvoidance: request.path.crowdAvoidance,
-        accessibilityMode: request.path.accessibilityMode,
-      } : null,
     }));
 
     return NextResponse.json({

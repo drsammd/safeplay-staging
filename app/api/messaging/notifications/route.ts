@@ -52,13 +52,12 @@ export async function GET(request: NextRequest) {
 
     const formattedNotifications = notifications.map(notification => ({
       id: notification.id,
-      type: notification.type,
+      type: notification.notificationType,
       title: notification.title,
       message: notification.message,
       data: notification.data,
-      read: notification.read,
+      read: notification.isRead,
       priority: notification.priority,
-      groupId: notification.groupId,
       createdAt: notification.createdAt,
       readAt: notification.readAt,
       expiresAt: notification.expiresAt,
@@ -99,10 +98,10 @@ export async function PUT(request: NextRequest) {
       await prisma.communicationNotification.updateMany({
         where: {
           userId: session.user.id,
-          read: false,
+          isRead: false,
         },
         data: {
-          read: true,
+          isRead: true,
           readAt: new Date(),
         },
       });
@@ -117,10 +116,10 @@ export async function PUT(request: NextRequest) {
         where: {
           id: { in: notificationIds },
           userId: session.user.id,
-          read: false,
+          isRead: false,
         },
         data: {
-          read: true,
+          isRead: true,
           readAt: new Date(),
         },
       });
@@ -164,7 +163,7 @@ export async function DELETE(request: NextRequest) {
       await prisma.communicationNotification.deleteMany({
         where: {
           userId: session.user.id,
-          read: true,
+          isRead: true,
           createdAt: { lte: thirtyDaysAgo },
         },
       });

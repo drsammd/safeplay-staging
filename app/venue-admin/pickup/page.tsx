@@ -200,6 +200,27 @@ export default function PickupManagement() {
         <div>
           <h1 className="text-3xl font-bold">Pickup Management</h1>
           <p className="text-muted-foreground">Manage child pickup authorizations and verification</p>
+          
+          {/* Purpose Explanation */}
+          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg max-w-4xl">
+            <div className="flex items-start space-x-3">
+              <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-blue-900 mb-2">Secure Child Pickup Verification System</h3>
+                <p className="text-sm text-blue-800">
+                  <strong>Purpose:</strong> This system ensures only authorized individuals can pick up children through multi-layer verification including 
+                  biometric authentication, photo ID verification, and parent-approved authorization lists. Each pickup is logged with verification scores 
+                  and audit trails for maximum security and accountability.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-blue-700 border-blue-300">Biometric Verification</Badge>
+                  <Badge variant="outline" className="text-blue-700 border-blue-300">Photo ID Validation</Badge>
+                  <Badge variant="outline" className="text-blue-700 border-blue-300">Parent Authorization</Badge>
+                  <Badge variant="outline" className="text-blue-700 border-blue-300">Real-time Notifications</Badge>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <Button onClick={fetchData} variant="outline">
           <RefreshCw className="h-4 w-4 mr-2" />
