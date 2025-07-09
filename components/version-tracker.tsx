@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-// Version configuration - update this with each deployment
-const VERSION_CONFIG = {
-  version: "1.0.9-staging",
+// Fallback version configuration
+const FALLBACK_VERSION_CONFIG = {
+  version: "1.2.6-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "comprehensive-stakeholder-demo-fixes", // COMPREHENSIVE FIXES: Fixed authentication URL concat + Account-specific children (john=0, parent=3) + Dashboard consistency + Security enhancement logic + Fixed child images - ALL CRITICAL ISSUES RESOLVED
+  commit: "version-display-fix-1.2.6",
   branch: "main"
 };
 
@@ -17,30 +17,47 @@ interface VersionDisplayProps {
 }
 
 export function VersionTracker({ placement }: VersionDisplayProps) {
+  const [versionConfig, setVersionConfig] = useState(FALLBACK_VERSION_CONFIG);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    if (placement === 'console') {
+    // Fetch version information from API
+    fetch('/api/version')
+      .then(response => response.json())
+      .then(data => {
+        setVersionConfig(data);
+        setIsLoading(false);
+      })
+      .catch(error => {
+        console.error('Failed to fetch version info:', error);
+        setIsLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (placement === 'console' && !isLoading) {
       console.log(`
 🚀 mySafePlay Version Information:
-   Version: ${VERSION_CONFIG.version}
-   Environment: ${VERSION_CONFIG.environment}
-   Build Time: ${VERSION_CONFIG.buildTimestamp}
-   Commit: ${VERSION_CONFIG.commit}
-   Branch: ${VERSION_CONFIG.branch}
+   Version: ${versionConfig.version}
+   Environment: ${versionConfig.environment}
+   Build Time: ${versionConfig.buildTimestamp}
+   Commit: ${versionConfig.commit}
+   Branch: ${versionConfig.branch}
       `);
     }
-  }, [placement]);
+  }, [placement, versionConfig, isLoading]);
 
   if (placement === 'footer') {
     return (
       <div className="text-xs text-gray-400 py-2 px-4 bg-gray-50 border-t">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center space-x-4">
-            <span>v{VERSION_CONFIG.version}</span>
-            <span>Build: {new Date(VERSION_CONFIG.buildTimestamp).toLocaleDateString()}</span>
-            <span className="hidden sm:inline">Env: {VERSION_CONFIG.environment}</span>
+            <span>v{versionConfig.version}</span>
+            <span>Build: {new Date(versionConfig.buildTimestamp).toLocaleDateString()}</span>
+            <span className="hidden sm:inline">Env: {versionConfig.environment}</span>
           </div>
           <div className="flex items-center space-x-2 text-xs">
-            <span className="hidden md:inline">Commit: {VERSION_CONFIG.commit}</span>
+            <span className="hidden md:inline">Commit: {versionConfig.commit}</span>
             <span className="text-green-600">●</span>
             <span>Deployed</span>
           </div>
@@ -52,10 +69,10 @@ export function VersionTracker({ placement }: VersionDisplayProps) {
   if (placement === 'meta') {
     return (
       <>
-        <meta name="app-version" content={VERSION_CONFIG.version} />
-        <meta name="app-build-time" content={VERSION_CONFIG.buildTimestamp} />
-        <meta name="app-environment" content={VERSION_CONFIG.environment} />
-        <meta name="app-commit" content={VERSION_CONFIG.commit} />
+        <meta name="app-version" content={versionConfig.version} />
+        <meta name="app-build-time" content={versionConfig.buildTimestamp} />
+        <meta name="app-environment" content={versionConfig.environment} />
+        <meta name="app-commit" content={versionConfig.commit} />
       </>
     );
   }
@@ -64,4 +81,4 @@ export function VersionTracker({ placement }: VersionDisplayProps) {
 }
 
 // Export the version config for use in other components
-export const getVersionInfo = () => VERSION_CONFIG;
+export const getVersionInfo = () => FALLBACK_VERSION_CONFIG;
