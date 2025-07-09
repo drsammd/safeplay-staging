@@ -19,7 +19,7 @@ interface VersionDisplayProps {
 export function VersionTracker({ placement }: VersionDisplayProps) {
   const [versionConfig, setVersionConfig] = useState({
     ...FALLBACK_VERSION_CONFIG,
-    version: '1.2.7-staging'
+    version: '1.2.8-staging'
   });
   const [isLoading, setIsLoading] = useState(true);
 

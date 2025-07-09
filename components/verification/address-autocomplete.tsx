@@ -129,7 +129,10 @@ export function AddressAutocomplete({
         !suggestionsRef.current.contains(event.target as Node) &&
         !inputRef.current?.contains(event.target as Node)
       ) {
-        setShowSuggestions(false);
+        // Add a small delay to allow click events to process first
+        setTimeout(() => {
+          setShowSuggestions(false);
+        }, 100);
       }
     }
 
@@ -215,7 +218,15 @@ export function AddressAutocomplete({
     setValidationResult(null);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSuggestions([]);
+    }
+  };
+
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
+    console.log('🎯 Suggestion clicked:', suggestion);
     onChange(suggestion.description);
     setSelectedSuggestion(suggestion);
     setShowSuggestions(false);
@@ -284,6 +295,7 @@ export function AddressAutocomplete({
           type="text"
           value={value}
           onChange={handleInputChange}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           required={required}
           className="pl-10 pr-10"
@@ -310,15 +322,28 @@ export function AddressAutocomplete({
       {showSuggestions && suggestions.length > 0 && (
         <Card 
           ref={suggestionsRef}
-          className="absolute z-50 w-full mt-1 max-h-60 overflow-y-auto bg-white border shadow-lg"
+          className="absolute z-[9999] w-full mt-1 max-h-60 overflow-y-auto bg-white border shadow-lg"
+          style={{ pointerEvents: 'auto' }}
         >
           {suggestions.map((suggestion) => (
             <div
               key={suggestion.place_id}
               className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-              onClick={() => handleSuggestionClick(suggestion)}
+              style={{ pointerEvents: 'auto' }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎯 Dropdown item clicked:', suggestion);
+                handleSuggestionClick(suggestion);
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🎯 Dropdown item mouse down:', suggestion);
+                handleSuggestionClick(suggestion);
+              }}
             >
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2" style={{ pointerEvents: 'none' }}>
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 truncate">
