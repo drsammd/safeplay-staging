@@ -222,8 +222,8 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-sm border border-gray-200 shadow-xl">
+        <DialogHeader className="bg-white/90 backdrop-blur-md p-6 rounded-t-lg">
           <DialogTitle className="flex items-center space-x-2">
             <Brain className="h-6 w-6 text-blue-600" />
             <span>AI Configuration Settings</span>
@@ -271,7 +271,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                       max={100}
                       min={50}
                       step={5}
-                      className="mt-2"
+                      className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                     />
                   </div>
                   <div>
@@ -282,7 +282,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                       max={120}
                       min={10}
                       step={10}
-                      className="mt-2"
+                      className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                     />
                   </div>
                 </CardContent>
@@ -327,7 +327,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                       max={100}
                       min={50}
                       step={5}
-                      className="mt-2"
+                      className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                     />
                   </div>
                 </CardContent>
@@ -358,12 +358,14 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                     </Badge>
                   </div>
                   <div>
-                    <Label>Maximum Capacity</Label>
-                    <Input
-                      type="number"
-                      value={settings.crowdAnalysis.maxCapacity}
-                      onChange={(e) => updateSetting('crowdAnalysis', 'maxCapacity', parseInt(e.target.value))}
-                      className="mt-1"
+                    <Label>Maximum Capacity: {settings.crowdAnalysis.maxCapacity} people</Label>
+                    <Slider
+                      value={[settings.crowdAnalysis.maxCapacity]}
+                      onValueChange={([value]) => updateSetting('crowdAnalysis', 'maxCapacity', value)}
+                      max={200}
+                      min={10}
+                      step={5}
+                      className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                     />
                   </div>
                   <div>
@@ -374,7 +376,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                       max={100}
                       min={50}
                       step={5}
-                      className="mt-2"
+                      className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                     />
                   </div>
                 </CardContent>
@@ -426,7 +428,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                       max={100}
                       min={50}
                       step={5}
-                      className="mt-2"
+                      className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                     />
                   </div>
                 </CardContent>
@@ -538,7 +540,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                         max={100}
                         min={50}
                         step={5}
-                        className="mt-2"
+                        className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                       />
                     </div>
                     <div>
@@ -549,7 +551,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                         max={100}
                         min={50}
                         step={5}
-                        className="mt-2"
+                        className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                       />
                     </div>
                     <div>
@@ -560,7 +562,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                         max={100}
                         min={50}
                         step={5}
-                        className="mt-2"
+                        className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                       />
                     </div>
                   </div>
@@ -574,7 +576,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                         max={100}
                         min={50}
                         step={5}
-                        className="mt-2"
+                        className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                       />
                     </div>
                     <div>
@@ -585,7 +587,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                         max={100}
                         min={50}
                         step={5}
-                        className="mt-2"
+                        className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                       />
                     </div>
                     <div>
@@ -596,7 +598,7 @@ export function AISettingsModal({ open, onOpenChange, onSettingsUpdate }: AISett
                         max={100}
                         min={50}
                         step={5}
-                        className="mt-2"
+                        className="mt-2 [&>*]:bg-blue-200 [&>*]:h-2 [&>*]:rounded-full [&>*:first-child]:bg-blue-600"
                         disabled={!settings.voiceAnalysis.enabled}
                       />
                     </div>

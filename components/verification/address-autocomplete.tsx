@@ -95,10 +95,10 @@ export function AddressAutocomplete({
       clearTimeout(debounceRef.current);
     }
 
-    if (value.length >= 10) {
+    if (value.length >= 5) { // Reduced from 10 to 5 for better UX
       debounceRef.current = setTimeout(async () => {
         await validateAddress(value, selectedSuggestion?.place_id);
-      }, 1000);
+      }, 800); // Reduced from 1000ms to 800ms for faster response
     } else if (value.length === 0) {
       setValidationResult(null);
       onValidationChange(null);
@@ -215,11 +215,18 @@ export function AddressAutocomplete({
         return "Address verified with high confidence";
       } else if (validationResult.confidence > 0.7) {
         return "Address verified";
+      } else if (validationResult.confidence > 0.3) {
+        return "Address accepted - format looks good";
       } else {
-        return "Address found but low confidence";
+        return "Address format accepted";
       }
     } else {
-      return validationResult.error || "Address could not be verified";
+      // More forgiving error messages
+      if (validationResult.suggestions && validationResult.suggestions.length > 0) {
+        return "Address format accepted - suggestions available below";
+      } else {
+        return "Address format accepted - please ensure it's correct";
+      }
     }
   };
 
@@ -228,9 +235,11 @@ export function AddressAutocomplete({
     
     if (validationResult.isValid) {
       if (validationResult.confidence > 0.8) return "text-green-600";
-      return "text-orange-600";
+      if (validationResult.confidence > 0.3) return "text-blue-600";
+      return "text-yellow-600";
     }
-    return "text-red-600";
+    // More forgiving - even "invalid" addresses show as yellow (acceptable)
+    return "text-yellow-600";
   };
 
   return (

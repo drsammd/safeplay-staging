@@ -57,7 +57,6 @@ export async function PUT(
         await prisma.navigationRequest.update({
           where: { id: requestId },
           data: {
-            abandoned: true,
             actualTime: finalActualTime,
             completedAt: new Date(),
           },
@@ -123,7 +122,6 @@ export async function GET(
         venue: {
           select: { id: true, name: true },
         },
-        path: true,
       },
     });
 
@@ -133,23 +131,13 @@ export async function GET(
 
     const formattedRequest = {
       id: navigationRequest.id,
-      child: navigationRequest.child,
+      childId: navigationRequest.childId,
       venue: navigationRequest.venue,
       targetLocation: navigationRequest.targetLocation,
-      mode: navigationRequest.mode,
       estimatedTime: navigationRequest.estimatedTime,
       actualTime: navigationRequest.actualTime,
-      crowdFactor: navigationRequest.crowdFactor,
       requestedAt: navigationRequest.requestedAt,
       completedAt: navigationRequest.completedAt,
-      abandoned: navigationRequest.abandoned,
-      path: navigationRequest.path ? {
-        waypoints: navigationRequest.path.waypoints,
-        totalDistance: navigationRequest.path.totalDistance,
-        estimatedTime: navigationRequest.path.estimatedTime,
-        crowdAvoidance: navigationRequest.path.crowdAvoidance,
-        accessibilityMode: navigationRequest.path.accessibilityMode,
-      } : null,
     };
 
     return NextResponse.json({

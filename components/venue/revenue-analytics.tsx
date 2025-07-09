@@ -190,6 +190,27 @@ export default function RevenueAnalytics() {
         <div>
           <h2 className="text-2xl font-bold">Revenue Analytics</h2>
           <p className="text-gray-600">Track your venue's earnings and revenue sharing</p>
+          
+          {/* Purpose Explanation */}
+          <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg max-w-4xl">
+            <div className="flex items-start space-x-3">
+              <DollarSign className="h-5 w-5 text-purple-600 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-purple-900 mb-2">Financial Performance Tracking & Insights</h3>
+                <p className="text-sm text-purple-800">
+                  <strong>Purpose:</strong> This comprehensive revenue analytics dashboard provides real-time insights into your venue's financial performance, 
+                  including earnings from photo/video sales, subscription revenue, and transaction volumes. Track trends, monitor payouts, and optimize 
+                  revenue streams with detailed reporting and analytics tools.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge variant="outline" className="text-purple-700 border-purple-300">Revenue Tracking</Badge>
+                  <Badge variant="outline" className="text-purple-700 border-purple-300">Payout Management</Badge>
+                  <Badge variant="outline" className="text-purple-700 border-purple-300">Performance Analytics</Badge>
+                  <Badge variant="outline" className="text-purple-700 border-purple-300">Financial Reporting</Badge>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Select value={timeRange} onValueChange={setTimeRange}>

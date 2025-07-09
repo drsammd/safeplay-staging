@@ -238,6 +238,16 @@ export default function BiometricManagement() {
         <div>
           <h1 className="text-3xl font-bold">Biometric Management</h1>
           <p className="text-muted-foreground">Manage facial recognition enrollment and verification</p>
+          
+          {/* Purpose Explanation */}
+          <Alert className="mt-4 max-w-4xl">
+            <Shield className="h-4 w-4" />
+            <AlertDescription className="text-sm">
+              <strong>Purpose:</strong> Biometric management uses facial and body signature recognition to enhance child safety through secure identification. 
+              This system enables instant verification of children during check-in/out, prevents unauthorized access, and provides real-time alerts for security incidents.
+              All biometric data is encrypted and stored securely in compliance with privacy regulations.
+            </AlertDescription>
+          </Alert>
         </div>
         <div className="flex space-x-2">
           <Dialog open={showEnrollDialog} onOpenChange={setShowEnrollDialog}>

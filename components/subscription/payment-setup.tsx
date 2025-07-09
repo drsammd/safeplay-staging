@@ -50,7 +50,9 @@ function PaymentFormContent({
   originalAmount,
   discountCodeId,
   onSuccess,
-  onError
+  onError,
+  prefilledBillingAddress,
+  billingAddressValidation
 }: PaymentSetupProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -75,6 +77,47 @@ function PaymentFormContent({
       country: 'US',
     },
   });
+
+  // Prefill billing address from signup process
+  useEffect(() => {
+    if (prefilledBillingAddress && billingAddressValidation) {
+      try {
+        // Use standardized address if available
+        const addressData = billingAddressValidation.standardizedAddress;
+        if (addressData) {
+          setBillingDetails(prev => ({
+            ...prev,
+            address: {
+              line1: `${addressData.street_number || ''} ${addressData.route || ''}`.trim() || prefilledBillingAddress,
+              city: addressData.locality || '',
+              state: addressData.administrative_area_level_1 || '',
+              postal_code: addressData.postal_code || '',
+              country: addressData.country || 'US',
+            }
+          }));
+        } else {
+          // Fall back to using the original address string
+          setBillingDetails(prev => ({
+            ...prev,
+            address: {
+              ...prev.address,
+              line1: prefilledBillingAddress,
+            }
+          }));
+        }
+      } catch (error) {
+        console.error('Error prefilling billing address:', error);
+        // Still set the basic address if parsing fails
+        setBillingDetails(prev => ({
+          ...prev,
+          address: {
+            ...prev.address,
+            line1: prefilledBillingAddress,
+          }
+        }));
+      }
+    }
+  }, [prefilledBillingAddress, billingAddressValidation]);
 
   // User-specific storage keys - CRITICAL FIX for cross-user data privacy
   const getUserSpecificKey = useCallback((baseKey: string) => {
@@ -622,6 +665,8 @@ interface PaymentSetupProps {
   discountCodeId?: string;
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  prefilledBillingAddress?: string;
+  billingAddressValidation?: any;
 }
 
 // Main PaymentSetup component with Elements provider
