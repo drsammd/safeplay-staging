@@ -32,3 +32,6 @@ core
 .abacus.donotdelete
 .vercel
 .env*.local
+*.env*
+.env.local
+.env.production
