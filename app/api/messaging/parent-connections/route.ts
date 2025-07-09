@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from 'next-auth/react';
 import { prisma } from '../../../../lib/db';
-import { ParentConnectionStatus } from '@prisma/client';
+import { ConnectionStatus } from '@prisma/client';
 
 // GET /api/messaging/parent-connections - Get parent connections
 export async function GET(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') as ParentConnectionStatus | null;
+    const status = searchParams.get('status') as ConnectionStatus | null;
 
     const where: any = {
       OR: [
@@ -37,17 +37,13 @@ export async function GET(request: NextRequest) {
         receiver: {
           select: { id: true, name: true, email: true },
         },
-        sharedActivities: {
-          orderBy: { scheduledFor: 'desc' },
-          take: 3,
-        },
       },
       orderBy: { requestedAt: 'desc' },
     });
 
     const formattedConnections = connections.map(connection => {
       const isRequester = connection.requesterId === session.user.id;
-      const otherParent = isRequester ? connection.receiver : connection.requester;
+      const otherParent = isRequester ? (connection as any).receiver : (connection as any).requester;
 
       return {
         id: connection.id,
@@ -57,10 +53,9 @@ export async function GET(request: NextRequest) {
         requestedAt: connection.requestedAt,
         respondedAt: connection.respondedAt,
         message: connection.message,
-        connectionReason: connection.connectionReason,
-        sharedInterests: connection.sharedInterests,
-        compatibilityScore: connection.compatibilityScore,
-        recentActivities: connection.sharedActivities,
+        sharedInterests: connection.sharedInterests || [],
+        compatibilityScore: 0,
+        recentActivities: [],
       };
     });
 

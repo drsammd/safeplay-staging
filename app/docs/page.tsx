@@ -1,21 +1,12 @@
 
 import Link from "next/link";
-import { Shield, Building, Heart, FileText, Clock, Users, Zap } from "lucide-react";
+import { Building, Heart, FileText, Clock, Users, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import DocumentationLayout from "@/components/documentation/documentation-layout";
 
 export default function DocumentationHub() {
   const manuals = [
-    {
-      title: "Company Admin Manual",
-      description: "Complete system administration and management guide for SafePlay platform administrators.",
-      icon: Shield,
-      href: "/docs/company-admin",
-      features: ["User Management", "System Configuration", "Analytics & Reporting", "Security Settings"],
-      color: "bg-blue-50 text-blue-600",
-      readTime: "15 min read"
-    },
     {
       title: "Venue Admin Manual", 
       description: "Comprehensive venue management guide covering all administrative functions for venue staff.",
@@ -38,12 +29,6 @@ export default function DocumentationHub() {
 
   const quickLinks = [
     {
-      title: "Quick Reference Guides",
-      description: "Printable reference cards and checklists",
-      icon: FileText,
-      href: "/docs/quick-reference"
-    },
-    {
       title: "Emergency Procedures",
       description: "Critical safety and emergency response guide",
       icon: Zap,
@@ -53,7 +38,7 @@ export default function DocumentationHub() {
       title: "Training Resources",
       description: "Staff training materials and onboarding guides",
       icon: Users,
-      href: "/docs/quick-reference#training"
+      href: "/docs/venue-admin#training"
     }
   ];
 

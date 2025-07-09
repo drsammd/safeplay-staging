@@ -107,13 +107,44 @@ export class GeoapifyService {
 
       const data: GeoapifyAutocompleteResponse = await response.json();
       
-      return data.features?.map(feature => ({
-        place_id: feature.properties.place_id || `geoapify_${Date.now()}_${Math.random()}`,
-        description: feature.properties.formatted,
-        main_text: feature.properties.name || feature.properties.street || feature.properties.formatted.split(',')[0],
-        secondary_text: this.getSecondaryText(feature.properties),
-        types: ['address']
-      })) || [];
+      return data.features?.map((feature, index) => {
+        const props = feature.properties;
+        
+        // Create a more reliable place_id
+        const placeId = props.place_id || `geoapify_${input}_${index}_${Date.now()}`;
+        
+        // Better main text extraction
+        let mainText = '';
+        if (props.housenumber && props.street) {
+          mainText = `${props.housenumber} ${props.street}`;
+        } else if (props.name && props.name !== props.formatted) {
+          mainText = props.name;
+        } else if (props.street) {
+          mainText = props.street;
+        } else {
+          mainText = props.formatted.split(',')[0];
+        }
+        
+        // Better secondary text
+        const secondaryParts = [];
+        if (props.city && props.city !== mainText) {
+          secondaryParts.push(props.city);
+        }
+        if (props.state) {
+          secondaryParts.push(props.state);
+        }
+        if (props.postcode) {
+          secondaryParts.push(props.postcode);
+        }
+        
+        return {
+          place_id: placeId,
+          description: props.formatted,
+          main_text: mainText,
+          secondary_text: secondaryParts.join(', '),
+          types: ['address']
+        };
+      }) || [];
     } catch (error) {
       console.error('Geoapify autocomplete error:', error);
       return [];

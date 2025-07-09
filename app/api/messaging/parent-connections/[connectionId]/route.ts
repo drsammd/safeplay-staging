@@ -73,7 +73,6 @@ export async function PUT(
     await prisma.communicationNotification.create({
       data: {
         userId: connection.requesterId,
-        type: 'COMMUNITY_INVITE',
         title: 'Connection Request Response',
         message: notificationMessage,
         data: {
@@ -92,7 +91,7 @@ export async function PUT(
         const { messagingInfrastructureService } = await import('../../../../../lib/services/messaging-infrastructure-service');
         
         await messagingInfrastructureService.createChat({
-          type: ChatType.DIRECT,
+          type: 'PRIVATE',
           title: `${connection.requester.name} & ${connection.receiver.name}`,
           participantIds: [connection.requesterId, connection.receiverId],
           creatorId: session.user.id,

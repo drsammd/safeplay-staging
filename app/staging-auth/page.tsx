@@ -53,14 +53,14 @@ export default function StagingAuthPage() {
           // Fix URL concatenation issue and ensure clean redirect
           setTimeout(() => {
             // Use window.location.replace to avoid URL concatenation issues
-            window.location.replace('/parent');
+            window.location.replace('/');
           }, 500);
         } else {
           console.log('⚠️ Demo mode not available, using auto-login mechanism');
           
           // Auto-login approach: redirect to a special auto-signin endpoint
           setTimeout(() => {
-            window.location.replace('/api/auth/auto-signin?callbackUrl=/parent');
+            window.location.replace('/api/auth/auto-signin?callbackUrl=/');
           }, 500);
         }
       } else {
