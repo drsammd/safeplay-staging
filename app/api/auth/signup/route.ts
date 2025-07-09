@@ -203,30 +203,70 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       // Map plan type to subscription enum
       const subscriptionPlan = selectedPlan.planType.toUpperCase() as 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
       
-      const subscriptionData: any = {
-        userId: newUser.id,
-        planType: subscriptionPlan,
-        status: selectedPlan.planType === 'FREE' ? 'ACTIVE' : 'TRIALING',
-        startDate: currentTime,
-        autoRenew: selectedPlan.billingInterval !== 'lifetime',
-        metadata: {
-          selectedPlan: selectedPlan,
-          registrationFlow: true,
-          createdAt: currentTime.toISOString()
+      // Check if Stripe subscription was already created during payment
+      if (subscriptionData?.subscription?.id && subscriptionData?.customer?.id) {
+        console.log('💳 Linking existing Stripe subscription to user:', newUser.id);
+        
+        const stripeSubscription = subscriptionData.subscription;
+        const stripeCustomer = subscriptionData.customer;
+        
+        const subscriptionRecord = {
+          userId: newUser.id,
+          planType: subscriptionPlan,
+          status: stripeSubscription.status === 'trialing' ? 'TRIALING' : 'ACTIVE',
+          stripeCustomerId: stripeCustomer.id,
+          stripeSubscriptionId: stripeSubscription.id,
+          currentPeriodStart: stripeSubscription.current_period_start 
+            ? new Date(stripeSubscription.current_period_start * 1000) 
+            : currentTime,
+          currentPeriodEnd: stripeSubscription.current_period_end 
+            ? new Date(stripeSubscription.current_period_end * 1000) 
+            : new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000)),
+          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end || false,
+          canceledAt: stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
+          trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : null,
+          trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
+          autoRenew: selectedPlan.billingInterval !== 'lifetime',
+          metadata: {
+            selectedPlan: selectedPlan,
+            registrationFlow: true,
+            createdAt: currentTime.toISOString(),
+            stripeSubscriptionData: stripeSubscription
+          }
+        };
+
+        await tx.userSubscription.create({
+          data: subscriptionRecord,
+        });
+
+        console.log('✅ Stripe subscription linked successfully for user:', newUser.id);
+      } else {
+        // Create local subscription record (for free plans or fallback)
+        const subscriptionRecord: any = {
+          userId: newUser.id,
+          planType: subscriptionPlan,
+          status: selectedPlan.planType === 'FREE' ? 'ACTIVE' : 'TRIALING',
+          startDate: currentTime,
+          autoRenew: selectedPlan.billingInterval !== 'lifetime',
+          metadata: {
+            selectedPlan: selectedPlan,
+            registrationFlow: true,
+            createdAt: currentTime.toISOString()
+          }
+        };
+
+        // Add trial period for non-free plans
+        if (selectedPlan.planType !== 'FREE') {
+          subscriptionRecord.trialStart = currentTime;
+          subscriptionRecord.trialEnd = new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days trial
         }
-      };
 
-      // Add trial period for non-free plans
-      if (selectedPlan.planType !== 'FREE') {
-        subscriptionData.trialStart = currentTime;
-        subscriptionData.trialEnd = new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days trial
+        await tx.userSubscription.create({
+          data: subscriptionRecord,
+        });
+
+        console.log('✅ Local subscription created successfully for user:', newUser.id);
       }
-
-      await tx.userSubscription.create({
-        data: subscriptionData,
-      });
-
-      console.log('✅ Subscription created successfully for user:', newUser.id);
     } else {
       console.log('ℹ️ No plan selected, creating user without subscription');
     }

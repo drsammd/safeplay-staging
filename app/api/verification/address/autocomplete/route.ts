@@ -8,10 +8,13 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Allow unauthenticated access for signup flow
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    console.log('🔍 Address autocomplete API call:', { 
+      hasSession: !!session, 
+      userId: session?.user?.id,
+      allowUnauthenticated: true
+    });
 
     const { input, countryRestriction } = await request.json();
 

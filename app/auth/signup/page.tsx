@@ -688,6 +688,8 @@ export default function SignUpPage() {
                       ? billingAddressFields
                       : homeAddressFields
                   }
+                  userEmail={formData.email}
+                  userName={formData.name}
                 />
               </div>
             )}

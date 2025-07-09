@@ -57,6 +57,8 @@ interface PaymentSetupProps {
   prefilledBillingAddress?: string;
   billingAddressValidation?: any;
   prefilledBillingFields?: AddressFields;
+  userEmail?: string;
+  userName?: string;
 }
 
 // Payment Form Component (inside Elements provider)
@@ -72,7 +74,9 @@ function PaymentFormContent({
   onError,
   prefilledBillingAddress,
   billingAddressValidation,
-  prefilledBillingFields
+  prefilledBillingFields,
+  userEmail,
+  userName
 }: PaymentSetupProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -251,14 +255,28 @@ function PaymentFormContent({
       console.log('✅ PAYMENT: Payment method created:', paymentMethod.id);
 
       // Create subscription with payment method
-      const response = await fetch('/api/stripe/subscription/create-fixed', {
+      // Use signup endpoint if user is not authenticated (during signup flow)
+      const isSignupFlow = !session?.user?.id;
+      const endpoint = isSignupFlow ? '/api/stripe/subscription/create-signup' : '/api/stripe/subscription/create-fixed';
+      
+      const requestBody = isSignupFlow ? {
+        priceId: stripePriceId,
+        paymentMethodId: paymentMethod.id,
+        discountCodeId,
+        userEmail: userEmail || session?.user?.email || billingDetails.name?.toLowerCase().replace(/\s+/g, '') + '@temp.com',
+        userName: userName || billingDetails.name || 'User'
+      } : {
+        priceId: stripePriceId,
+        paymentMethodId: paymentMethod.id,
+        discountCodeId,
+      };
+
+      console.log('💳 PAYMENT: Using endpoint:', endpoint, 'IsSignupFlow:', isSignupFlow);
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId: stripePriceId,
-          paymentMethodId: paymentMethod.id,
-          discountCodeId,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
