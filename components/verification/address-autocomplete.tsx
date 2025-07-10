@@ -129,17 +129,15 @@ export function AddressAutocomplete({
         !suggestionsRef.current.contains(event.target as Node) &&
         !inputRef.current?.contains(event.target as Node)
       ) {
-        setShowSuggestions(false);
+        // Add a small delay to allow suggestion clicks to process first
+        setTimeout(() => {
+          setShowSuggestions(false);
+        }, 150);
       }
     }
 
-    // Use a slight delay to allow React events to process first
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 0);
-
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
@@ -339,15 +337,18 @@ export function AddressAutocomplete({
             <div
               key={suggestion.place_id}
               className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
-              onMouseDown={(e) => {
-                // Use mousedown to ensure it fires before blur events
+              onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('🎯 Dropdown item selected:', suggestion);
+                console.log('🎯 Dropdown item clicked:', suggestion);
                 handleSuggestionClick(suggestion);
               }}
+              onMouseDown={(e) => {
+                // Prevent input blur while allowing click to process
+                e.preventDefault();
+              }}
             >
-              <div className="flex items-start gap-2 pointer-events-none">
+              <div className="flex items-start gap-2">
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 truncate">

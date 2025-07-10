@@ -58,15 +58,14 @@ export async function POST(request: NextRequest) {
       data: {
         title: title || `${mediaType} from ${venue.name}`,
         description,
-        mediaType,
+        type: mediaType,
         fileUrl,
         thumbnailUrl,
         fileSize,
         duration,
         capturedAt: new Date(),
         venueId,
-        uploadedById: session.user.id,
-        taggedChildren: [],
+        uploadedBy: session.user.id,
         facialTagsConfirmed: false,
       },
     });
@@ -124,7 +123,6 @@ export async function POST(request: NextRequest) {
             await prisma.sharedMedia.update({
               where: { id: media.id },
               data: {
-                taggedChildren,
                 facialTagsConfirmed: true,
               },
             });
@@ -168,7 +166,7 @@ export async function POST(request: NextRequest) {
       media: {
         id: media.id,
         title: media.title,
-        mediaType: media.mediaType,
+        mediaType: media.type,
         fileUrl: media.fileUrl,
         thumbnailUrl: media.thumbnailUrl,
         taggedChildren,

@@ -815,16 +815,15 @@ export default function SignUpPage() {
       <nav className="relative z-10 bg-white/10 backdrop-blur-md border-b border-white/20">
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="relative w-10 h-10">
+            <Link href="/" className="flex items-center">
+              <div className="relative w-16 h-16">
                 <Image
                   src="https://mysafeplay.ai/logos/safeplay_combined_logo5.png"
-                  alt="SafePlay Logo"
+                  alt="SafePlay"
                   fill
                   className="object-contain"
                 />
               </div>
-              <span className="text-white font-semibold text-lg">SafePlay</span>
             </Link>
             
             <div className="flex items-center space-x-6">

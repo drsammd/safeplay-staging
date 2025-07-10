@@ -54,19 +54,11 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch('/api/stripe/plans-fixed');
+      const response = await fetch('/api/stripe/plans-demo');
       const data = await response.json();
       if (data.plans) {
-        // FIXED: Sort plans by price (ascending) - Basic, Premium, Family, Lifetime
-        const sortedPlans = data.plans.sort((a: SubscriptionPlan, b: SubscriptionPlan) => {
-          // Handle lifetime plans separately - put them at the end
-          if (a.planType === 'LIFETIME' && b.planType !== 'LIFETIME') return 1;
-          if (b.planType === 'LIFETIME' && a.planType !== 'LIFETIME') return -1;
-          if (a.planType === 'LIFETIME' && b.planType === 'LIFETIME') {
-            return (a.lifetimePrice || 0) - (b.lifetimePrice || 0);
-          }
-          
-          // For non-lifetime plans, sort by monthly price
+        // Sort plans by price (ascending) - Basic, Premium, Family
+        const sortedPlans = data.plans.sort((a: any, b: any) => {
           return a.price - b.price;
         });
         

@@ -267,18 +267,12 @@ function PaymentFormContent({
       console.log('✅ PAYMENT: Payment method created:', paymentMethod.id);
 
       // Create subscription with payment method
-      // Use signup endpoint if user is not authenticated (during signup flow)
+      // Use demo endpoints for both signup and authenticated flows
       const isSignupFlow = !session?.user?.id;
-      const endpoint = isSignupFlow ? '/api/stripe/subscription/create-signup' : '/api/stripe/subscription/create-fixed';
+      const endpoint = '/api/stripe/subscription-demo';
       
-      const requestBody = isSignupFlow ? {
-        priceId: stripePriceId,
-        paymentMethodId: paymentMethod.id,
-        discountCodeId,
-        userEmail: userEmail || session?.user?.email || billingDetails.name?.toLowerCase().replace(/\s+/g, '') + '@temp.com',
-        userName: userName || billingDetails.name || 'User'
-      } : {
-        priceId: stripePriceId,
+      const requestBody = {
+        planId: planId,
         paymentMethodId: paymentMethod.id,
         discountCodeId,
       };
