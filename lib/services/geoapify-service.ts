@@ -97,20 +97,22 @@ export class GeoapifyService {
       }
 
       const countries = countryRestriction.join(',');
-      // IMPROVED: Increase limit to 10 for more suggestions and adjust parameters for better results
+      // FIXED: Remove invalid 'type=address' parameter and increase limit for more suggestions
       const response = await fetch(
-        `${this.baseUrl}/geocode/autocomplete?text=${encodeURIComponent(input)}&filter=countrycode:${countries}&apiKey=${this.apiKey}&limit=10&type=address&bias=proximity:-74.0060,40.7128&format=json`
+        `${this.baseUrl}/geocode/autocomplete?text=${encodeURIComponent(input)}&filter=countrycode:${countries}&apiKey=${this.apiKey}&limit=10&bias=proximity:-74.0060,40.7128&format=json`
       );
 
       if (!response.ok) {
         throw new Error(`Geoapify API error: ${response.status}`);
       }
 
-      const data: GeoapifyAutocompleteResponse = await response.json();
+      const data: any = await response.json();
       
-      // IMPROVED: Better processing to return more varied suggestions
-      const suggestions = data.features?.map((feature, index) => {
-        const props = feature.properties;
+      // FIXED: Geoapify returns 'results' not 'features' 
+      const results = data.results || [];
+      const suggestions = results.map((result: any, index: number) => {
+        // FIXED: Access result properties directly (not result.properties)
+        const props = result;
         
         // Create a more reliable place_id
         const placeId = props.place_id || `geoapify_${input}_${index}_${Date.now()}`;
@@ -119,8 +121,8 @@ export class GeoapifyService {
         let mainText = '';
         if (props.housenumber && props.street) {
           mainText = `${props.housenumber} ${props.street}`;
-        } else if (props.name && props.name !== props.formatted && props.name.length < 50) {
-          mainText = props.name;
+        } else if (props.address_line1 && props.address_line1.length < 50) {
+          mainText = props.address_line1;
         } else if (props.street) {
           mainText = props.street;
         } else {
@@ -210,12 +212,12 @@ export class GeoapifyService {
         throw new Error(`Geoapify API error: ${response.status}`);
       }
 
-      const data: GeoapifyAutocompleteResponse = await response.json();
+      const data: any = await response.json();
       
-      if (data.features && data.features.length > 0) {
-        const feature = data.features[0];
-        const standardizedAddress = this.parseGeoapifyResult(feature);
-        const confidence = this.calculateConfidence(feature, address);
+      if (data.results && data.results.length > 0) {
+        const result = data.results[0];
+        const standardizedAddress = this.parseGeoapifyResult(result);
+        const confidence = this.calculateConfidence(result, address);
 
         return {
           isValid: true,
@@ -259,8 +261,9 @@ export class GeoapifyService {
     }
   }
 
-  private parseGeoapifyResult(feature: any): StandardizedAddress {
-    const props = feature.properties;
+  private parseGeoapifyResult(result: any): StandardizedAddress {
+    // FIXED: Access result properties directly (not result.properties)
+    const props = result;
     
     return {
       formatted_address: props.formatted,
@@ -283,10 +286,11 @@ export class GeoapifyService {
     return parts.join(', ');
   }
 
-  private calculateConfidence(feature: any, originalInput: string): number {
+  private calculateConfidence(result: any, originalInput: string): number {
     let confidence = 0.4; // IMPROVED: Higher base confidence
 
-    const props = feature.properties;
+    // FIXED: Access result properties directly (not result.properties)
+    const props = result;
     
     // Higher confidence for complete addresses
     if (props.housenumber) confidence += 0.2;
