@@ -274,22 +274,38 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     return newUser;
   });
 
-  // Trigger 7-Day Onboarding Sequence (with race condition fix)
+  // Trigger 7-Day Onboarding Sequence (with comprehensive debugging)
   try {
-    // Add small delay to ensure user is fully committed to database
-    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log(`🔍 SIGNUP DEBUG: About to trigger email automation for user ${user.id} (${email}) at ${new Date().toISOString()}`);
+    console.log(`🔍 SIGNUP DEBUG: User created successfully - ID: ${user.id}, Email: ${email}, CreatedAt: ${user.createdAt}`);
     
-    await emailAutomationEngine.processOnboardingTrigger(user.id, {
+    // Add significant delay to ensure user is fully committed to database
+    console.log(`⏳ SIGNUP DEBUG: Waiting 500ms for database transaction to fully commit...`);
+    await new Promise(resolve => setTimeout(resolve, 500)); // Significantly increased delay
+    
+    console.log(`📧 SIGNUP DEBUG: Starting email automation trigger for user ${user.id}`);
+    
+    const automationResult = await emailAutomationEngine.processOnboardingTrigger(user.id, {
       signupDate: new Date().toISOString(),
       userRole: role,
       userName: name,
       userEmail: email,
       ipAddress,
-      userAgent
+      userAgent,
+      debugContext: 'signup-flow',
+      transactionDelay: 200
     });
-    console.log(`✅ 7-day onboarding sequence triggered for user: ${email}`);
+    
+    console.log(`✅ SIGNUP DEBUG: Email automation completed for user ${email}:`, automationResult);
   } catch (error) {
-    console.error(`❌ Failed to trigger onboarding sequence for user ${email}:`, error);
+    console.error(`🚨 SIGNUP DEBUG: Failed to trigger onboarding sequence for user ${email}:`, error);
+    console.error(`🚨 SIGNUP DEBUG: Error details:`, {
+      errorMessage: error?.message,
+      errorStack: error?.stack,
+      userId: user.id,
+      userEmail: email,
+      timestamp: new Date().toISOString()
+    });
     // Don't fail the signup if email automation fails
   }
 

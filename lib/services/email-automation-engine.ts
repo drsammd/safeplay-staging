@@ -70,6 +70,9 @@ export class EmailAutomationEngine {
     scheduledExecutions: number;
     errors: string[];
   }> {
+    console.log(`🔍 TRIGGER DEBUG: processTrigger called with event:`, event);
+    console.log(`🔍 TRIGGER DEBUG: This is NOT the same as processOnboardingTrigger!`);
+    
     let scheduledExecutions = 0;
     const errors: string[] = [];
 
@@ -85,18 +88,20 @@ export class EmailAutomationEngine {
         }
       });
 
-      console.log(`Processing trigger ${event.trigger} for user ${event.userId}, found ${rules.length} rules`);
+      console.log(`🔍 TRIGGER DEBUG: Processing trigger ${event.trigger} for user ${event.userId}, found ${rules.length} rules`);
 
       for (const rule of rules) {
         try {
+          console.log(`🔍 TRIGGER DEBUG: Evaluating rule conditions for rule ${rule.id} (${rule.name})`);
           const shouldExecute = await this.evaluateRuleConditions(rule, event);
+          console.log(`🔍 TRIGGER DEBUG: Rule ${rule.id} should execute: ${shouldExecute}`);
           
           if (shouldExecute) {
             await this.scheduleRuleExecution(rule, event);
             scheduledExecutions++;
           }
         } catch (error) {
-          console.error(`Error processing rule ${rule.id}:`, error);
+          console.error(`🚨 TRIGGER DEBUG: Error processing rule ${rule.id}:`, error);
           errors.push(`Rule ${rule.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
@@ -124,15 +129,24 @@ export class EmailAutomationEngine {
     rule: EmailAutomationRule, 
     event: TriggerEvent
   ): Promise<boolean> {
+    console.log(`🔍 EVAL DEBUG: evaluateRuleConditions called for rule ${rule.id} (${rule.name})`);
+    console.log(`🔍 EVAL DEBUG: Event userId: ${event.userId}, trigger: ${event.trigger}`);
+    
     try {
-      // Get user context
+      console.log(`🔍 EVAL DEBUG: About to call getUserContext for user ${event.userId}`);
+      console.log(`🔍 EVAL DEBUG: This is where the "User not found" error likely occurs!`);
+      
+      // Get user context - THIS IS WHERE THE ERROR LIKELY HAPPENS
       const context = await this.getUserContext(event.userId, event.metadata);
+      
+      console.log(`✅ EVAL DEBUG: Successfully got user context for ${context.user.email}`);
 
       // Check user segment
       if (rule.userSegment) {
+        console.log(`🔍 EVAL DEBUG: Checking user segment ${rule.userSegment} for user ${event.userId}`);
         const userMatchesSegment = await this.checkUserSegment(context.user, rule.userSegment);
         if (!userMatchesSegment) {
-          console.log(`User ${event.userId} doesn't match segment ${rule.userSegment}`);
+          console.log(`❌ EVAL DEBUG: User ${event.userId} doesn't match segment ${rule.userSegment}`);
           return false;
         }
       }
@@ -398,33 +412,67 @@ export class EmailAutomationEngine {
     userId: string, 
     metadata?: Record<string, any>
   ): Promise<AutomationContext> {
-    // Retry logic to handle race conditions during user creation
+    console.log(`🔍 DEBUG: getUserContext called for userId: ${userId} at ${new Date().toISOString()}`);
+    console.log(`🔍 DEBUG: Metadata provided:`, metadata);
+    
+    // Enhanced retry logic to handle race conditions during user creation
     let user = null;
     let attempts = 0;
-    const maxAttempts = 3;
-    const delayMs = 100;
+    const maxAttempts = 10; // Significantly increased to 10 attempts
+    const baseDelayMs = 200; // Base delay increased to 200ms
 
     while (!user && attempts < maxAttempts) {
       attempts++;
+      // Exponential backoff: delay increases with each attempt
+      const currentDelay = baseDelayMs * Math.pow(1.5, attempts - 1);
       
-      user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          children: true,
-          managedVenues: true
-        }
-      });
+      console.log(`🔍 DEBUG: Attempt ${attempts}/${maxAttempts} to find user ${userId}`);
+      
+      try {
+        user = await prisma.user.findUnique({
+          where: { id: userId },
+          include: {
+            children: true,
+            managedVenues: true
+          }
+        });
 
-      if (!user && attempts < maxAttempts) {
-        console.log(`⏳ Email automation: User not found on attempt ${attempts}/${maxAttempts}, retrying in ${delayMs}ms...`);
-        await new Promise(resolve => setTimeout(resolve, delayMs));
+        console.log(`🔍 DEBUG: Prisma query result for attempt ${attempts}:`, user ? 'USER FOUND' : 'USER NOT FOUND');
+        
+        if (user) {
+          console.log(`✅ DEBUG: User found on attempt ${attempts}! User ID: ${user.id}, Email: ${user.email}, Created: ${user.createdAt}`);
+          console.log(`✅ DEBUG: Total wait time: ${(attempts - 1) * baseDelayMs}ms over ${attempts} attempts`);
+        } else {
+          console.log(`❌ DEBUG: User not found on attempt ${attempts}/${maxAttempts} for userId: ${userId}`);
+          
+          if (attempts < maxAttempts) {
+            console.log(`⏳ DEBUG: Waiting ${Math.round(currentDelay)}ms before retry ${attempts + 1} (exponential backoff)...`);
+            await new Promise(resolve => setTimeout(resolve, currentDelay));
+          }
+        }
+      } catch (dbError) {
+        console.error(`🚨 DEBUG: Database error during attempt ${attempts}:`, dbError);
+        if (attempts < maxAttempts) {
+          console.log(`⏳ DEBUG: Database error - waiting ${Math.round(currentDelay)}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, currentDelay));
+        }
       }
     }
 
     if (!user) {
-      throw new Error('User not found after multiple attempts');
+      // Calculate total wait time with exponential backoff
+      let totalWaitTime = 0;
+      for (let i = 1; i < maxAttempts; i++) {
+        totalWaitTime += baseDelayMs * Math.pow(1.5, i - 1);
+      }
+      
+      const errorMsg = `User not found after ${maxAttempts} attempts over ${Math.round(totalWaitTime)}ms (exponential backoff). UserId: ${userId}`;
+      console.error(`🚨 DEBUG: FINAL ERROR - ${errorMsg}`);
+      console.error(`🚨 DEBUG: This error will be thrown to the calling function`);
+      throw new Error(errorMsg);
     }
 
+    console.log(`🎉 DEBUG: Successfully retrieved user context for ${user.email}`);
     return {
       user,
       children: user.children,
@@ -782,16 +830,24 @@ export class EmailAutomationEngine {
     scheduledEmails: number;
     errors: string[];
   }> {
+    console.log(`🔍 ONBOARDING DEBUG: processOnboardingTrigger called for userId: ${userId} at ${new Date().toISOString()}`);
+    console.log(`🔍 ONBOARDING DEBUG: Metadata:`, metadata);
+    
     const errors: string[] = [];
     let scheduledEmails = 0;
 
     try {
+      console.log(`🔍 ONBOARDING DEBUG: Checking email preferences for user ${userId}...`);
+      
       // Check if user has email preferences that allow welcome sequence
       const userPreferences = await prisma.emailPreferences.findFirst({
         where: { userId }
       });
 
+      console.log(`🔍 ONBOARDING DEBUG: User preferences found:`, userPreferences ? 'YES' : 'NO');
+
       if (userPreferences && !userPreferences.welcomeSequence) {
+        console.log(`⏭️ ONBOARDING DEBUG: User has disabled welcome sequence, skipping`);
         return {
           success: true,
           scheduledEmails: 0,
@@ -799,6 +855,8 @@ export class EmailAutomationEngine {
         };
       }
 
+      console.log(`🔍 ONBOARDING DEBUG: Getting onboarding sequence rules...`);
+      
       // Get all onboarding sequence rules
       const onboardingRules = await prisma.emailAutomationRule.findMany({
         where: {
@@ -813,9 +871,13 @@ export class EmailAutomationEngine {
         }
       });
 
+      console.log(`🔍 ONBOARDING DEBUG: Found ${onboardingRules.length} onboarding rules`);
+
       // Schedule all onboarding emails
       for (const rule of onboardingRules) {
         try {
+          console.log(`📅 ONBOARDING DEBUG: Scheduling rule "${rule.name}" for user ${userId}`);
+          
           const scheduledAt = new Date();
           scheduledAt.setMinutes(scheduledAt.getMinutes() + rule.delay);
 
@@ -835,8 +897,11 @@ export class EmailAutomationEngine {
           });
 
           scheduledEmails++;
+          console.log(`✅ ONBOARDING DEBUG: Successfully scheduled "${rule.name}" for user ${userId}`);
         } catch (error) {
-          errors.push(`Failed to schedule ${rule.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const errorMsg = `Failed to schedule ${rule.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          console.error(`❌ ONBOARDING DEBUG: ${errorMsg}`, error);
+          errors.push(errorMsg);
         }
       }
 
