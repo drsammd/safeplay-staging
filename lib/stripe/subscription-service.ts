@@ -103,6 +103,10 @@ export class SubscriptionService {
 
       // Get user info
       console.log('👤 SERVICE: Looking up user in database...');
+      console.log('🔍 SERVICE: Searching for userId:', userId);
+      console.log('🔍 SERVICE: UserId type:', typeof userId);
+      console.log('🔍 SERVICE: UserId length:', userId?.length);
+      
       const user = await prisma.user.findUnique({
         where: { id: userId }
       });
@@ -110,12 +114,41 @@ export class SubscriptionService {
       console.log('👤 SERVICE: User lookup result:', {
         found: !!user,
         email: user?.email,
-        name: user?.name
+        name: user?.name,
+        searchedId: userId
       });
 
       if (!user) {
         console.log('❌ SERVICE: User not found in createSubscription');
-        throw new Error('User not found');
+        console.log('🔍 SERVICE: Phantom user ID detected:', userId);
+        console.log('🔍 SERVICE: This may be from cached/stale session data');
+        
+        // Check if there are any similar user IDs in database
+        console.log('🔍 SERVICE: Checking for similar user IDs...');
+        try {
+          const recentUsers = await prisma.user.findMany({
+            select: { id: true, email: true, createdAt: true },
+            orderBy: { createdAt: 'desc' },
+            take: 5
+          });
+          console.log('🔍 SERVICE: Recent users:', recentUsers.map(u => ({ id: u.id, email: u.email })));
+        } catch (similarError) {
+          console.log('❌ SERVICE: Could not fetch similar users:', similarError.message);
+        }
+        
+        // Enhanced error message for debugging
+        const enhancedError = new Error(`User not found for ID: ${userId}. This may be a stale session or cached user ID. Please sign out and sign back in.`);
+        enhancedError.name = 'UserNotFoundError';
+        enhancedError.cause = 'PHANTOM_USER_ID';
+        enhancedError.details = {
+          userId: userId,
+          userIdType: typeof userId,
+          userIdLength: userId?.length,
+          timestamp: new Date().toISOString(),
+          suggestion: 'Sign out and sign back in to refresh session'
+        };
+        
+        throw enhancedError;
       }
 
       // Get or create customer

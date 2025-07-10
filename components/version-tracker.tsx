@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 
 // Fallback version configuration
 const FALLBACK_VERSION_CONFIG = {
-  version: "1.2.19-staging",
+  version: "1.2.20-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "fixed-user-not-found-and-geoapify-multiple-suggestions",
+  commit: "fixed-billing-address-population-and-enhanced-user-not-found-error-handling",
   branch: "main"
 };
 

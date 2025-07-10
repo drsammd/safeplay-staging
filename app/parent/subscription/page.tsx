@@ -418,6 +418,18 @@ export default function SubscriptionPage() {
                 amount={selectedPlan.amount}
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}
+                // BILLING ADDRESS FIX: Pass user information for billing address pre-population
+                userEmail={session?.user?.email || ''}
+                userName={session?.user?.name || ''}
+                prefilledBillingAddress=""
+                billingAddressValidation={null}
+                prefilledBillingFields={{
+                  street: '',
+                  city: '',
+                  state: '',
+                  zipCode: '',
+                  fullAddress: ''
+                }}
               />
             )}
           </div>
