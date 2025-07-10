@@ -9,15 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const { planId, paymentMethodId } = await request.json();
+    const { planId, paymentMethodId, isSignupFlow } = await request.json();
 
     if (!planId) {
       return NextResponse.json(
@@ -26,7 +18,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('🎭 DEMO API: Creating subscription for user:', session.user.id, 'Plan:', planId);
+    // Handle signup flow (no authentication required)
+    if (!session?.user?.id) {
+      console.log('🚀 DEMO API: Handling signup flow - no authentication required');
+      console.log('🚀 DEMO API: Creating temporary subscription for signup with plan:', planId);
+
+      // Create a temporary subscription for signup flow
+      const tempSubscription = await demoSubscriptionService.createSignupSubscription(
+        planId,
+        paymentMethodId
+      );
+
+      return NextResponse.json({
+        success: true,
+        subscription: tempSubscription,
+        customer: tempSubscription.customer,
+        isSignupFlow: true,
+        message: 'Demo subscription prepared for signup! This is a test environment.'
+      });
+    }
+
+    // Handle authenticated user flow (existing logic)
+    console.log('🎭 DEMO API: Creating subscription for authenticated user:', session.user.id, 'Plan:', planId);
 
     // Create subscription using demo service
     const subscription = await demoSubscriptionService.createSubscription(

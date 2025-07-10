@@ -59,6 +59,80 @@ export class DemoSubscriptionService {
     return plans.find(plan => plan.planType === planType);
   }
 
+  // Create a demo subscription for signup flow (no user ID required)
+  async createSignupSubscription(
+    planId: string, 
+    paymentMethodId?: string
+  ) {
+    try {
+      console.log('🚀 DEMO MODE: Creating signup subscription for plan:', planId);
+
+      // Find the plan
+      const plans = this.getAvailablePlans();
+      const plan = plans.find(p => p.id === planId);
+      if (!plan) {
+        throw new Error(`No plan found for ID: ${planId}`);
+      }
+
+      console.log('📋 DEMO MODE: Found plan for signup:', plan.name, 'Type:', plan.planType);
+
+      // Generate temporary IDs that will be linked to user later
+      const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const demoCustomerId = `demo_cus_signup_${tempId}`;
+      const demoSubscriptionId = `demo_sub_signup_${tempId}`;
+
+      // Calculate dates
+      const now = new Date();
+      const trialEnd = new Date(now.getTime() + (plan.trialDays * 24 * 60 * 60 * 1000));
+      const currentPeriodEnd = new Date(trialEnd.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days after trial
+
+      // Return a mock Stripe subscription object with customer info
+      const mockSubscription = {
+        id: demoSubscriptionId,
+        object: 'subscription',
+        customer: {
+          id: demoCustomerId,
+          object: 'customer',
+          created: Math.floor(now.getTime() / 1000),
+          email: null, // Will be set during signup
+          metadata: {
+            signupFlow: 'true',
+            planType: plan.planType,
+            demoMode: 'true',
+            tempId: tempId
+          }
+        },
+        status: 'trialing',
+        current_period_start: Math.floor(now.getTime() / 1000),
+        current_period_end: Math.floor(currentPeriodEnd.getTime() / 1000),
+        trial_start: Math.floor(now.getTime() / 1000),
+        trial_end: Math.floor(trialEnd.getTime() / 1000),
+        cancel_at_period_end: false,
+        canceled_at: null,
+        metadata: {
+          planType: plan.planType,
+          demoMode: 'true',
+          signupFlow: 'true',
+          tempId: tempId,
+          planId: planId
+        },
+        latest_invoice: {
+          payment_intent: {
+            status: 'succeeded',
+            client_secret: `demo_pi_signup_${tempId}_secret`
+          }
+        }
+      };
+
+      console.log('🎉 DEMO MODE: Signup subscription created successfully!');
+      return mockSubscription;
+
+    } catch (error) {
+      console.error('❌ DEMO MODE: Error in createSignupSubscription:', error);
+      throw error;
+    }
+  }
+
   // Create a demo subscription (simulates Stripe integration)
   async createSubscription(
     userId: string, 

@@ -275,6 +275,7 @@ function PaymentFormContent({
         planId: planId,
         paymentMethodId: paymentMethod.id,
         discountCodeId,
+        isSignupFlow: isSignupFlow // Add this parameter to distinguish signup flow
       };
 
       console.log('💳 PAYMENT: Using endpoint:', endpoint, 'IsSignupFlow:', isSignupFlow);
@@ -294,7 +295,7 @@ function PaymentFormContent({
 
       console.log('✅ PAYMENT: Subscription API Response:', data);
 
-      // Handle subscription confirmation if needed
+      // Handle subscription confirmation if needed (for real Stripe subscriptions)
       if (data.subscription?.latest_invoice?.payment_intent?.status === 'requires_action') {
         const { error: confirmError } = await stripe.confirmCardPayment(
           data.subscription.latest_invoice.payment_intent.client_secret
@@ -307,7 +308,19 @@ function PaymentFormContent({
 
       // Success!
       setSuccess(true);
-      onSuccess?.(data);
+      
+      // For signup flow, pass both subscription and customer data
+      if (isSignupFlow && data.isSignupFlow) {
+        console.log('🚀 PAYMENT: Signup flow success - passing subscription and customer data');
+        onSuccess?.({
+          subscription: data.subscription,
+          customer: data.customer,
+          isSignupFlow: true
+        });
+      } else {
+        // For authenticated users, pass regular subscription data
+        onSuccess?.(data);
+      }
       
     } catch (err: any) {
       const errorMessage = err.message || 'An error occurred during payment';
