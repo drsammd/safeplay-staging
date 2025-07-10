@@ -30,17 +30,25 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'No venue found' }, { status: 404 });
       }
 
-      whereClause.venueId = venue.id;
+      whereClause.floorPlan = {
+        venueId: venue.id
+      };
     }
 
-    const zones = await prisma.zone.findMany({
+    const zones = await prisma.floorPlanZone.findMany({
       where: whereClause,
       include: {
         cameras: true,
-        venue: {
+        floorPlan: {
           select: {
             id: true,
-            name: true
+            name: true,
+            venue: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         }
       },
@@ -104,24 +112,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Venue ID is required' }, { status: 400 });
     }
 
-    const zone = await prisma.zone.create({
+    // Find or create a default floor plan for the venue
+    let floorPlan = await prisma.floorPlan.findFirst({
+      where: { venueId: targetVenueId }
+    });
+
+    if (!floorPlan) {
+      // Create a default floor plan if none exists
+      floorPlan = await prisma.floorPlan.create({
+        data: {
+          name: 'Default Floor Plan',
+          venueId: targetVenueId,
+          description: 'Automatically created default floor plan for zone configuration',
+          isActive: true
+        }
+      });
+    }
+
+    const zone = await prisma.floorPlanZone.create({
       data: {
         name: name.trim(),
         description: description?.trim() || null,
-        zoneType: zoneType || 'PLAY_AREA',
-        maxCapacity: maxCapacity ? parseInt(maxCapacity) : null,
-        safetyLevel: safetyLevel || 'MEDIUM',
-        monitoringEnabled: monitoringEnabled !== false,
-        venueId: targetVenueId,
+        type: zoneType || 'PLAY_AREA',
+        floorPlanId: floorPlan.id,
         coordinates: null, // Will be set later when configuring on floor plan
-        currentOccupancy: 0
+        color: '#3B82F6', // Default blue color
+        metadata: {
+          maxCapacity: maxCapacity ? parseInt(maxCapacity) : null,
+          safetyLevel: safetyLevel || 'MEDIUM',
+          monitoringEnabled: monitoringEnabled !== false,
+          currentOccupancy: 0,
+          createdBy: session.user.id,
+          createdAt: new Date().toISOString()
+        }
       },
       include: {
         cameras: true,
-        venue: {
+        floorPlan: {
           select: {
             id: true,
-            name: true
+            name: true,
+            venue: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
           }
         }
       }

@@ -129,15 +129,19 @@ export function AddressAutocomplete({
         !suggestionsRef.current.contains(event.target as Node) &&
         !inputRef.current?.contains(event.target as Node)
       ) {
-        // Add a small delay to allow click events to process first
-        setTimeout(() => {
-          setShowSuggestions(false);
-        }, 100);
+        setShowSuggestions(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    // Use a slight delay to allow React events to process first
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const fetchSuggestions = async (input: string) => {
@@ -231,6 +235,12 @@ export function AddressAutocomplete({
     setSelectedSuggestion(suggestion);
     setShowSuggestions(false);
     setSuggestions([]);
+    // Clear any pending validation
+    setValidationResult(null);
+    // Focus back to input for better UX
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   };
 
   const getValidationIcon = () => {
@@ -328,22 +338,16 @@ export function AddressAutocomplete({
           {suggestions.map((suggestion) => (
             <div
               key={suggestion.place_id}
-              className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
-              style={{ pointerEvents: 'auto' }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🎯 Dropdown item clicked:', suggestion);
-                handleSuggestionClick(suggestion);
-              }}
+              className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
               onMouseDown={(e) => {
+                // Use mousedown to ensure it fires before blur events
                 e.preventDefault();
                 e.stopPropagation();
-                console.log('🎯 Dropdown item mouse down:', suggestion);
+                console.log('🎯 Dropdown item selected:', suggestion);
                 handleSuggestionClick(suggestion);
               }}
             >
-              <div className="flex items-start gap-2" style={{ pointerEvents: 'none' }}>
+              <div className="flex items-start gap-2 pointer-events-none">
                 <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-gray-900 truncate">

@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 
 // Fallback version configuration
 const FALLBACK_VERSION_CONFIG = {
-  version: "1.2.10-staging",
+  version: "1.2.11-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "comprehensive-fixes-v1.2.10",
+  commit: "critical-fixes-v1.2.11",
   branch: "main"
 };
 
@@ -19,7 +19,7 @@ interface VersionDisplayProps {
 export function VersionTracker({ placement }: VersionDisplayProps) {
   const [versionConfig, setVersionConfig] = useState({
     ...FALLBACK_VERSION_CONFIG,
-    version: '1.2.10-staging'
+    version: '1.2.11-staging'
   });
   const [isLoading, setIsLoading] = useState(true);
 

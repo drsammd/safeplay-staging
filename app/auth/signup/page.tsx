@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import Image from "next/image";
 import { Eye, EyeOff, User, Mail, Lock, Building, ArrowRight, ArrowLeft, CheckCircle, MapPin, Home } from "lucide-react";
 import SubscriptionPlans from "@/components/subscription/subscription-plans";
 import PaymentSetup from "@/components/subscription/payment-setup";
@@ -815,8 +816,13 @@ export default function SignUpPage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-blue-600 font-bold text-sm">SP</span>
+              <div className="relative w-10 h-10">
+                <Image
+                  src="https://mysafeplay.ai/logos/safeplay_combined_logo5.png"
+                  alt="SafePlay Logo"
+                  fill
+                  className="object-contain"
+                />
               </div>
               <span className="text-white font-semibold text-lg">SafePlay</span>
             </Link>

@@ -1,9 +1,11 @@
 
 import React from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { 
   Building, 
   Users, 
@@ -20,7 +22,11 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
-  Zap
+  Zap,
+  FileText,
+  ExternalLink,
+  Home,
+  Book
 } from 'lucide-react';
 
 export default function QuickReferencePage() {
@@ -164,6 +170,81 @@ export default function QuickReferencePage() {
             Essential guides and checklists for venue administrators and parents to maximize 
             safety and get the most out of SafePlay's comprehensive child protection system.
           </p>
+        </div>
+
+        {/* Navigation */}
+        <div className="mb-8">
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-center space-x-2 text-center">
+                <Book className="h-5 w-5 text-blue-600" />
+                <span>Documentation Center</span>
+              </CardTitle>
+              <CardDescription className="text-center">
+                Access comprehensive manuals and detailed guides for your role
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <Building className="h-8 w-8 text-blue-600 mx-auto mb-3" />
+                      <h3 className="font-semibold mb-2">Venue Administrator Manual</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Complete guide for venue management, safety monitoring, and operations
+                      </p>
+                      <Link href="/docs/venue-admin">
+                        <Button className="w-full" variant="outline">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Open Manual
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <Heart className="h-8 w-8 text-purple-600 mx-auto mb-3" />
+                      <h3 className="font-semibold mb-2">Parent Manual</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Complete user guide for parents to maximize safety features and monitoring
+                      </p>
+                      <Link href="/docs/parent">
+                        <Button className="w-full" variant="outline">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Open Manual
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="hover:shadow-md transition-shadow">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <Home className="h-8 w-8 text-green-600 mx-auto mb-3" />
+                      <h3 className="font-semibold mb-2">Main Documentation</h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                        Overview and general information about SafePlay platform
+                      </p>
+                      <Link href="/docs">
+                        <Button className="w-full" variant="outline">
+                          <FileText className="h-4 w-4 mr-2" />
+                          View Docs
+                          <ExternalLink className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Stats */}

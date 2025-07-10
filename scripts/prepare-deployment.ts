@@ -22,7 +22,7 @@ const DEPLOYMENT_DATA = {
       email: 'john@doe.com',
       password: 'johndoe123',
       name: 'John Doe',
-      role: 'PARENT' as const,
+      role: 'SUPER_ADMIN' as const,
       phone: '+1 (555) 001-0002',
     },
     {
