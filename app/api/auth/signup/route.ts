@@ -274,8 +274,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     return newUser;
   });
 
-  // Trigger 7-Day Onboarding Sequence
+  // Trigger 7-Day Onboarding Sequence (with race condition fix)
   try {
+    // Add small delay to ensure user is fully committed to database
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     await emailAutomationEngine.processOnboardingTrigger(user.id, {
       signupDate: new Date().toISOString(),
       userRole: role,

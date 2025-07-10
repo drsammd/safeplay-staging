@@ -398,16 +398,31 @@ export class EmailAutomationEngine {
     userId: string, 
     metadata?: Record<string, any>
   ): Promise<AutomationContext> {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        children: true,
-        managedVenues: true
+    // Retry logic to handle race conditions during user creation
+    let user = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+    const delayMs = 100;
+
+    while (!user && attempts < maxAttempts) {
+      attempts++;
+      
+      user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+          children: true,
+          managedVenues: true
+        }
+      });
+
+      if (!user && attempts < maxAttempts) {
+        console.log(`⏳ Email automation: User not found on attempt ${attempts}/${maxAttempts}, retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
-    });
+    }
 
     if (!user) {
-      throw new Error('User not found');
+      throw new Error('User not found after multiple attempts');
     }
 
     return {
