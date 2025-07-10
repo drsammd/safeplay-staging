@@ -77,16 +77,17 @@ export function AddressAutocomplete({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch suggestions when user types
+  // IMPROVED: Fetch suggestions when user types (more responsive)
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
+    // IMPROVED: Lower minimum character requirement and faster debounce
     if (value.length >= 2 && !selectedSuggestion) {
       debounceRef.current = setTimeout(async () => {
         await fetchSuggestions(value);
-      }, 250);
+      }, 200); // Faster response - 200ms instead of 250ms
     } else if (value.length < 2) {
       setSuggestions([]);
       setShowSuggestions(false);
@@ -99,16 +100,17 @@ export function AddressAutocomplete({
     };
   }, [value, selectedSuggestion]);
 
-  // Validate address when user stops typing or selects suggestion
+  // IMPROVED: More lenient validation timing
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
-    if (value.length >= 5) {
+    // IMPROVED: Lower minimum character requirement for validation
+    if (value.length >= 4) {
       debounceRef.current = setTimeout(async () => {
         await validateAddress(value, selectedSuggestion?.place_id);
-      }, 600);
+      }, 500); // Faster validation - 500ms instead of 600ms
     } else if (value.length === 0) {
       setValidationResult(null);
       onValidationChange(null);
@@ -147,6 +149,8 @@ export function AddressAutocomplete({
   const fetchSuggestions = async (input: string) => {
     setIsLoading(true);
     try {
+      console.log(`🔍 Address autocomplete: Fetching suggestions for "${input}"`);
+      
       const response = await fetch('/api/verification/address/autocomplete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -158,11 +162,23 @@ export function AddressAutocomplete({
 
       if (response.ok) {
         const data = await response.json();
-        setSuggestions(data.suggestions || []);
-        setShowSuggestions(true);
+        const fetchedSuggestions = data.suggestions || [];
+        
+        console.log(`✅ Address autocomplete: Received ${fetchedSuggestions.length} suggestions for "${input}"`);
+        console.log(`📍 Address suggestions:`, fetchedSuggestions.map(s => s.description));
+        
+        setSuggestions(fetchedSuggestions);
+        // IMPROVED: Show suggestions even if only one or few are returned
+        setShowSuggestions(fetchedSuggestions.length > 0);
+      } else {
+        console.error('Address autocomplete API error:', response.status);
+        setSuggestions([]);
+        setShowSuggestions(false);
       }
     } catch (error) {
       console.error('Error fetching address suggestions:', error);
+      setSuggestions([]);
+      setShowSuggestions(false);
     } finally {
       setIsLoading(false);
     }
@@ -171,6 +187,8 @@ export function AddressAutocomplete({
   const validateAddress = async (address: string, placeId?: string) => {
     setIsValidating(true);
     try {
+      console.log(`🔍 Address validation: Validating "${address}"`);
+      
       const response = await fetch('/api/verification/address/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,6 +202,13 @@ export function AddressAutocomplete({
       if (response.ok) {
         const data = await response.json();
         const validation = data.validation as AddressValidationResult;
+        
+        console.log(`✅ Address validation result:`, {
+          isValid: validation.isValid,
+          confidence: validation.confidence,
+          hasSuggestions: validation.suggestions?.length || 0
+        });
+        
         setValidationResult(validation);
         onValidationChange(validation);
 
@@ -192,6 +217,8 @@ export function AddressAutocomplete({
           const fields = parseAddressFields(validation.standardizedAddress);
           onFieldsChange?.(fields);
         }
+      } else {
+        console.error('Address validation API error:', response.status);
       }
     } catch (error) {
       console.error('Error validating address:', error);
@@ -249,9 +276,10 @@ export function AddressAutocomplete({
     }
     
     if (validationResult) {
-      if (validationResult.isValid && validationResult.confidence > 0.6) {
+      // IMPROVED: More lenient validation feedback
+      if (validationResult.isValid && validationResult.confidence > 0.4) {
         return <Check className="h-4 w-4 text-green-500" />;
-      } else if (validationResult.confidence > 0.3) {
+      } else if (validationResult.confidence > 0.2) {
         return <Check className="h-4 w-4 text-yellow-500" />;
       } else {
         return <AlertCircle className="h-4 w-4 text-orange-500" />;
@@ -264,22 +292,23 @@ export function AddressAutocomplete({
   const getValidationMessage = () => {
     if (!validationResult) return null;
     
+    // IMPROVED: More encouraging validation messages
     if (validationResult.isValid) {
       if (validationResult.confidence > 0.8) {
         return "Address verified with high confidence";
       } else if (validationResult.confidence > 0.6) {
-        return "Address verified";
-      } else if (validationResult.confidence > 0.3) {
-        return "Address accepted - format looks good";
+        return "Address verified and looks good";
+      } else if (validationResult.confidence > 0.4) {
+        return "Address format is acceptable";
       } else {
         return "Address format accepted";
       }
     } else {
-      // More forgiving error messages
+      // More encouraging messages for "invalid" addresses
       if (validationResult.suggestions && validationResult.suggestions.length > 0) {
-        return "Address format accepted - suggestions available below";
+        return "Address format accepted - see suggestions below if needed";
       } else {
-        return "Address format accepted - please ensure it's correct";
+        return "Address format accepted - please verify it's correct";
       }
     }
   };
@@ -287,13 +316,13 @@ export function AddressAutocomplete({
   const getValidationColor = () => {
     if (!validationResult) return "";
     
+    // IMPROVED: More lenient color coding
     if (validationResult.isValid) {
-      if (validationResult.confidence > 0.8) return "text-green-600";
       if (validationResult.confidence > 0.6) return "text-green-600";
-      if (validationResult.confidence > 0.3) return "text-yellow-600";
+      if (validationResult.confidence > 0.4) return "text-green-600";
       return "text-yellow-600";
     }
-    // More forgiving - even "invalid" addresses show as yellow (acceptable)
+    // Even "invalid" addresses show as acceptable
     return "text-yellow-600";
   };
 
@@ -328,41 +357,46 @@ export function AddressAutocomplete({
         )}
       </div>
 
-      {/* Suggestions dropdown */}
+      {/* IMPROVED: Suggestions dropdown with better styling and more suggestions */}
       {showSuggestions && suggestions.length > 0 && (
         <Card 
           ref={suggestionsRef}
-          className="absolute z-[9999] w-full mt-1 max-h-60 overflow-y-auto bg-white border shadow-lg"
+          className="absolute z-[9999] w-full mt-1 max-h-80 overflow-y-auto bg-white border shadow-lg"
           style={{ pointerEvents: 'auto' }}
         >
-          {suggestions.map((suggestion) => (
-            <div
-              key={suggestion.place_id}
-              className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('🎯 Dropdown item clicked:', suggestion);
-                handleSuggestionClick(suggestion);
-              }}
-              onMouseDown={(e) => {
-                // Prevent input blur while allowing click to process
-                e.preventDefault();
-              }}
-            >
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-gray-900 truncate">
-                    {suggestion.main_text}
-                  </div>
-                  <div className="text-sm text-gray-500 truncate">
-                    {suggestion.secondary_text}
+          <div className="p-2">
+            <div className="text-xs text-gray-500 mb-2 px-2">
+              {suggestions.length} address suggestion{suggestions.length !== 1 ? 's' : ''} found
+            </div>
+            {suggestions.map((suggestion, index) => (
+              <div
+                key={suggestion.place_id}
+                className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors rounded-sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log(`🎯 Dropdown item ${index + 1} clicked:`, suggestion);
+                  handleSuggestionClick(suggestion);
+                }}
+                onMouseDown={(e) => {
+                  // Prevent input blur while allowing click to process
+                  e.preventDefault();
+                }}
+              >
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 truncate text-sm">
+                      {suggestion.main_text}
+                    </div>
+                    <div className="text-xs text-gray-500 truncate">
+                      {suggestion.secondary_text}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </Card>
       )}
 
@@ -395,23 +429,24 @@ export function AddressAutocomplete({
             </div>
           )}
           
-          {!validationResult.isValid && validationResult.suggestions && validationResult.suggestions.length > 0 && (
-            <div className="mt-2 p-3 bg-orange-50 rounded-md">
-              <div className="text-sm font-medium text-orange-800 mb-2">
-                Did you mean:
+          {/* IMPROVED: Show validation suggestions more prominently */}
+          {validationResult.suggestions && validationResult.suggestions.length > 0 && (
+            <div className="mt-2 p-3 bg-blue-50 rounded-md">
+              <div className="text-sm font-medium text-blue-800 mb-2">
+                Similar addresses you might mean:
               </div>
               <div className="space-y-1">
-                {validationResult.suggestions.slice(0, 3).map((suggestion) => (
+                {validationResult.suggestions.slice(0, 4).map((suggestion) => (
                   <Button
                     key={suggestion.place_id}
                     variant="ghost"
                     size="sm"
-                    className="text-left justify-start h-auto p-2 text-orange-700 hover:bg-orange-100 w-full"
+                    className="text-left justify-start h-auto p-2 text-blue-700 hover:bg-blue-100 w-full"
                     onClick={() => handleSuggestionClick(suggestion)}
                   >
                     <div className="truncate">
-                      <div className="font-medium">{suggestion.main_text}</div>
-                      <div className="text-xs text-orange-600">{suggestion.secondary_text}</div>
+                      <div className="font-medium text-sm">{suggestion.main_text}</div>
+                      <div className="text-xs text-blue-600">{suggestion.secondary_text}</div>
                     </div>
                   </Button>
                 ))}

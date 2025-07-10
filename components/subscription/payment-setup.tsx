@@ -237,21 +237,45 @@ function PaymentFormContent({
     setLoading(true);
     setError(null);
 
+    // COMPREHENSIVE DEBUGGING - START
+    const debugId = `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`🔍 PAYMENT DEBUG [${debugId}]: Starting payment process...`);
+    console.log(`🔍 PAYMENT DEBUG [${debugId}]: Session state:`, {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email,
+      userName: session?.user?.name
+    });
+    console.log(`🔍 PAYMENT DEBUG [${debugId}]: Payment parameters:`, {
+      planId,
+      stripePriceId,
+      billingInterval,
+      planName,
+      amount,
+      discountCodeId,
+      userEmail,
+      userName
+    });
+
     if (!stripe || !elements) {
-      setError('Stripe has not loaded correctly');
+      const errorMsg = 'Stripe has not loaded correctly';
+      console.error(`🚨 PAYMENT DEBUG [${debugId}]: ${errorMsg}`);
+      setError(errorMsg);
       setLoading(false);
       return;
     }
 
     const cardElement = elements.getElement(CardNumberElement);
     if (!cardElement) {
-      setError('Card element not found');
+      const errorMsg = 'Card element not found';
+      console.error(`🚨 PAYMENT DEBUG [${debugId}]: ${errorMsg}`);
+      setError(errorMsg);
       setLoading(false);
       return;
     }
 
     try {
-      console.log('🎯 PAYMENT: Starting payment process...');
+      console.log(`💳 PAYMENT DEBUG [${debugId}]: Creating payment method...`);
       
       // Create payment method
       const { error: paymentMethodError, paymentMethod } = await stripe.createPaymentMethod({
@@ -261,13 +285,13 @@ function PaymentFormContent({
       });
 
       if (paymentMethodError) {
+        console.error(`🚨 PAYMENT DEBUG [${debugId}]: Payment method creation failed:`, paymentMethodError);
         throw new Error(paymentMethodError.message);
       }
 
-      console.log('✅ PAYMENT: Payment method created:', paymentMethod.id);
+      console.log(`✅ PAYMENT DEBUG [${debugId}]: Payment method created:`, paymentMethod.id);
 
       // Create subscription with payment method
-      // Use demo endpoints for both signup and authenticated flows
       const isSignupFlow = !session?.user?.id;
       const endpoint = '/api/stripe/subscription-demo';
       
@@ -275,10 +299,17 @@ function PaymentFormContent({
         planId: planId,
         paymentMethodId: paymentMethod.id,
         discountCodeId,
-        isSignupFlow: isSignupFlow // Add this parameter to distinguish signup flow
+        isSignupFlow: isSignupFlow,
+        debugId: debugId // Include debug ID for tracking
       };
 
-      console.log('💳 PAYMENT: Using endpoint:', endpoint, 'IsSignupFlow:', isSignupFlow);
+      console.log(`🚀 PAYMENT DEBUG [${debugId}]: Making API call to:`, endpoint);
+      console.log(`🚀 PAYMENT DEBUG [${debugId}]: Request body:`, requestBody);
+      console.log(`🚀 PAYMENT DEBUG [${debugId}]: IsSignupFlow:`, isSignupFlow);
+
+      // Log timestamp before API call
+      const apiCallStart = Date.now();
+      console.log(`⏰ PAYMENT DEBUG [${debugId}]: API call started at:`, new Date(apiCallStart).toISOString());
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -286,49 +317,76 @@ function PaymentFormContent({
         body: JSON.stringify(requestBody),
       });
 
+      const apiCallEnd = Date.now();
+      const apiCallDuration = apiCallEnd - apiCallStart;
+      console.log(`⏰ PAYMENT DEBUG [${debugId}]: API call completed at:`, new Date(apiCallEnd).toISOString());
+      console.log(`⏰ PAYMENT DEBUG [${debugId}]: API call duration:`, `${apiCallDuration}ms`);
+
+      console.log(`📡 PAYMENT DEBUG [${debugId}]: API response status:`, response.status);
+      console.log(`📡 PAYMENT DEBUG [${debugId}]: API response ok:`, response.ok);
+
       const data = await response.json();
+      console.log(`📡 PAYMENT DEBUG [${debugId}]: API response data:`, data);
 
       if (!response.ok) {
-        console.error('❌ PAYMENT: Subscription API Error:', data);
+        console.error(`🚨 PAYMENT DEBUG [${debugId}]: Subscription API Error:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          details: data.details,
+          fullResponse: data
+        });
         throw new Error(data.error || data.details || 'Payment failed');
       }
 
-      console.log('✅ PAYMENT: Subscription API Response:', data);
+      console.log(`✅ PAYMENT DEBUG [${debugId}]: Subscription API Success:`, data);
 
       // Handle subscription confirmation if needed (for real Stripe subscriptions)
       if (data.subscription?.latest_invoice?.payment_intent?.status === 'requires_action') {
+        console.log(`🔐 PAYMENT DEBUG [${debugId}]: Payment requires additional action`);
         const { error: confirmError } = await stripe.confirmCardPayment(
           data.subscription.latest_invoice.payment_intent.client_secret
         );
         
         if (confirmError) {
+          console.error(`🚨 PAYMENT DEBUG [${debugId}]: Payment confirmation failed:`, confirmError);
           throw new Error(confirmError.message);
         }
+        console.log(`✅ PAYMENT DEBUG [${debugId}]: Payment confirmed successfully`);
       }
 
       // Success!
       setSuccess(true);
+      console.log(`🎉 PAYMENT DEBUG [${debugId}]: Payment process completed successfully`);
       
       // For signup flow, pass both subscription and customer data
       if (isSignupFlow && data.isSignupFlow) {
-        console.log('🚀 PAYMENT: Signup flow success - passing subscription and customer data');
+        console.log(`🚀 PAYMENT DEBUG [${debugId}]: Signup flow success - passing subscription and customer data`);
         onSuccess?.({
           subscription: data.subscription,
           customer: data.customer,
-          isSignupFlow: true
+          isSignupFlow: true,
+          debugId: debugId
         });
       } else {
         // For authenticated users, pass regular subscription data
+        console.log(`👤 PAYMENT DEBUG [${debugId}]: Authenticated user flow success`);
         onSuccess?.(data);
       }
       
     } catch (err: any) {
       const errorMessage = err.message || 'An error occurred during payment';
-      console.error('❌ PAYMENT: Payment error:', err);
+      console.error(`🚨 PAYMENT DEBUG [${debugId}]: Payment error:`, {
+        errorMessage,
+        errorStack: err.stack,
+        errorName: err.name,
+        fullError: err
+      });
       setError(errorMessage);
       onError?.(errorMessage);
     } finally {
       setLoading(false);
+      console.log(`🏁 PAYMENT DEBUG [${debugId}]: Payment process finished`);
     }
   };
 

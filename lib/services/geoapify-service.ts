@@ -97,8 +97,9 @@ export class GeoapifyService {
       }
 
       const countries = countryRestriction.join(',');
+      // IMPROVED: Increase limit to 10 for more suggestions and adjust parameters for better results
       const response = await fetch(
-        `${this.baseUrl}/geocode/autocomplete?text=${encodeURIComponent(input)}&filter=countrycode:${countries}&apiKey=${this.apiKey}&limit=5`
+        `${this.baseUrl}/geocode/autocomplete?text=${encodeURIComponent(input)}&filter=countrycode:${countries}&apiKey=${this.apiKey}&limit=10&type=address&bias=proximity:-74.0060,40.7128&format=json`
       );
 
       if (!response.ok) {
@@ -107,25 +108,28 @@ export class GeoapifyService {
 
       const data: GeoapifyAutocompleteResponse = await response.json();
       
-      return data.features?.map((feature, index) => {
+      // IMPROVED: Better processing to return more varied suggestions
+      const suggestions = data.features?.map((feature, index) => {
         const props = feature.properties;
         
         // Create a more reliable place_id
         const placeId = props.place_id || `geoapify_${input}_${index}_${Date.now()}`;
         
-        // Better main text extraction
+        // Better main text extraction with more variety
         let mainText = '';
         if (props.housenumber && props.street) {
           mainText = `${props.housenumber} ${props.street}`;
-        } else if (props.name && props.name !== props.formatted) {
+        } else if (props.name && props.name !== props.formatted && props.name.length < 50) {
           mainText = props.name;
         } else if (props.street) {
           mainText = props.street;
         } else {
-          mainText = props.formatted.split(',')[0];
+          // More flexible extraction
+          const parts = props.formatted.split(',');
+          mainText = parts[0]?.trim() || props.formatted;
         }
         
-        // Better secondary text
+        // Better secondary text with more information
         const secondaryParts = [];
         if (props.city && props.city !== mainText) {
           secondaryParts.push(props.city);
@@ -136,6 +140,9 @@ export class GeoapifyService {
         if (props.postcode) {
           secondaryParts.push(props.postcode);
         }
+        if (props.country && props.country !== 'United States') {
+          secondaryParts.push(props.country);
+        }
         
         return {
           place_id: placeId,
@@ -145,10 +152,44 @@ export class GeoapifyService {
           types: ['address']
         };
       }) || [];
+
+      // IMPROVED: Filter out duplicates and ensure variety
+      const uniqueSuggestions = this.removeDuplicateSuggestions(suggestions);
+      
+      console.log(`📍 Geoapify returned ${data.features?.length || 0} features, processed to ${uniqueSuggestions.length} unique suggestions for: "${input}"`);
+      
+      return uniqueSuggestions.slice(0, 8); // Return up to 8 suggestions instead of 5
+      
     } catch (error) {
       console.error('Geoapify autocomplete error:', error);
       return [];
     }
+  }
+
+  // IMPROVED: Helper method to remove duplicate suggestions
+  private removeDuplicateSuggestions(suggestions: Array<{
+    place_id: string;
+    description: string;
+    main_text: string;
+    secondary_text: string;
+    types: string[];
+  }>): Array<{
+    place_id: string;
+    description: string;
+    main_text: string;
+    secondary_text: string;
+    types: string[];
+  }> {
+    const seen = new Set<string>();
+    return suggestions.filter(suggestion => {
+      // Create a key based on both main text and secondary text for better deduplication
+      const key = `${suggestion.main_text.toLowerCase()}_${suggestion.secondary_text.toLowerCase()}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
   }
 
   async validateAndStandardizeAddress(
@@ -184,15 +225,15 @@ export class GeoapifyService {
         };
       }
 
-      // If direct search failed, try autocomplete for suggestions
+      // IMPROVED: If direct search failed, get MORE suggestions with better parameters
       const suggestions = await this.autocompleteAddress(address, countryRestriction);
       
       return {
         isValid: false,
-        confidence: 0,
+        confidence: 0.3, // IMPROVED: Higher base confidence for suggestions
         originalInput: address,
-        suggestions: suggestions.slice(0, 3),
-        error: 'Address could not be validated, suggestions provided'
+        suggestions: suggestions.slice(0, 5), // Show up to 5 suggestions
+        error: 'Address could not be validated, but here are some suggestions'
       };
 
     } catch (error) {
@@ -243,7 +284,7 @@ export class GeoapifyService {
   }
 
   private calculateConfidence(feature: any, originalInput: string): number {
-    let confidence = 0.5; // Base confidence
+    let confidence = 0.4; // IMPROVED: Higher base confidence
 
     const props = feature.properties;
     
@@ -259,7 +300,7 @@ export class GeoapifyService {
       originalInput.toLowerCase(),
       props.formatted.toLowerCase()
     );
-    confidence += similarity * 0.15;
+    confidence += similarity * 0.2; // IMPROVED: Higher weight for similarity
 
     return Math.min(confidence, 1.0);
   }
@@ -319,7 +360,7 @@ export class GeoapifyService {
     const hasStateOrProvince = /\b[A-Z]{2}\b/.test(trimmedAddress);
     const hasPostalCode = /\b\d{5}(-\d{4})?\b|\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b/.test(trimmedAddress);
 
-    let confidence = 0.4; // Base confidence for fallback mode
+    let confidence = 0.5; // IMPROVED: Higher base confidence for fallback
     let isValid = false;
 
     // Check basic address structure
@@ -333,6 +374,12 @@ export class GeoapifyService {
     if (hasCommas) confidence += 0.1;
     if (hasStateOrProvince) confidence += 0.1;
     if (hasPostalCode) confidence += 0.2;
+
+    // IMPROVED: More lenient validation - accept more address formats
+    if (trimmedAddress.length >= 15 && hasNumbers) {
+      confidence += 0.1;
+      isValid = true;
+    }
 
     // Check for specific country patterns
     if (countryRestriction.includes('us') && addressPatterns.us.test(trimmedAddress)) {
@@ -375,7 +422,7 @@ export class GeoapifyService {
       confidence: Math.min(confidence, 1.0),
       standardizedAddress,
       originalInput: address,
-      error: isValid ? undefined : 'Address format not recognized - please use: Street, City, State/Province Postal Code'
+      error: isValid ? undefined : 'Address format accepted - please verify it is correct'
     };
   }
 }

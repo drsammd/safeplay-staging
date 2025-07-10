@@ -103,29 +103,49 @@ export class DemoSubscriptionService {
     planId: string, 
     paymentMethodId?: string
   ) {
+    // COMPREHENSIVE DEBUGGING - START
+    const debugId = `demo_signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
-      console.log('🚀 DEMO MODE: Creating signup subscription for plan:', planId);
+      console.log(`🔍 DEMO SIGNUP DEBUG [${debugId}]: createSignupSubscription called at ${new Date().toISOString()}`);
+      console.log(`🔍 DEMO SIGNUP DEBUG [${debugId}]: Parameters:`, { planId, paymentMethodId });
+      console.log(`🚀 DEMO SIGNUP DEBUG [${debugId}]: Creating signup subscription for plan: ${planId}`);
 
       // Find the plan
+      console.log(`📋 DEMO SIGNUP DEBUG [${debugId}]: Looking up plan in available plans...`);
       const plans = this.getAvailablePlans();
+      console.log(`📋 DEMO SIGNUP DEBUG [${debugId}]: Available plans:`, plans.map(p => ({ id: p.id, name: p.name, type: p.planType })));
+      
       const plan = plans.find(p => p.id === planId);
       if (!plan) {
-        throw new Error(`No plan found for ID: ${planId}`);
+        const errorMsg = `No plan found for ID: ${planId}`;
+        console.error(`🚨 DEMO SIGNUP DEBUG [${debugId}]: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
-      console.log('📋 DEMO MODE: Found plan for signup:', plan.name, 'Type:', plan.planType);
+      console.log(`✅ DEMO SIGNUP DEBUG [${debugId}]: Found plan for signup:`, { name: plan.name, type: plan.planType, price: plan.price });
 
       // Generate temporary IDs that will be linked to user later
+      console.log(`🆔 DEMO SIGNUP DEBUG [${debugId}]: Generating temporary IDs...`);
       const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const demoCustomerId = `demo_cus_signup_${tempId}`;
       const demoSubscriptionId = `demo_sub_signup_${tempId}`;
+      console.log(`✅ DEMO SIGNUP DEBUG [${debugId}]: Generated IDs:`, { tempId, demoCustomerId, demoSubscriptionId });
 
       // Calculate dates
+      console.log(`📅 DEMO SIGNUP DEBUG [${debugId}]: Calculating subscription dates...`);
       const now = new Date();
       const trialEnd = new Date(now.getTime() + (plan.trialDays * 24 * 60 * 60 * 1000));
       const currentPeriodEnd = new Date(trialEnd.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days after trial
+      console.log(`📅 DEMO SIGNUP DEBUG [${debugId}]: Dates calculated:`, {
+        now: now.toISOString(),
+        trialEnd: trialEnd.toISOString(),
+        currentPeriodEnd: currentPeriodEnd.toISOString(),
+        trialDays: plan.trialDays
+      });
 
       // Return a mock Stripe subscription object with customer info
+      console.log(`🏗️ DEMO SIGNUP DEBUG [${debugId}]: Building mock subscription object...`);
       const mockSubscription = {
         id: demoSubscriptionId,
         object: 'subscription',
@@ -138,7 +158,8 @@ export class DemoSubscriptionService {
             signupFlow: 'true',
             planType: plan.planType,
             demoMode: 'true',
-            tempId: tempId
+            tempId: tempId,
+            debugId: debugId
           }
         },
         status: 'trialing',
@@ -153,7 +174,8 @@ export class DemoSubscriptionService {
           demoMode: 'true',
           signupFlow: 'true',
           tempId: tempId,
-          planId: planId
+          planId: planId,
+          debugId: debugId
         },
         latest_invoice: {
           payment_intent: {
@@ -163,11 +185,27 @@ export class DemoSubscriptionService {
         }
       };
 
-      console.log('🎉 DEMO MODE: Signup subscription created successfully!');
+      console.log(`✅ DEMO SIGNUP DEBUG [${debugId}]: Mock subscription object created:`, {
+        subscriptionId: mockSubscription.id,
+        customerId: mockSubscription.customer.id,
+        status: mockSubscription.status,
+        planType: mockSubscription.metadata.planType,
+        debugId: debugId
+      });
+
+      console.log(`🎉 DEMO SIGNUP DEBUG [${debugId}]: Signup subscription created successfully!`);
       return mockSubscription;
 
     } catch (error) {
-      console.error('❌ DEMO MODE: Error in createSignupSubscription:', error);
+      console.error(`🚨 DEMO SIGNUP DEBUG [${debugId}]: Error in createSignupSubscription:`, {
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+        errorName: error?.name,
+        fullError: error,
+        planId,
+        paymentMethodId,
+        debugId
+      });
       throw error;
     }
   }
@@ -178,38 +216,61 @@ export class DemoSubscriptionService {
     planId: string, 
     paymentMethodId?: string
   ) {
+    // COMPREHENSIVE DEBUGGING - START
+    const debugId = `demo_auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
-      console.log('🎭 DEMO MODE: Creating subscription for:', { userId, planId, paymentMethodId });
+      console.log(`🔍 DEMO AUTH DEBUG [${debugId}]: createSubscription called at ${new Date().toISOString()}`);
+      console.log(`🔍 DEMO AUTH DEBUG [${debugId}]: Parameters:`, { userId, planId, paymentMethodId });
+      console.log(`🎭 DEMO AUTH DEBUG [${debugId}]: Creating subscription for authenticated user:`, { userId, planId, paymentMethodId });
 
       // Get user info
+      console.log(`👤 DEMO AUTH DEBUG [${debugId}]: Looking up user in database...`);
       const user = await prisma.user.findUnique({
         where: { id: userId }
       });
 
+      console.log(`👤 DEMO AUTH DEBUG [${debugId}]: User lookup result:`, user ? { id: user.id, email: user.email, name: user.name } : 'USER NOT FOUND');
+
       if (!user) {
-        throw new Error('User not found');
+        const errorMsg = `User not found for ID: ${userId}`;
+        console.error(`🚨 DEMO AUTH DEBUG [${debugId}]: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
       // Find the plan
+      console.log(`📋 DEMO AUTH DEBUG [${debugId}]: Looking up plan in available plans...`);
       const plans = this.getAvailablePlans();
       const plan = plans.find(p => p.id === planId);
       if (!plan) {
-        throw new Error(`No plan found for ID: ${planId}`);
+        const errorMsg = `No plan found for ID: ${planId}`;
+        console.error(`🚨 DEMO AUTH DEBUG [${debugId}]: ${errorMsg}`);
+        throw new Error(errorMsg);
       }
 
-      console.log('📋 DEMO MODE: Found plan:', plan.name, 'Type:', plan.planType);
+      console.log(`📋 DEMO AUTH DEBUG [${debugId}]: Found plan:`, { name: plan.name, type: plan.planType, price: plan.price });
 
       // Simulate Stripe customer creation
+      console.log(`🆔 DEMO AUTH DEBUG [${debugId}]: Generating demo Stripe IDs...`);
       const demoCustomerId = `demo_cus_${userId}_${Date.now()}`;
       const demoSubscriptionId = `demo_sub_${userId}_${Date.now()}`;
+      console.log(`✅ DEMO AUTH DEBUG [${debugId}]: Generated IDs:`, { demoCustomerId, demoSubscriptionId });
 
       // Calculate dates
+      console.log(`📅 DEMO AUTH DEBUG [${debugId}]: Calculating subscription dates...`);
       const now = new Date();
       const trialEnd = new Date(now.getTime() + (plan.trialDays * 24 * 60 * 60 * 1000));
       const currentPeriodEnd = new Date(trialEnd.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days after trial
+      console.log(`📅 DEMO AUTH DEBUG [${debugId}]: Dates calculated:`, {
+        now: now.toISOString(),
+        trialEnd: trialEnd.toISOString(),
+        currentPeriodEnd: currentPeriodEnd.toISOString(),
+        trialDays: plan.trialDays
+      });
 
       // Create/update subscription record in database
-      await prisma.userSubscription.upsert({
+      console.log(`💾 DEMO AUTH DEBUG [${debugId}]: Creating/updating subscription record in database...`);
+      const dbResult = await prisma.userSubscription.upsert({
         where: { userId },
         create: {
           userId,
@@ -236,9 +297,15 @@ export class DemoSubscriptionService {
         }
       });
 
-      console.log('✅ DEMO MODE: Database subscription record created/updated');
+      console.log(`✅ DEMO AUTH DEBUG [${debugId}]: Database subscription record created/updated:`, {
+        id: dbResult.id,
+        userId: dbResult.userId,
+        planType: dbResult.planType,
+        status: dbResult.status
+      });
 
       // Return a mock Stripe subscription object
+      console.log(`🏗️ DEMO AUTH DEBUG [${debugId}]: Building mock subscription object...`);
       const mockSubscription = {
         id: demoSubscriptionId,
         object: 'subscription',
@@ -253,7 +320,8 @@ export class DemoSubscriptionService {
         metadata: {
           userId,
           planType: plan.planType,
-          demoMode: 'true'
+          demoMode: 'true',
+          debugId: debugId
         },
         latest_invoice: {
           payment_intent: {
@@ -263,11 +331,20 @@ export class DemoSubscriptionService {
         }
       };
 
-      console.log('🎉 DEMO MODE: Subscription created successfully!');
+      console.log(`🎉 DEMO AUTH DEBUG [${debugId}]: Subscription created successfully!`);
       return mockSubscription;
 
     } catch (error) {
-      console.error('❌ DEMO MODE: Error in createSubscription:', error);
+      console.error(`🚨 DEMO AUTH DEBUG [${debugId}]: Error in createSubscription:`, {
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+        errorName: error?.name,
+        fullError: error,
+        userId,
+        planId,
+        paymentMethodId,
+        debugId
+      });
       throw error;
     }
   }
@@ -327,30 +404,66 @@ export class DemoSubscriptionService {
 
   // Get subscription status
   async getSubscriptionStatus(userId: string) {
+    // COMPREHENSIVE DEBUGGING - START
+    const debugId = `demo_status_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     try {
+      console.log(`🔍 DEMO STATUS DEBUG [${debugId}]: getSubscriptionStatus called at ${new Date().toISOString()}`);
+      console.log(`🔍 DEMO STATUS DEBUG [${debugId}]: Parameters:`, { userId });
+      
+      console.log(`💾 DEMO STATUS DEBUG [${debugId}]: Looking up subscription in database...`);
       const subscription = await prisma.userSubscription.findUnique({
         where: { userId }
       });
 
+      console.log(`💾 DEMO STATUS DEBUG [${debugId}]: Subscription lookup result:`, subscription ? {
+        id: subscription.id,
+        userId: subscription.userId,
+        planType: subscription.planType,
+        status: subscription.status
+      } : 'NO SUBSCRIPTION FOUND');
+
       if (!subscription) {
-        return { hasSubscription: false };
+        console.log(`ℹ️ DEMO STATUS DEBUG [${debugId}]: No subscription found for user ${userId}`);
+        return { hasSubscription: false, debugId };
       }
 
+      console.log(`📋 DEMO STATUS DEBUG [${debugId}]: Getting plan details for type: ${subscription.planType}`);
       const plan = this.getPlanByType(subscription.planType);
+      console.log(`📋 DEMO STATUS DEBUG [${debugId}]: Plan details:`, plan ? { id: plan.id, name: plan.name, type: plan.planType } : 'PLAN NOT FOUND');
       
-      return {
+      const result = {
         hasSubscription: true,
         subscription,
         plan,
         isActive: ['ACTIVE', 'TRIALING'].includes(subscription.status),
         isTrialing: subscription.status === 'TRIALING',
         trialEndsAt: subscription.trialEnd,
-        currentPeriodEndsAt: subscription.currentPeriodEnd
+        currentPeriodEndsAt: subscription.currentPeriodEnd,
+        debugId
       };
 
+      console.log(`✅ DEMO STATUS DEBUG [${debugId}]: Subscription status result:`, {
+        hasSubscription: result.hasSubscription,
+        isActive: result.isActive,
+        isTrialing: result.isTrialing,
+        status: subscription.status,
+        planType: subscription.planType,
+        debugId
+      });
+
+      return result;
+
     } catch (error) {
-      console.error('Error getting subscription status:', error);
-      return { hasSubscription: false, error: error.message };
+      console.error(`🚨 DEMO STATUS DEBUG [${debugId}]: Error getting subscription status:`, {
+        errorMessage: error?.message,
+        errorStack: error?.stack,
+        errorName: error?.name,
+        fullError: error,
+        userId,
+        debugId
+      });
+      return { hasSubscription: false, error: error?.message, debugId };
     }
   }
 }

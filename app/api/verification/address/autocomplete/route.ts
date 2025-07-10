@@ -24,10 +24,15 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    console.log(`📍 Address autocomplete: Processing "${input}" with countries:`, countryRestriction);
+
     const suggestions = await geoapifyService.autocompleteAddress(
       input.trim(),
       countryRestriction || ['us', 'ca']
     );
+
+    console.log(`✅ Address autocomplete: Returning ${suggestions.length} suggestions for "${input}"`);
+    console.log(`📋 Suggestions:`, suggestions.map(s => ({ main: s.main_text, secondary: s.secondary_text })));
 
     return NextResponse.json({
       success: true,

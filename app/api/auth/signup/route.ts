@@ -44,17 +44,33 @@ const signupSchema = z.object({
 });
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
+  // COMPREHENSIVE DEBUGGING - START
+  const debugId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Signup API called at ${new Date().toISOString()}`);
+  
   // Parse and validate request body
   const body = await request.json();
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Request body received:`, {
+    email: body.email,
+    name: body.name,
+    role: body.role,
+    hasSubscriptionData: !!body.subscriptionData,
+    hasSelectedPlan: !!body.selectedPlan,
+    subscriptionDataDebugId: body.subscriptionData?.debugId,
+    fullBodyKeys: Object.keys(body)
+  });
+  
   const validation = signupSchema.safeParse(body);
   
   if (!validation.success) {
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Validation failed:`, validation.error.issues);
     return apiErrorHandler.createErrorResponse(
       ErrorType.VALIDATION,
       'SIGNUP_VALIDATION_FAILED',
       'Invalid signup data',
       400,
-      { issues: validation.error.issues }
+      { issues: validation.error.issues, debugId }
     );
   }
 
@@ -76,24 +92,31 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   
   // Normalize email to lowercase for consistency
   const email = rawEmail.toLowerCase().trim();
+  console.log(`✅ SIGNUP DEBUG [${debugId}]: Validation passed for email: ${email}, name: ${name}`);
 
   // Check if user already exists
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Checking if user exists...`);
   const existingUser = await prisma.user.findUnique({
     where: { email },
   });
 
   if (existingUser) {
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: User already exists with email: ${email}`);
     return apiErrorHandler.createErrorResponse(
       ErrorType.CONFLICT,
       'USER_ALREADY_EXISTS',
       'An account with this email already exists',
       409,
-      { email }
+      { email, debugId }
     );
   }
 
+  console.log(`✅ SIGNUP DEBUG [${debugId}]: User does not exist, proceeding with creation`);
+
   // Hash password
+  console.log(`🔐 SIGNUP DEBUG [${debugId}]: Hashing password...`);
   const hashedPassword = await bcrypt.hash(password, 12);
+  console.log(`✅ SIGNUP DEBUG [${debugId}]: Password hashed successfully`);
 
   // Get request metadata for compliance tracking
   const ipAddress = request.headers.get("x-forwarded-for") || 
@@ -103,9 +126,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Get current time for timestamps
   const currentTime = new Date();
+  console.log(`⏰ SIGNUP DEBUG [${debugId}]: Creating user at ${currentTime.toISOString()}`);
 
   // Create user and legal agreements in a transaction
+  console.log(`🔄 SIGNUP DEBUG [${debugId}]: Starting database transaction...`);
   const user = await prisma.$transaction(async (tx) => {
+    console.log(`📝 SIGNUP DEBUG [${debugId}]: Creating user record...`);
+    
     // Create user
     const newUser = await tx.user.create({
       data: {
@@ -116,31 +143,34 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       },
     });
 
+    console.log(`✅ SIGNUP DEBUG [${debugId}]: User created with ID: ${newUser.id}, email: ${newUser.email}, createdAt: ${newUser.createdAt}`);
+
     // Log address information (database storage will be implemented later)
     if (homeAddress) {
-      console.log('✅ Address validation completed for user:', newUser.id);
-      console.log('Home address:', homeAddress);
-      console.log('Home address validation:', {
+      console.log(`✅ SIGNUP DEBUG [${debugId}]: Address validation completed for user: ${newUser.id}`);
+      console.log(`📍 SIGNUP DEBUG [${debugId}]: Home address: ${homeAddress}`);
+      console.log(`📍 SIGNUP DEBUG [${debugId}]: Home address validation:`, {
         isValid: homeAddressValidation?.isValid,
         confidence: homeAddressValidation?.confidence,
         standardizedAddress: homeAddressValidation?.standardizedAddress
       });
 
       if (useDifferentBillingAddress && billingAddress) {
-        console.log('✅ Separate billing address validated for user:', newUser.id);
-        console.log('Billing address:', billingAddress);
-        console.log('Billing address validation:', {
+        console.log(`✅ SIGNUP DEBUG [${debugId}]: Separate billing address validated for user: ${newUser.id}`);
+        console.log(`💳 SIGNUP DEBUG [${debugId}]: Billing address: ${billingAddress}`);
+        console.log(`💳 SIGNUP DEBUG [${debugId}]: Billing address validation:`, {
           isValid: billingAddressValidation?.isValid,
           confidence: billingAddressValidation?.confidence,
           standardizedAddress: billingAddressValidation?.standardizedAddress
         });
       } else {
-        console.log('ℹ️ Using home address as billing address for user:', newUser.id);
+        console.log(`ℹ️ SIGNUP DEBUG [${debugId}]: Using home address as billing address for user: ${newUser.id}`);
       }
     }
 
     // Create legal agreement records
     const agreementVersion = "1.0"; // Current version of legal documents
+    console.log(`📋 SIGNUP DEBUG [${debugId}]: Creating legal agreements...`);
 
     // Terms of Service agreement
     await tx.legalAgreement.create({
@@ -170,6 +200,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
     // COPPA consent for parent accounts
     if (role === "PARENT") {
+      console.log(`👨‍👩‍👧‍👦 SIGNUP DEBUG [${debugId}]: Creating parent-specific legal agreements...`);
+      
       await tx.legalAgreement.create({
         data: {
           userId: newUser.id,
@@ -198,14 +230,14 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
     // Create subscription if plan was selected
     if (selectedPlan) {
-      console.log('✅ Creating subscription for user:', newUser.id, 'Plan:', selectedPlan.planType);
+      console.log(`💳 SIGNUP DEBUG [${debugId}]: Creating subscription for user: ${newUser.id}, Plan: ${selectedPlan.planType}`);
       
       // Map plan type to subscription enum
       const subscriptionPlan = selectedPlan.planType.toUpperCase() as 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
       
       // Check if Stripe subscription was already created during payment
       if (subscriptionData?.subscription?.id && subscriptionData?.customer?.id) {
-        console.log('💳 Linking existing Stripe subscription to user:', newUser.id);
+        console.log(`💳 SIGNUP DEBUG [${debugId}]: Linking existing Stripe subscription to user: ${newUser.id}`);
         
         const stripeSubscription = subscriptionData.subscription;
         const stripeCustomer = subscriptionData.customer;
@@ -231,7 +263,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
             selectedPlan: selectedPlan,
             registrationFlow: true,
             createdAt: currentTime.toISOString(),
-            stripeSubscriptionData: stripeSubscription
+            stripeSubscriptionData: stripeSubscription,
+            debugId: debugId
           }
         };
 
@@ -239,9 +272,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           data: subscriptionRecord,
         });
 
-        console.log('✅ Stripe subscription linked successfully for user:', newUser.id);
+        console.log(`✅ SIGNUP DEBUG [${debugId}]: Stripe subscription linked successfully for user: ${newUser.id}`);
       } else {
         // Create local subscription record (for free plans or fallback)
+        console.log(`📝 SIGNUP DEBUG [${debugId}]: Creating local subscription record (no Stripe data)`);
+        
         const subscriptionRecord: any = {
           userId: newUser.id,
           planType: subscriptionPlan,
@@ -251,7 +286,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           metadata: {
             selectedPlan: selectedPlan,
             registrationFlow: true,
-            createdAt: currentTime.toISOString()
+            createdAt: currentTime.toISOString(),
+            debugId: debugId
           }
         };
 
@@ -265,25 +301,35 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           data: subscriptionRecord,
         });
 
-        console.log('✅ Local subscription created successfully for user:', newUser.id);
+        console.log(`✅ SIGNUP DEBUG [${debugId}]: Local subscription created successfully for user: ${newUser.id}`);
       }
     } else {
-      console.log('ℹ️ No plan selected, creating user without subscription');
+      console.log(`ℹ️ SIGNUP DEBUG [${debugId}]: No plan selected, creating user without subscription`);
     }
 
+    console.log(`🎉 SIGNUP DEBUG [${debugId}]: Database transaction completed successfully`);
     return newUser;
+  });
+
+  console.log(`✅ SIGNUP DEBUG [${debugId}]: User and related data created successfully`);
+  console.log(`📊 SIGNUP DEBUG [${debugId}]: Final user data:`, {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    createdAt: user.createdAt
   });
 
   // Trigger 7-Day Onboarding Sequence (with comprehensive debugging)
   try {
-    console.log(`🔍 SIGNUP DEBUG: About to trigger email automation for user ${user.id} (${email}) at ${new Date().toISOString()}`);
-    console.log(`🔍 SIGNUP DEBUG: User created successfully - ID: ${user.id}, Email: ${email}, CreatedAt: ${user.createdAt}`);
+    console.log(`📧 SIGNUP DEBUG [${debugId}]: About to trigger email automation for user ${user.id} (${email}) at ${new Date().toISOString()}`);
+    console.log(`📧 SIGNUP DEBUG [${debugId}]: User created successfully - ID: ${user.id}, Email: ${email}, CreatedAt: ${user.createdAt}`);
     
     // Add significant delay to ensure user is fully committed to database
-    console.log(`⏳ SIGNUP DEBUG: Waiting 500ms for database transaction to fully commit...`);
-    await new Promise(resolve => setTimeout(resolve, 500)); // Significantly increased delay
+    console.log(`⏳ SIGNUP DEBUG [${debugId}]: Waiting 750ms for database transaction to fully commit...`);
+    await new Promise(resolve => setTimeout(resolve, 750)); // INCREASED TO 750ms
     
-    console.log(`📧 SIGNUP DEBUG: Starting email automation trigger for user ${user.id}`);
+    console.log(`📧 SIGNUP DEBUG [${debugId}]: Starting email automation trigger for user ${user.id}`);
     
     const automationResult = await emailAutomationEngine.processOnboardingTrigger(user.id, {
       signupDate: new Date().toISOString(),
@@ -293,20 +339,23 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       ipAddress,
       userAgent,
       debugContext: 'signup-flow',
-      transactionDelay: 200
+      debugId: debugId,
+      parentDebugId: debugId,
+      transactionDelay: 750
     });
     
-    console.log(`✅ SIGNUP DEBUG: Email automation completed for user ${email}:`, automationResult);
+    console.log(`✅ SIGNUP DEBUG [${debugId}]: Email automation completed for user ${email}:`, automationResult);
   } catch (error) {
-    console.error(`🚨 SIGNUP DEBUG: Failed to trigger onboarding sequence for user ${email}:`, error);
-    console.error(`🚨 SIGNUP DEBUG: Error details:`, {
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Failed to trigger onboarding sequence for user ${email}:`, {
       errorMessage: error?.message,
       errorStack: error?.stack,
+      errorName: error?.name,
       userId: user.id,
       userEmail: email,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      fullError: error
     });
-    // Don't fail the signup if email automation fails
+    // Don't fail the signup if email automation fails - this is not critical for user creation
   }
 
   // Remove password from response
@@ -316,6 +365,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   let subscriptionInfo = null;
   if (selectedPlan) {
     try {
+      console.log(`📊 SIGNUP DEBUG [${debugId}]: Retrieving subscription info for response...`);
       const subscription = await prisma.userSubscription.findUnique({
         where: { userId: user.id },
         select: {
@@ -329,17 +379,29 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         }
       });
       subscriptionInfo = subscription;
+      console.log(`✅ SIGNUP DEBUG [${debugId}]: Subscription info retrieved:`, subscriptionInfo);
     } catch (error) {
-      console.error('Error fetching subscription info:', error);
+      console.error(`🚨 SIGNUP DEBUG [${debugId}]: Error fetching subscription info:`, error);
     }
   }
 
-  return apiErrorHandler.createSuccessResponse({
+  const responseData = {
     user: userWithoutPassword,
     subscription: subscriptionInfo,
     selectedPlan: selectedPlan,
     message: selectedPlan 
       ? `Account created successfully with ${selectedPlan.name} plan`
-      : "Account created successfully with legal compliance tracking"
+      : "Account created successfully with legal compliance tracking",
+    debugId
+  };
+
+  console.log(`🎉 SIGNUP DEBUG [${debugId}]: Returning success response at ${new Date().toISOString()}`);
+  console.log(`📤 SIGNUP DEBUG [${debugId}]: Response data:`, {
+    userId: responseData.user.id,
+    userEmail: responseData.user.email,
+    hasSubscription: !!responseData.subscription,
+    debugId: responseData.debugId
   });
+
+  return apiErrorHandler.createSuccessResponse(responseData);
 });

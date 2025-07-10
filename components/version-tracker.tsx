@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 
 // Fallback version configuration
 const FALLBACK_VERSION_CONFIG = {
-  version: "1.2.17-staging",
+  version: "1.2.18-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "button-fix-stripe-price-ids",
+  commit: "comprehensive-debugging-geoapify-fixes",
   branch: "main"
 };
 
@@ -19,7 +19,7 @@ interface VersionDisplayProps {
 export function VersionTracker({ placement }: VersionDisplayProps) {
   const [versionConfig, setVersionConfig] = useState({
     ...FALLBACK_VERSION_CONFIG,
-    version: '1.2.17-staging'
+    version: '1.2.18-staging'
   });
   const [isLoading, setIsLoading] = useState(true);
 

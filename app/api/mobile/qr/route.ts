@@ -109,13 +109,13 @@ export async function POST(request: NextRequest) {
     }
 
     let result: any = {
-      qrType: qrCodeData.qrType,
+      qrType: qrCodeData.purpose,
       venue: qrCodeData.venue,
       action: action || qrCodeData.purpose
     };
 
     // Process based on QR type and action
-    if ((qrCodeData.qrType === 'CHECK_IN' || action === 'check_in') && childId) {
+    if ((qrCodeData.purpose === 'CHECK_IN' || action === 'check_in') && childId) {
       // Verify parent owns this child
       const child = await db.child.findFirst({
         where: {
@@ -133,15 +133,11 @@ export async function POST(request: NextRequest) {
         data: {
           childId,
           venueId: qrCodeData.venueId,
-          parentId: session.user.id,
+          userId: session.user.id,
           eventType: 'CHECK_IN',
           method: 'QR_CODE',
-          qrCode: qrCode,
-          location: qrCodeData.metadata as any,
-          metadata: {
-            qrCodeId: qrCodeData.id,
-            scannedBy: 'parent'
-          }
+          qrCodeUsed: qrCode,
+          location: qrCodeData.metadata as any
         },
         include: {
           child: {
@@ -154,11 +150,10 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      // Update child status
+      // Update child's current venue
       await db.child.update({
         where: { id: childId },
         data: {
-          status: 'CHECKED_IN',
           currentVenueId: qrCodeData.venueId
         }
       });
@@ -166,7 +161,7 @@ export async function POST(request: NextRequest) {
       result.checkInEvent = checkInEvent;
       result.message = `${child.firstName} ${child.lastName} checked in successfully`;
 
-    } else if ((qrCodeData.qrType === 'CHECK_OUT' || action === 'check_out') && childId) {
+    } else if ((qrCodeData.purpose === 'CHECK_OUT' || action === 'check_out') && childId) {
       // Verify parent owns this child
       const child = await db.child.findFirst({
         where: {
@@ -201,16 +196,12 @@ export async function POST(request: NextRequest) {
         data: {
           childId,
           venueId: qrCodeData.venueId,
-          parentId: session.user.id,
+          userId: session.user.id,
           eventType: 'CHECK_OUT',
           method: 'QR_CODE',
-          qrCode: qrCode,
+          qrCodeUsed: qrCode,
           duration,
-          location: qrCodeData.metadata as any,
-          metadata: {
-            qrCodeId: qrCodeData.id,
-            scannedBy: 'parent'
-          }
+          location: qrCodeData.metadata as any
         },
         include: {
           child: {
@@ -223,11 +214,10 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      // Update child status
+      // Update child's current venue (remove from venue)
       await db.child.update({
         where: { id: childId },
         data: {
-          status: 'CHECKED_OUT',
           currentVenueId: null
         }
       });
@@ -235,7 +225,7 @@ export async function POST(request: NextRequest) {
       result.checkOutEvent = checkOutEvent;
       result.message = `${child.firstName} ${child.lastName} checked out successfully`;
       
-    } else if (qrCodeData.qrType === 'INFO' || action === 'info') {
+    } else if (qrCodeData.purpose === 'VENUE_INFO' || action === 'info') {
       // Return venue information
       result.venueInfo = {
         ...qrCodeData.venue,
