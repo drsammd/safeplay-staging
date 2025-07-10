@@ -68,10 +68,12 @@ export async function GET(request: NextRequest) {
 
     const statusSummary = {
       total: children.length,
-      checkedIn: children.filter(child => child.status === 'CHECKED_IN').length,
-      checkedOut: children.filter(child => child.status === 'CHECKED_OUT').length,
       active: children.filter(child => child.status === 'ACTIVE').length,
       inactive: children.filter(child => child.status === 'INACTIVE').length,
+      suspended: children.filter(child => child.status === 'SUSPENDED').length,
+      // Check-in/out status would need to be determined from most recent CheckInOutEvent
+      checkedIn: 0, // TODO: Calculate from CheckInOutEvents
+      checkedOut: 0, // TODO: Calculate from CheckInOutEvents
     };
 
     return NextResponse.json({

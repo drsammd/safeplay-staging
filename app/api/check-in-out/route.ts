@@ -58,21 +58,6 @@ export async function GET(request: NextRequest) {
             email: true,
           },
         },
-        membership: {
-          select: {
-            id: true,
-            memberId: true,
-            status: true,
-            tierLevel: true,
-          },
-        },
-        kiosk: {
-          select: {
-            id: true,
-            name: true,
-            location: true,
-          },
-        },
         identityVerifications: {
           select: {
             id: true,
@@ -169,15 +154,14 @@ export async function POST(request: NextRequest) {
         userId: session.user.role === 'PARENT' ? session.user.id : body.userId,
         eventType,
         method,
-        qrCode,
-        authorizedBy: session.user.id,
-        isAuthorized: true,
-        requiresVerification: biometricRequired,
-        membershipId,
-        kioskId,
-        kioskSessionId,
+        qrCodeUsed: qrCode,
+        verifiedBy: session.user.id,
+        biometricUsed: biometricRequired || false,
         notes,
-        metadata,
+        location: {
+          area: body.location || 'Main Entrance',
+          coordinates: { x: 0, y: 0 }
+        },
       },
       include: {
         child: {
@@ -212,16 +196,14 @@ export async function POST(request: NextRequest) {
       // For now, we'll create a pending verification record
       await prisma.identityVerification.create({
         data: {
-          
-          
-          personId: childId,
+          userId: childId,
           verificationType: 'GOVERNMENT_ID',
-          capturedBiometric: '', // Would be populated by biometric capture
-          verificationResult: 'PENDING',
-          auditLog: {
+          status: 'PENDING',
+          metadata: {
             action: 'biometric_verification_initiated',
             timestamp: new Date(),
             initiatedBy: session.user.id,
+            capturedBiometric: '', // Would be populated by biometric capture
           },
         },
       });

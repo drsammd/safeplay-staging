@@ -57,17 +57,20 @@ export async function POST(request: NextRequest) {
           data: {
             childId,
             venueId,
-            parentId: session.user.role === 'PARENT' ? session.user.id : childData.parentId,
+            userId: session.user.role === 'PARENT' ? session.user.id : childData.parentId,
             eventType,
             method,
-            qrCode,
-            authorizedBy: session.user.id,
-            isAuthorized: true,
+            qrCodeUsed: qrCode,
+            verifiedBy: session.user.id,
             notes: notes || groupNotes,
-            metadata: {
-              ...metadata,
-              bulkOperation: true,
-              groupId: `bulk_${Date.now()}`,
+            location: {
+              area: location || 'Main Entrance',
+              coordinates: { x: 0, y: 0 },
+              metadata: {
+                ...metadata,
+                bulkOperation: true,
+                groupId: `bulk_${Date.now()}`,
+              }
             },
           },
           include: {
@@ -93,7 +96,7 @@ export async function POST(request: NextRequest) {
           success: true,
           childId,
           eventId: checkInOutEvent.id,
-          childName: `${checkInOutEvent.child.firstName} ${checkInOutEvent.child.lastName}`,
+          childName: `${(checkInOutEvent as any).child.firstName} ${(checkInOutEvent as any).child.lastName}`,
         });
       } catch (error) {
         errors.push({

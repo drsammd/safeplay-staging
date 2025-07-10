@@ -215,7 +215,7 @@ class CameraRecommendationEngine {
     // Distance to zone center (closer is better)
     const zoneCenter = this.getZoneCenter(zone.coordinates);
     const distanceToZone = Math.sqrt(
-      (coordinates.x - zoneCenter.x) ** 2 + (coordinates.y - zoneCenter.y) ** 2
+      (position.x - zoneCenter.x) ** 2 + (position.y - zoneCenter.y) ** 2
     );
     score += Math.max(0, 200 - distanceToZone);
     
@@ -223,7 +223,7 @@ class CameraRecommendationEngine {
     for (const camera of existingCameras) {
       if (camera.coordinates) {
         const distance = Math.sqrt(
-          (coordinates.x - camera.coordinates.x) ** 2 + (coordinates.y - camera.coordinates.y) ** 2
+          (position.x - camera.coordinates.x) ** 2 + (position.y - camera.coordinates.y) ** 2
         );
         score += Math.min(100, distance);
       }
@@ -333,8 +333,8 @@ class CameraRecommendationEngine {
     // Add coverage arc points
     for (let i = 0; i <= 8; i++) {
       const angle = (startAngle + (i * angleStep)) * (Math.PI / 180);
-      const x = coordinates.x + Math.cos(angle) * viewDistance;
-      const y = coordinates.y + Math.sin(angle) * viewDistance;
+      const x = position.x + Math.cos(angle) * viewDistance;
+      const y = position.y + Math.sin(angle) * viewDistance;
       points.push({ x, y });
     }
     
@@ -529,15 +529,13 @@ export async function POST(request: NextRequest) {
         return prisma.cameraRecommendation.create({
           data: {
             venueId,
-
-            recommendationType: rec.recommendationType as any,
-            suggestedPosition: rec.suggestedPosition,
+            type: rec.recommendationType as any,
+            title: rec.title || 'Camera Recommendation',
+            description: rec.description || 'Camera placement recommendation',
             reasoning: rec.reasoning,
             priority: rec.priority as any,
-            coverageArea: rec.coverageArea,
             estimatedCost: rec.estimatedCost,
-            status: 'PENDING',
-            metadata: rec.metadata
+            status: 'PENDING'
           }
         });
       })

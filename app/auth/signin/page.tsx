@@ -32,10 +32,12 @@ export default function SignInPage() {
   const [userRequires2FA, setUserRequires2FA] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Check for messages from URL params
+  // Check for messages from URL params and handle auto-login
   useEffect(() => {
     const message = searchParams.get('message');
     const errorParam = searchParams.get('error');
+    const autoLogin = searchParams.get('auto');
+    const autoToken = searchParams.get('token');
     
     if (message) {
       // You could show a success toast here
@@ -44,7 +46,83 @@ export default function SignInPage() {
     if (errorParam) {
       setError(decodeURIComponent(errorParam));
     }
+
+    // Handle auto-login from staging auth
+    if (autoLogin === 'true' && autoToken) {
+      console.log('🔄 Auto-login detected, attempting automatic authentication...');
+      handleAutoLogin(autoToken);
+    }
   }, [searchParams]);
+
+  const handleAutoLogin = async (token: string) => {
+    setIsLoading(true);
+    setError("");
+    
+    try {
+      console.log('🔄 Checking for demo session data...');
+      
+      // Check if demo session data exists from staging auth
+      const demoSessionData = sessionStorage.getItem('mySafePlay_demoSession');
+      const demoUserData = sessionStorage.getItem('mySafePlay_demoUser');
+      
+      if (demoSessionData && demoUserData) {
+        const demoSession = JSON.parse(demoSessionData);
+        const demoUser = JSON.parse(demoUserData);
+        
+        console.log('✅ Demo session found, auto-signing in as:', demoUser.email);
+        
+        // Use known demo credentials based on the user
+        let demoPassword = 'demo123'; // Default demo password
+        
+        // Set specific passwords for known demo accounts
+        if (demoUser.email === 'john@doe.com') {
+          demoPassword = 'johndoe123';
+        } else if (demoUser.email === 'venue@mysafeplay.ai') {
+          demoPassword = 'venue123';
+        } else if (demoUser.email === 'parent@mysafeplay.ai') {
+          demoPassword = 'parent123';
+        }
+        
+        // Attempt auto-signin with demo credentials
+        const result = await signIn("credentials", {
+          email: demoUser.email,
+          password: demoPassword,
+          redirect: false,
+        });
+
+        if (result?.error) {
+          console.error('❌ Auto-signin failed with demo credentials:', result.error);
+          // Fall back to manual login
+          setError('Auto-login failed. Please enter your credentials manually.');
+        } else if (result?.ok) {
+          console.log('✅ Auto-signin successful, redirecting...');
+          const session = await getSession();
+          
+          // Clear demo session storage since we're now properly authenticated
+          sessionStorage.removeItem('mySafePlay_demoSession');
+          sessionStorage.removeItem('mySafePlay_demoUser');
+          sessionStorage.removeItem('mySafePlay_demoMode');
+          
+          // Redirect based on user role
+          if (session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'COMPANY_ADMIN') {
+            router.push('/admin');
+          } else if (session?.user?.role === 'VENUE_ADMIN') {
+            router.push('/venue-admin');
+          } else {
+            router.push('/parent');
+          }
+        }
+      } else {
+        console.log('❌ No demo session data found, falling back to manual login');
+        setError('Auto-login session not found. Please enter your credentials manually.');
+      }
+    } catch (error) {
+      console.error('❌ Auto-signin error:', error);
+      setError('Auto-login failed. Please enter your credentials manually.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

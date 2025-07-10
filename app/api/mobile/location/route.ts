@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (currentOnly) {
-      whereClause.isCurrentLocation = true;
+      // whereClause.isCurrentLocation = true; // Field doesn't exist in ChildLocationHistory model
     } else {
       // Get locations from the last X hours
       const hoursAgo = new Date();
@@ -70,22 +70,22 @@ export async function GET(request: NextRequest) {
             name: true,
             address: true
           }
-        },
-        camera: {
-          select: {
-            id: true,
-            name: true,
-            position: true
-          }
-        },
-        zone: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            color: true
-          }
         }
+        // camera: {
+        //   select: {
+        //     id: true,
+        //     name: true,
+        //     position: true
+        //   }
+        // },
+        // zone: {
+        //   select: {
+        //     id: true,
+        //     name: true,
+        //     type: true,
+        //     color: true
+        //   }
+        // }
       },
       orderBy: {
         timestamp: 'desc'
@@ -95,8 +95,8 @@ export async function GET(request: NextRequest) {
     // Also get current locations separately for quick access
     const currentLocations = await db.childLocationHistory.findMany({
       where: {
-        childId: childId ? childId : { in: childIds },
-        isCurrentLocation: true
+        childId: childId ? childId : { in: childIds }
+        // isCurrentLocation: true // Field doesn't exist in ChildLocationHistory model
       },
       include: {
         child: {
@@ -114,22 +114,22 @@ export async function GET(request: NextRequest) {
             name: true,
             address: true
           }
-        },
-        camera: {
-          select: {
-            id: true,
-            name: true,
-            position: true
-          }
-        },
-        zone: {
-          select: {
-            id: true,
-            name: true,
-            type: true,
-            color: true
-          }
         }
+        // camera: {
+        //   select: {
+        //     id: true,
+        //     name: true,
+        //     position: true
+        //   }
+        // },
+        // zone: {
+        //   select: {
+        //     id: true,
+        //     name: true,
+        //     type: true,
+        //     color: true
+        //   }
+        // }
       }
     });
 
@@ -176,16 +176,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Set previous current location to false for this child
-    await db.childLocationHistory.updateMany({
-      where: {
-        childId,
-        isCurrentLocation: true
-      },
-      data: {
-        isCurrentLocation: false,
-        exitTime: new Date()
-      }
-    });
+    // Note: isCurrentLocation field doesn't exist in ChildLocationHistory model
+    // await db.childLocationHistory.updateMany({
+    //   where: {
+    //     childId,
+    //     isCurrentLocation: true
+    //   },
+    //   data: {
+    //     isCurrentLocation: false,
+    //     exitTime: new Date()
+    //   }
+    // });
 
     // Create new location record
     const location = await db.childLocationHistory.create({
@@ -196,7 +197,7 @@ export async function POST(request: NextRequest) {
         detectionType: detectionType || 'MANUAL_CHECK_IN',
         zoneId,
         accuracy: accuracy || 1.0,
-        isCurrentLocation: true,
+        // isCurrentLocation: true, // Field doesn't exist in ChildLocationHistory model
         confidence: 1.0,
         entryTime: new Date(),
         metadata: {

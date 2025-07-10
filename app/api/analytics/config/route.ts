@@ -234,16 +234,24 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Configuration not found or access denied' }, { status: 404 });
     }
 
-    // Remove venueId from updateData as it shouldn't be updated
-    const { venueId, ...safeUpdateData } = updateData;
+    // Remove venueId from updateData as it shouldn't be updated and prepare safe update data
+    const { venueId, ...partialData } = updateData;
+    
+    // Only include allowed fields for update
+    const safeUpdateData: any = {};
+    if (partialData.name !== undefined) safeUpdateData.name = partialData.name;
+    if (partialData.description !== undefined) safeUpdateData.description = partialData.description;
+    if (partialData.configType !== undefined) safeUpdateData.configType = partialData.configType;
+    if (partialData.settings !== undefined) safeUpdateData.settings = partialData.settings;
+    if (partialData.isActive !== undefined) safeUpdateData.isActive = partialData.isActive;
+    
+    // Add audit fields
+    safeUpdateData.appliedBy = session.user.id;
+    safeUpdateData.appliedAt = new Date();
     
     const config = await prisma.analyticsConfig.update({
       where: { id: configId },
-      data: {
-        ...safeUpdateData,
-        appliedBy: session.user.id,
-        appliedAt: new Date()
-      }
+      data: safeUpdateData
     });
 
     // Log analytics event

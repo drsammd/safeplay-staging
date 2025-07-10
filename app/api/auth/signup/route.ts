@@ -210,19 +210,19 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         const stripeSubscription = subscriptionData.subscription;
         const stripeCustomer = subscriptionData.customer;
         
-        const subscriptionRecord = {
+        const subscriptionRecord: any = {
           userId: newUser.id,
           planType: subscriptionPlan,
           status: stripeSubscription.status === 'trialing' ? 'TRIALING' : 'ACTIVE',
-          stripeCustomerId: stripeCustomer.id,
-          stripeSubscriptionId: stripeSubscription.id,
+          stripeCustomerId: String(stripeCustomer.id),
+          stripeSubscriptionId: String(stripeSubscription.id),
           currentPeriodStart: stripeSubscription.current_period_start 
             ? new Date(stripeSubscription.current_period_start * 1000) 
             : currentTime,
           currentPeriodEnd: stripeSubscription.current_period_end 
             ? new Date(stripeSubscription.current_period_end * 1000) 
             : new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000)),
-          cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end || false,
+          cancelAtPeriodEnd: Boolean(stripeSubscription.cancel_at_period_end),
           canceledAt: stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
           trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : null,
           trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,

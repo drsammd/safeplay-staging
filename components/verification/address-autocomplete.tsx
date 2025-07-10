@@ -129,15 +129,17 @@ export function AddressAutocomplete({
         !suggestionsRef.current.contains(event.target as Node) &&
         !inputRef.current?.contains(event.target as Node)
       ) {
-        // Add a small delay to allow suggestion clicks to process first
-        setTimeout(() => {
-          setShowSuggestions(false);
-        }, 150);
+        setShowSuggestions(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use a slight delay to allow the component to mount properly
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
     return () => {
+      clearTimeout(timeoutId);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);

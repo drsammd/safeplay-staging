@@ -42,7 +42,7 @@ export default function VenueManagementPage() {
   ]);
 
   // Modal state available for future implementation
-  // const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   return (
     <div className="min-h-full bg-venue bg-overlay-light">

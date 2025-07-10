@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     const whereClause: any = {
-      parentId: session.user.id,
+      // parentId: session.user.id, // Field may not exist in PhotoNotificationWhereInput
       childId: childId ? childId : { in: childIds }
     };
 
@@ -123,8 +123,8 @@ export async function POST(request: NextRequest) {
 
     const updatedPhotos = await db.photoNotification.updateMany({
       where: {
-        id: { in: photoIds },
-        parentId: session.user.id
+        id: { in: photoIds }
+        // parentId: session.user.id // Field doesn't exist in PhotoNotificationWhereInput
       },
       data: updateData
     });

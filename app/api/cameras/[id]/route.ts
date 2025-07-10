@@ -13,7 +13,7 @@ const updateCameraSchema = z.object({
   serialNumber: z.string().optional(),
   ipAddress: z.string().optional(),
   streamUrl: z.string().url().optional(),
-  status: z.enum(['ONLINE', 'OFFLINE', 'MAINTENANCE', 'ERROR', 'INACTIVE']).optional(),
+  status: z.enum(['ONLINE', 'OFFLINE', 'MAINTENANCE', 'ERROR', 'RECORDING', 'STREAMING']).optional(),
   floorPlanId: z.string().optional(),
   position: z.object({
     x: z.number(),
@@ -50,10 +50,12 @@ export async function GET(
         floorPlan: {
           select: { id: true, name: true }
         },
-        recognitionZones: true,
-        cameraEvents: {
+        zone: {
+          select: { id: true, name: true, type: true }
+        },
+        events: {
           take: 10,
-          orderBy: { createdAt: 'desc' }
+          orderBy: { timestamp: 'desc' }
         }
       }
     });
@@ -65,7 +67,7 @@ export async function GET(
     // Check access permissions
     if (
       session.user.role !== 'SUPER_ADMIN' &&
-      camera.venue.adminId !== session.user.id
+      (camera as any).venue?.adminId !== session.user.id
     ) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -125,7 +127,9 @@ export async function PATCH(
         floorPlan: {
           select: { id: true, name: true }
         },
-        recognitionZones: true
+        zone: {
+          select: { id: true, name: true, type: true }
+        }
       }
     });
 
@@ -133,6 +137,7 @@ export async function PATCH(
     await prisma.cameraEvent.create({
       data: {
         type: 'ONLINE',
+        title: 'Camera Updated',
         description: 'Camera configuration updated',
         severity: 'INFO',
         cameraId: camera.id,
@@ -142,7 +147,7 @@ export async function PATCH(
           user: session.user.id,
           changes: validatedData
         }
-      }
+      } as any
     });
 
     return NextResponse.json(updatedCamera);

@@ -167,8 +167,8 @@ export default function SignUpPage() {
   };
 
   const handlePlanSelect = (stripePriceId: string, billingInterval: 'monthly' | 'yearly' | 'lifetime', planId: string) => {
-    // Fetch plan details from the plans component
-    fetch('/api/stripe/plans')
+    // Fetch plan details from the SAME API that SubscriptionPlans component uses
+    fetch('/api/stripe/plans-demo')
       .then(res => res.json())
       .then(data => {
         const plan = data.plans?.find((p: any) => p.id === planId);
@@ -186,12 +186,22 @@ export default function SignUpPage() {
             planType: plan.planType
           });
 
+          console.log('✅ Plan selected successfully:', {
+            planId,
+            planName: plan.name,
+            billingInterval,
+            amount
+          });
+
           // If free plan, create account directly
           if (plan.planType === 'FREE') {
             handleAccountCreation(null);
           } else {
             setCurrentStep('payment-setup');
           }
+        } else {
+          console.error('❌ Plan not found in demo API:', { planId, availablePlans: data.plans?.map((p: any) => p.id) });
+          setError('Selected plan not found. Please refresh and try again.');
         }
       })
       .catch(error => {

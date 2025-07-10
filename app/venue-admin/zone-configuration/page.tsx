@@ -22,11 +22,8 @@ export default async function ZoneConfigurationPage() {
     venue = await prisma.venue.findFirst({
       where: { adminId: session.user.id },
       include: {
-        zones: {
-          include: {
-            cameras: true
-          }
-        }
+        cameras: true,
+        floorPlans: true
       }
     });
 

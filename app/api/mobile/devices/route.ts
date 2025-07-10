@@ -71,12 +71,11 @@ export async function POST(request: NextRequest) {
         data: {
           userId: session.user.id,
           deviceId,
-          deviceToken,
-          deviceType,
+          pushToken: deviceToken,
+          deviceName: deviceType || `${platform} Device`,
           platform,
           appVersion,
           osVersion,
-          notificationSettings,
           lastActiveAt: new Date()
         }
       });
@@ -110,13 +109,8 @@ export async function PUT(request: NextRequest) {
         userId: session.user.id
       },
       data: {
-        deviceToken: deviceToken !== undefined ? deviceToken : undefined,
-        pushNotificationsEnabled: pushNotificationsEnabled !== undefined ? pushNotificationsEnabled : undefined,
-        offlineDataEnabled: offlineDataEnabled !== undefined ? offlineDataEnabled : undefined,
-        locationPermission: locationPermission !== undefined ? locationPermission : undefined,
-        cameraPermission: cameraPermission !== undefined ? cameraPermission : undefined,
-        notificationSettings: notificationSettings !== undefined ? notificationSettings : undefined,
-        lastActiveAt: new Date()
+        pushToken: deviceToken !== undefined ? deviceToken : undefined,
+        lastSeen: new Date()
       }
     });
 
