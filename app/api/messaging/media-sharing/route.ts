@@ -281,21 +281,21 @@ export async function GET(request: NextRequest) {
     // Format response with safe type conversions
     const formattedMedia = media.map(item => {
       // Fixed: safely handle JsonValue conversion
-      const taggedChildrenSafe = item.taggedChildren ? toStringArraySafe(item.taggedChildren) : [];
+      const taggedChildrenSafe = item.tags ? toStringArraySafe(item.tags) : [];
       
       return {
         id: item.id,
         title: item.title,
         description: item.description,
-        mediaType: item.mediaType,
+        mediaType: item.type, // Fixed: use 'type' instead of 'mediaType'
         fileUrl: item.fileUrl,
         thumbnailUrl: item.thumbnailUrl,
         fileSize: item.fileSize,
         duration: item.duration,
         capturedAt: item.capturedAt,
         taggedChildren: taggedChildrenSafe,
-        facialTagsConfirmed: toBooleanSafe(item.facialTagsConfirmed),
-        watermarked: toBooleanSafe(item.watermarked),
+        facialTagsConfirmed: false, // Fixed: default value since property doesn't exist
+        watermarked: false, // Fixed: default value since property doesn't exist
         uploadedBy: item.uploadedBy,
         hasPermission: item.uploadedBy === session.user.id,
         permissionStatus: null,

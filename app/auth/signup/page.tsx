@@ -809,8 +809,43 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+      {/* Navigation Header */}
+      <nav className="relative z-10 bg-white/10 backdrop-blur-md border-b border-white/20">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
+                <span className="text-blue-600 font-bold text-sm">SP</span>
+              </div>
+              <span className="text-white font-semibold text-lg">SafePlay</span>
+            </Link>
+            
+            <div className="flex items-center space-x-6">
+              <Link href="/safety" className="text-white/80 hover:text-white transition-colors">
+                Safety Features
+              </Link>
+              <Link href="/memory-features" className="text-white/80 hover:text-white transition-colors">
+                Memory Features
+              </Link>
+              <Link href="/auth/signin" className="text-white/80 hover:text-white transition-colors">
+                Sign In
+              </Link>
+              <Button 
+                variant="outline" 
+                className="border-white/30 text-white/50 bg-white/5 cursor-not-allowed"
+                disabled
+              >
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="flex items-center justify-center p-4 pt-8">
+        <div className="w-full max-w-4xl mx-auto">
         {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-2">
@@ -840,6 +875,7 @@ export default function SignUpPage() {
 
         {/* Step Content */}
         {renderStepContent()}
+        </div>
       </div>
     </div>
   );

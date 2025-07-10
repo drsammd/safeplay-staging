@@ -152,15 +152,27 @@ function PaymentFormContent({
     }
   }, [prefilledBillingAddress, billingAddressValidation, prefilledBillingFields]);
 
-  // Set cardholder name from session
+  // Set cardholder name from session or props (signup flow)
   useEffect(() => {
-    if (session?.user?.name) {
+    let nameToUse = '';
+    
+    // Priority: userName prop (signup flow) > session name > userEmail as fallback
+    if (userName?.trim()) {
+      nameToUse = userName;
+    } else if (session?.user?.name?.trim()) {
+      nameToUse = session.user.name;
+    } else if (userEmail?.trim()) {
+      // Extract name from email as fallback
+      nameToUse = userEmail.split('@')[0].replace(/[._]/g, ' ');
+    }
+    
+    if (nameToUse) {
       setBillingDetails(prev => ({
         ...prev,
-        name: session.user.name || ''
+        name: nameToUse
       }));
     }
-  }, [session?.user?.name]);
+  }, [session?.user?.name, userName, userEmail]);
 
   useEffect(() => {
     // Check if all card elements are complete
