@@ -99,36 +99,71 @@ function PaymentFormContent({
     },
   });
 
-  // Prefill billing address from signup process
+  // 🔧 ENHANCED BILLING ADDRESS DEBUG: Comprehensive address field debugging
   useEffect(() => {
+    const debugTimestamp = new Date().toISOString();
+    console.log(`🔧 BILLING ADDRESS DEBUG: PaymentSetup useEffect triggered at ${debugTimestamp}`);
+    console.log(`🔧 BILLING ADDRESS DEBUG: === ADDRESS PREFILL DATA INSPECTION ===`);
+    console.log('🔧 BILLING ADDRESS DEBUG: prefilledBillingFields TYPE:', typeof prefilledBillingFields);
+    console.log('🔧 BILLING ADDRESS DEBUG: prefilledBillingFields VALUE:', prefilledBillingFields);
+    console.log('🔧 BILLING ADDRESS DEBUG: prefilledBillingFields JSON:', JSON.stringify(prefilledBillingFields, null, 2));
+    console.log('🔧 BILLING ADDRESS DEBUG: prefilledBillingAddress VALUE:', prefilledBillingAddress);
+    console.log('🔧 BILLING ADDRESS DEBUG: billingAddressValidation VALUE:', billingAddressValidation);
+    console.log(`🔧 BILLING ADDRESS DEBUG: === CURRENT BILLING DETAILS STATE ===`);
+    console.log('🔧 BILLING ADDRESS DEBUG: Current billingDetails:', JSON.stringify(billingDetails, null, 2));
+    
     if (prefilledBillingFields) {
+      console.log('🔧 BILLING ADDRESS DEBUG: === USING PREFILLED BILLING FIELDS ===');
+      console.log('🔧 BILLING ADDRESS DEBUG: Field extraction:');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - street:', prefilledBillingFields.street, '(type:', typeof prefilledBillingFields.street, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - city:', prefilledBillingFields.city, '(type:', typeof prefilledBillingFields.city, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - state:', prefilledBillingFields.state, '(type:', typeof prefilledBillingFields.state, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - zipCode:', prefilledBillingFields.zipCode, '(type:', typeof prefilledBillingFields.zipCode, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - fullAddress:', prefilledBillingFields.fullAddress, '(type:', typeof prefilledBillingFields.fullAddress, ')');
+      
       // Use the parsed address fields directly
-      setBillingDetails(prev => ({
-        ...prev,
+      const newBillingDetails = {
+        ...billingDetails,
         address: {
-          line1: prefilledBillingFields.street || '',
-          city: prefilledBillingFields.city || '',
-          state: prefilledBillingFields.state || '',
-          postal_code: prefilledBillingFields.zipCode || '',
+          line1: String(prefilledBillingFields.street || ''),
+          city: String(prefilledBillingFields.city || ''),
+          state: String(prefilledBillingFields.state || ''),
+          postal_code: String(prefilledBillingFields.zipCode || ''),
           country: 'US',
         }
-      }));
+      };
+      
+      console.log('🔧 BILLING ADDRESS DEBUG: === NEW BILLING DETAILS CONSTRUCTED ===');
+      console.log('🔧 BILLING ADDRESS DEBUG: newBillingDetails JSON:', JSON.stringify(newBillingDetails, null, 2));
+      console.log('🔧 BILLING ADDRESS DEBUG: Setting billing details...');
+      setBillingDetails(newBillingDetails);
+      console.log('🔧 BILLING ADDRESS DEBUG: ✅ Billing details set from prefilledBillingFields');
+      
     } else if (prefilledBillingAddress && billingAddressValidation) {
+      console.log('🔧 BILLING ADDRESS DEBUG: === USING PREFILLED BILLING ADDRESS WITH VALIDATION ===');
       try {
         // Use standardized address if available
         const addressData = billingAddressValidation.standardizedAddress;
+        console.log('🔧 BILLING ADDRESS DEBUG: addressData from validation:', JSON.stringify(addressData, null, 2));
+        
         if (addressData) {
+          const constructedAddress = {
+            line1: `${addressData.street_number || ''} ${addressData.route || ''}`.trim() || prefilledBillingAddress,
+            city: addressData.locality || '',
+            state: addressData.administrative_area_level_1 || '',
+            postal_code: addressData.postal_code || '',
+            country: addressData.country || 'US',
+          };
+          
+          console.log('🔧 BILLING ADDRESS DEBUG: Constructed address from validation:', JSON.stringify(constructedAddress, null, 2));
+          
           setBillingDetails(prev => ({
             ...prev,
-            address: {
-              line1: `${addressData.street_number || ''} ${addressData.route || ''}`.trim() || prefilledBillingAddress,
-              city: addressData.locality || '',
-              state: addressData.administrative_area_level_1 || '',
-              postal_code: addressData.postal_code || '',
-              country: addressData.country || 'US',
-            }
+            address: constructedAddress
           }));
+          console.log('🔧 BILLING ADDRESS DEBUG: ✅ Billing details set from address validation');
         } else {
+          console.log('🔧 BILLING ADDRESS DEBUG: No standardized address data, using raw address');
           // Fall back to using the original address string
           setBillingDetails(prev => ({
             ...prev,
@@ -137,9 +172,15 @@ function PaymentFormContent({
               line1: prefilledBillingAddress,
             }
           }));
+          console.log('🔧 BILLING ADDRESS DEBUG: ✅ Billing details set from raw address');
         }
       } catch (error) {
-        console.error('Error prefilling billing address:', error);
+        console.error('🔧 BILLING ADDRESS DEBUG: ❌ Error prefilling billing address:', error);
+        console.error('🔧 BILLING ADDRESS DEBUG: Error details:', {
+          message: error?.message,
+          stack: error?.stack,
+          name: error?.name
+        });
         // Still set the basic address if parsing fails
         setBillingDetails(prev => ({
           ...prev,
@@ -148,8 +189,16 @@ function PaymentFormContent({
             line1: prefilledBillingAddress || '',
           }
         }));
+        console.log('🔧 BILLING ADDRESS DEBUG: ⚠️ Fallback billing details set after error');
       }
+    } else {
+      console.log('🔧 BILLING ADDRESS DEBUG: === NO PREFILLED DATA AVAILABLE ===');
+      console.log('🔧 BILLING ADDRESS DEBUG: prefilledBillingFields is:', prefilledBillingFields);
+      console.log('🔧 BILLING ADDRESS DEBUG: prefilledBillingAddress is:', prefilledBillingAddress);
+      console.log('🔧 BILLING ADDRESS DEBUG: billingAddressValidation is:', billingAddressValidation);
     }
+    
+    console.log(`🔧 BILLING ADDRESS DEBUG: === END ADDRESS PREFILL DEBUG ===`);
   }, [prefilledBillingAddress, billingAddressValidation, prefilledBillingFields]);
 
   // Set cardholder name from session or props (signup flow)
@@ -336,7 +385,48 @@ function PaymentFormContent({
           details: data.details,
           fullResponse: data
         });
-        throw new Error(data.error || data.details || 'Payment failed');
+        
+        // 🚨🚨🚨 PHANTOM ERROR OBJECT DETECTION 🚨🚨🚨
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: API Error Response Inspection:`);
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: data.error TYPE:`, typeof data.error);
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: data.error VALUE:`, data.error);
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: data.error JSON:`, JSON.stringify(data.error, null, 2));
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: data.details TYPE:`, typeof data.details);
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: data.details VALUE:`, data.details);
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: data.message TYPE:`, typeof data.message);
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: data.message VALUE:`, data.message);
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: FULL DATA OBJECT:`, JSON.stringify(data, null, 2));
+        
+        // 🔧 ERROR HANDLING FIX: Safely extract error message from API response
+        let apiErrorMessage = 'Payment failed';
+        if (typeof data.error === 'string' && data.error.trim() !== '') {
+          apiErrorMessage = data.error;
+          console.log(`✅ PAYMENT SETUP ERROR DEBUG [${debugId}]: Using data.error string:`, apiErrorMessage);
+        } else if (typeof data.error === 'object' && data.error !== null) {
+          if (typeof data.error.message === 'string' && data.error.message.trim() !== '') {
+            apiErrorMessage = data.error.message;
+            console.log(`✅ PAYMENT SETUP ERROR DEBUG [${debugId}]: Using data.error.message:`, apiErrorMessage);
+          } else if (typeof data.error.details === 'string' && data.error.details.trim() !== '') {
+            apiErrorMessage = data.error.details;
+            console.log(`✅ PAYMENT SETUP ERROR DEBUG [${debugId}]: Using data.error.details:`, apiErrorMessage);
+          } else {
+            apiErrorMessage = `Payment failed - Error object: ${JSON.stringify(data.error)}`;
+            console.log(`⚠️ PAYMENT SETUP ERROR DEBUG [${debugId}]: Using stringified error object:`, apiErrorMessage);
+          }
+        } else if (typeof data.details === 'string' && data.details.trim() !== '') {
+          apiErrorMessage = data.details;
+          console.log(`✅ PAYMENT SETUP ERROR DEBUG [${debugId}]: Using data.details:`, apiErrorMessage);
+        } else if (typeof data.message === 'string' && data.message.trim() !== '') {
+          apiErrorMessage = data.message;
+          console.log(`✅ PAYMENT SETUP ERROR DEBUG [${debugId}]: Using data.message:`, apiErrorMessage);
+        } else {
+          apiErrorMessage = `Payment failed (Status ${response.status}) - No clear error message found`;
+          console.log(`⚠️ PAYMENT SETUP ERROR DEBUG [${debugId}]: Using fallback error message:`, apiErrorMessage);
+        }
+        
+        console.error(`🚨 PAYMENT SETUP ERROR DEBUG [${debugId}]: FINAL ERROR MESSAGE:`, apiErrorMessage);
+        
+        throw new Error(apiErrorMessage);
       }
 
       console.log(`✅ PAYMENT DEBUG [${debugId}]: Subscription API Success:`, data);

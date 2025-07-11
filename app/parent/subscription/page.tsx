@@ -205,13 +205,16 @@ export default function SubscriptionPage() {
         
         let errorMessage = 'Failed to change plan. Please try again.';
         
-        // Handle specific HTTP status codes
+        // 🔧 ERROR HANDLING FIX: Properly extract error messages from different response formats
         if (response.status === 401) {
           errorMessage = 'Please log in again to change your plan. Your session may have expired.';
         } else if (response.status === 404) {
-          if (data.error?.includes('Plan not found')) {
+          const errorStr = typeof data.error === 'string' ? data.error : 
+                          typeof data.error === 'object' ? JSON.stringify(data.error) : 
+                          'Not found';
+          if (errorStr.includes('Plan not found')) {
             errorMessage = 'The selected plan is no longer available. Please refresh the page and try again.';
-          } else if (data.error?.includes('subscription not found')) {
+          } else if (errorStr.includes('subscription not found')) {
             errorMessage = 'No active subscription found. Please contact support for assistance.';
           } else {
             errorMessage = 'Service not found. Please try again later.';
@@ -221,8 +224,48 @@ export default function SubscriptionPage() {
         } else if (response.status === 500) {
           errorMessage = 'Server error occurred. Please try again in a few minutes.';
         } else {
-          // Use the error message from the server if available
-          errorMessage = data.error || `Failed to change plan (Error ${response.status})`;
+          // 🚨🚨🚨 PHANTOM ERROR OBJECT DETECTION - SUBSCRIPTION PAGE 🚨🚨🚨
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: API Error Response Inspection:`);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: response.status:`, response.status);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data TYPE:`, typeof data);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data VALUE:`, data);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error TYPE:`, typeof data.error);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error VALUE:`, data.error);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error JSON:`, JSON.stringify(data.error, null, 2));
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details TYPE:`, typeof data.details);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details VALUE:`, data.details);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message TYPE:`, typeof data.message);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message VALUE:`, data.message);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: FULL DATA OBJECT:`, JSON.stringify(data, null, 2));
+          
+          // 🔧 ERROR HANDLING FIX: Safely extract error message from various formats
+          if (typeof data.error === 'string' && data.error.trim() !== '') {
+            errorMessage = data.error;
+            console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.error string:`, errorMessage);
+          } else if (typeof data.error === 'object' && data.error !== null) {
+            // If error is an object, try to extract message or details
+            if (typeof data.error.message === 'string' && data.error.message.trim() !== '') {
+              errorMessage = data.error.message;
+              console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.error.message:`, errorMessage);
+            } else if (typeof data.error.details === 'string' && data.error.details.trim() !== '') {
+              errorMessage = data.error.details;
+              console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.error.details:`, errorMessage);
+            } else {
+              errorMessage = `Failed to change plan - Error object: ${JSON.stringify(data.error)}`;
+              console.log(`⚠️ SUBSCRIPTION PAGE ERROR DEBUG: Using stringified error object:`, errorMessage);
+            }
+          } else if (data.details && typeof data.details === 'string' && data.details.trim() !== '') {
+            errorMessage = data.details;
+            console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.details:`, errorMessage);
+          } else if (data.message && typeof data.message === 'string' && data.message.trim() !== '') {
+            errorMessage = data.message;
+            console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.message:`, errorMessage);
+          } else {
+            errorMessage = `Failed to change plan (Error ${response.status}) - No clear error message found`;
+            console.log(`⚠️ SUBSCRIPTION PAGE ERROR DEBUG: Using fallback error message:`, errorMessage);
+          }
+          
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: FINAL ERROR MESSAGE:`, errorMessage);
         }
         
         console.error('❌ Plan change failed:', errorMessage);
@@ -262,7 +305,19 @@ export default function SubscriptionPage() {
   };
 
   const handlePaymentError = (error: string) => {
-    console.error('❌ Payment failed:', error);
+    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: === PAYMENT ERROR RECEIVED ===');
+    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error TYPE:', typeof error);
+    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error VALUE:', error);
+    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error JSON:', JSON.stringify(error, null, 2));
+    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: === POTENTIAL OBJECT ERROR DETECTION ===');
+    
+    if (typeof error === 'object' && error !== null) {
+      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! Error is an object, not a string!');
+      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! This will show as "[object Object]"');
+      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! Object contents:', error);
+    }
+    
+    console.error('❌ Payment failed - setting plan change error:', error);
     setPlanChangeError(error);
     setShowPaymentSetup(false);
     setSelectedPlan(null);
@@ -280,15 +335,36 @@ export default function SubscriptionPage() {
   };
 
   const handleAddressFieldsChange = (fields: any) => {
-    console.log('🔧 BILLING ADDRESS DEBUG: Address fields extracted:', fields);
+    console.log('🔧 BILLING ADDRESS DEBUG: === ADDRESS FIELDS RECEIVED IN SUBSCRIPTION PAGE ===');
+    console.log('🔧 BILLING ADDRESS DEBUG: fields TYPE:', typeof fields);
+    console.log('🔧 BILLING ADDRESS DEBUG: fields VALUE:', fields);
+    console.log('🔧 BILLING ADDRESS DEBUG: fields JSON:', JSON.stringify(fields, null, 2));
+    
+    if (fields) {
+      console.log('🔧 BILLING ADDRESS DEBUG: Field breakdown:');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - street:', fields.street, '(type:', typeof fields.street, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - city:', fields.city, '(type:', typeof fields.city, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - state:', fields.state, '(type:', typeof fields.state, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - zipCode:', fields.zipCode, '(type:', typeof fields.zipCode, ')');
+      console.log('🔧 BILLING ADDRESS DEBUG:   - fullAddress:', fields.fullAddress, '(type:', typeof fields.fullAddress, ')');
+    }
+    
+    console.log('🔧 BILLING ADDRESS DEBUG: Setting billingAddressFields state...');
     setBillingAddressFields(fields);
+    console.log('🔧 BILLING ADDRESS DEBUG: ✅ billingAddressFields state updated');
   };
 
   const handleAddressComplete = () => {
-    console.log('🔧 BILLING ADDRESS DEBUG: Address collection complete, proceeding to payment');
-    console.log('🔧 BILLING ADDRESS DEBUG: Collected address fields:', billingAddressFields);
+    console.log('🔧 BILLING ADDRESS DEBUG: === ADDRESS COLLECTION COMPLETE ===');
+    console.log('🔧 BILLING ADDRESS DEBUG: Current billingAddressFields state:', JSON.stringify(billingAddressFields, null, 2));
+    console.log('🔧 BILLING ADDRESS DEBUG: Current billingAddress state:', billingAddress);
+    console.log('🔧 BILLING ADDRESS DEBUG: Current billingAddressValidation state:', JSON.stringify(billingAddressValidation, null, 2));
+    console.log('🔧 BILLING ADDRESS DEBUG: Proceeding to payment with these address fields...');
+    
     setShowAddressCollection(false);
     setShowPaymentSetup(true);
+    
+    console.log('🔧 BILLING ADDRESS DEBUG: ✅ Payment setup modal should now open with prefilled address fields');
   };
 
   if (status === 'loading' || loading) {
@@ -505,21 +581,37 @@ export default function SubscriptionPage() {
           </DialogHeader>
           <div className="px-6 py-4">
             {selectedPlan && (
-              <PaymentSetup
-                planId={selectedPlan.planId}
-                stripePriceId={selectedPlan.stripePriceId} // FIXED: Pass the actual Stripe price ID
-                billingInterval={selectedPlan.interval}
-                planName={selectedPlan.planName}
-                amount={selectedPlan.amount}
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
-                // 🔧 BILLING ADDRESS FIX: Pass collected billing address data
-                userEmail={session?.user?.email || ''}
-                userName={session?.user?.name || ''}
-                prefilledBillingAddress={billingAddress}
-                billingAddressValidation={billingAddressValidation}
-                prefilledBillingFields={billingAddressFields}
-              />
+              <>
+                {/* 🔧 BILLING ADDRESS DEBUG: Payment setup data inspection */}
+                {(() => {
+                  console.log('🔧 BILLING ADDRESS DEBUG: === PAYMENT SETUP RENDER DEBUG ===');
+                  console.log('🔧 BILLING ADDRESS DEBUG: About to render PaymentSetup with:');
+                  console.log('🔧 BILLING ADDRESS DEBUG:   - selectedPlan:', JSON.stringify(selectedPlan, null, 2));
+                  console.log('🔧 BILLING ADDRESS DEBUG:   - prefilledBillingFields:', JSON.stringify(billingAddressFields, null, 2));
+                  console.log('🔧 BILLING ADDRESS DEBUG:   - prefilledBillingAddress:', billingAddress);
+                  console.log('🔧 BILLING ADDRESS DEBUG:   - billingAddressValidation:', JSON.stringify(billingAddressValidation, null, 2));
+                  console.log('🔧 BILLING ADDRESS DEBUG:   - userEmail:', session?.user?.email);
+                  console.log('🔧 BILLING ADDRESS DEBUG:   - userName:', session?.user?.name);
+                  console.log('🔧 BILLING ADDRESS DEBUG: === END PAYMENT SETUP RENDER DEBUG ===');
+                  return null;
+                })()}
+                
+                <PaymentSetup
+                  planId={selectedPlan.planId}
+                  stripePriceId={selectedPlan.stripePriceId} // FIXED: Pass the actual Stripe price ID
+                  billingInterval={selectedPlan.interval}
+                  planName={selectedPlan.planName}
+                  amount={selectedPlan.amount}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                  // 🔧 BILLING ADDRESS FIX: Pass collected billing address data
+                  userEmail={session?.user?.email || ''}
+                  userName={session?.user?.name || ''}
+                  prefilledBillingAddress={billingAddress}
+                  billingAddressValidation={billingAddressValidation}
+                  prefilledBillingFields={billingAddressFields}
+                />
+              </>
             )}
           </div>
         </DialogContent>
