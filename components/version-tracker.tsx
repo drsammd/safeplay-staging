@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 
 // Fallback version configuration
 const FALLBACK_VERSION_CONFIG = {
-  version: "1.2.28-staging",
+  version: "1.2.29-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "address-autocomplete-ui-fixes-and-user-auth-sync-fixed",
+  commit: "stripe-price-id-configuration-fix",
   branch: "main"
 };
 

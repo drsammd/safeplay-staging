@@ -198,17 +198,21 @@ export class SubscriptionService {
         console.log('✅ SERVICE: Using existing customer:', stripeCustomerId);
       }
 
-      // Find the plan associated with this price ID
+      // Find the plan associated with this price ID (use hardcoded plans since SubscriptionPlan table doesn't exist)
       console.log('📋 SERVICE: Looking up subscription plan for price:', priceId);
-      const plan = await prisma.subscriptionPlan.findFirst({
-        where: {
-          OR: [
-            { stripePriceId: priceId },
-            { stripeYearlyPriceId: priceId },
-            { stripeLifetimePriceId: priceId }
-          ]
-        }
-      });
+      
+      // Hardcoded plan definitions to match the plans API
+      const PLAN_DEFINITIONS = {
+        'price_basic_monthly': { id: 'basic', name: 'Basic Plan', planType: 'BASIC', trialDays: 7, billingInterval: 'MONTHLY' },
+        'price_basic_yearly': { id: 'basic', name: 'Basic Plan', planType: 'BASIC', trialDays: 7, billingInterval: 'YEARLY' },
+        'price_premium_monthly': { id: 'premium', name: 'Premium Plan', planType: 'PREMIUM', trialDays: 7, billingInterval: 'MONTHLY' },
+        'price_premium_yearly': { id: 'premium', name: 'Premium Plan', planType: 'PREMIUM', trialDays: 7, billingInterval: 'YEARLY' },
+        'price_family_monthly': { id: 'family', name: 'Family Plan', planType: 'FAMILY', trialDays: 7, billingInterval: 'MONTHLY' },
+        'price_family_yearly': { id: 'family', name: 'Family Plan', planType: 'FAMILY', trialDays: 7, billingInterval: 'YEARLY' },
+        'price_lifetime_onetime': { id: 'lifetime', name: 'Lifetime Plan', planType: 'LIFETIME', trialDays: 0, billingInterval: 'LIFETIME' }
+      };
+      
+      const plan = PLAN_DEFINITIONS[priceId];
 
       console.log('📋 SERVICE: Plan lookup result:', {
         found: !!plan,
@@ -219,7 +223,8 @@ export class SubscriptionService {
 
       if (!plan) {
         console.log('❌ SERVICE: No plan found for price ID:', priceId);
-        throw new Error(`No plan found for price ID: ${priceId}`);
+        console.log('📋 SERVICE: Available price IDs:', Object.keys(PLAN_DEFINITIONS));
+        throw new Error(`No plan found for price ID: ${priceId}. Available: ${Object.keys(PLAN_DEFINITIONS).join(', ')}`);
       }
 
       console.log('⚙️ SERVICE: Building subscription parameters...');
@@ -228,7 +233,7 @@ export class SubscriptionService {
         items: [{ price: priceId }],
         metadata: {
           userId,
-          planId: plan.id,
+          planType: plan.planType,
         },
         expand: ['latest_invoice.payment_intent'],
       };
@@ -320,7 +325,7 @@ export class SubscriptionService {
         where: { userId },
         create: {
           userId,
-          planId: plan.id,
+          planType: plan.planType as any,
           status: this.mapStripeStatusToPrisma((subscription as any).status),
           stripeCustomerId,
           stripeSubscriptionId: (subscription as any).id,
@@ -330,10 +335,9 @@ export class SubscriptionService {
           canceledAt: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
           trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
           trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
-          billingInterval: plan.billingInterval,
         },
         update: {
-          planId: plan.id,
+          planType: plan.planType as any,
           status: this.mapStripeStatusToPrisma((subscription as any).status),
           stripeSubscriptionId: (subscription as any).id,
           currentPeriodStart,
@@ -342,7 +346,6 @@ export class SubscriptionService {
           canceledAt: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
           trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
           trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
-          billingInterval: plan.billingInterval,
         }
       });
 
@@ -549,20 +552,20 @@ export class SubscriptionService {
 
   private async logSubscriptionChange(userId: string, changeType: string, stripeData: any) {
     try {
-      // Get the actual plan ID from the user's subscription
+      // Get the actual plan type from the user's subscription
       const userSub = await prisma.userSubscription.findUnique({
         where: { userId }
       });
 
-      const planId = userSub?.planId || await this.getBasicPlanId(); // Use actual plan or fallback
+      const planType = userSub?.planType || 'BASIC'; // Use actual plan type or fallback to BASIC
       
       await prisma.subscriptionHistory.create({
         data: {
           userId,
-          planId,
-          changeType: changeType as any,
+          planType: planType as any,
+          action: changeType as any,
+          newStatus: this.mapStripeStatusToPrisma(stripeData.status),
           effectiveDate: new Date(),
-          stripeEventId: stripeData.id,
           metadata: stripeData,
         }
       });
@@ -571,17 +574,7 @@ export class SubscriptionService {
     }
   }
 
-  private async getBasicPlanId(): Promise<string> {
-    const basicPlan = await prisma.subscriptionPlan.findFirst({
-      where: { planType: SubscriptionPlanType.BASIC }
-    });
-    
-    if (!basicPlan) {
-      throw new Error('Basic plan not found');
-    }
-    
-    return basicPlan.id;
-  }
+
 
   // Check subscription status and features
   async checkSubscriptionAccess(userId: string, feature: string): Promise<boolean> {
