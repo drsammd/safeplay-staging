@@ -258,16 +258,22 @@ export function AddressAutocomplete({
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
     console.log('🎯 Suggestion clicked:', suggestion);
+    console.log('🔧 BILLING ADDRESS DEBUG: Auto-triggering validation for address selection');
+    
     onChange(suggestion.description);
     setSelectedSuggestion(suggestion);
     setShowSuggestions(false);
     setSuggestions([]);
     // Clear any pending validation
     setValidationResult(null);
-    // Focus back to input for better UX
+    
+    // 🔧 BILLING ADDRESS FIX: Automatically trigger validation when address is selected
+    // This will populate billing address fields via onFieldsChange callback
+    console.log('🔧 BILLING ADDRESS DEBUG: Triggering automatic validation for:', suggestion.description);
     setTimeout(() => {
+      validateAddress(suggestion.description);
       inputRef.current?.focus();
-    }, 0);
+    }, 100); // Small delay to ensure state is updated
   };
 
   const getValidationIcon = () => {

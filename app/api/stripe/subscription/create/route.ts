@@ -15,11 +15,27 @@ export async function POST(request: NextRequest) {
     console.log('🚀 SUBSCRIPTION API: Request headers:', Object.fromEntries(request.headers.entries()));
     
     const session = await getServerSession(authOptions);
+    
+    // 🔍 AGGRESSIVE DEBUGGING: Trace phantom user ID "cmcxeysqi0000jiij569qtc8m"
+    const PHANTOM_USER_ID = 'cmcxeysqi0000jiij569qtc8m';
+    const isPhantomUserInSession = session?.user?.id === PHANTOM_USER_ID;
+    
+    if (isPhantomUserInSession) {
+      console.log('🚨🚨🚨 PHANTOM USER ID IN SESSION! 🚨🚨🚨');
+      console.log('🔍 Session contains phantom user ID:', session?.user?.id);
+      console.log('🔍 Session user data:', session?.user);
+      console.log('🔍 Full session:', session);
+      console.log('🔍 This confirms the session contains stale/deleted user data');
+      console.log('🔍 Location: subscription/create/route.ts');
+      console.log('🔍 Time:', new Date().toISOString());
+    }
+    
     console.log('👤 SUBSCRIPTION API: Session check:', { 
       hasSession: !!session, 
       userId: session?.user?.id,
       userEmail: session?.user?.email,
-      userRole: session?.user?.role
+      userRole: session?.user?.role,
+      isPhantomUser: isPhantomUserInSession
     });
     
     if (!session?.user?.id) {

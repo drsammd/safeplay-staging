@@ -107,6 +107,18 @@ export class SubscriptionService {
       console.log('🔍 SERVICE: UserId type:', typeof userId);
       console.log('🔍 SERVICE: UserId length:', userId?.length);
       
+      // 🔍 AGGRESSIVE DEBUGGING: Trace phantom user ID "cmcxeysqi0000jiij569qtc8m"
+      const PHANTOM_USER_ID = 'cmcxeysqi0000jiij569qtc8m';
+      const isPhantomUser = userId === PHANTOM_USER_ID;
+      
+      if (isPhantomUser) {
+        console.log('🚨🚨🚨 PHANTOM USER ID DETECTED! 🚨🚨🚨');
+        console.log('🔍 TARGET USER ID:', userId);
+        console.log('🔍 Call Stack:', new Error().stack);
+        console.log('🔍 Function: createSubscription in subscription-service.ts');
+        console.log('🔍 Time:', new Date().toISOString());
+      }
+
       const user = await prisma.user.findUnique({
         where: { id: userId }
       });
@@ -115,13 +127,19 @@ export class SubscriptionService {
         found: !!user,
         email: user?.email,
         name: user?.name,
-        searchedId: userId
+        searchedId: userId,
+        isPhantomUser: isPhantomUser
       });
 
       if (!user) {
         console.log('❌ SERVICE: User not found in createSubscription');
         console.log('🔍 SERVICE: Phantom user ID detected:', userId);
         console.log('🔍 SERVICE: This may be from cached/stale session data');
+        
+        if (isPhantomUser) {
+          console.log('🚨 CONFIRMED: This is the specific phantom user ID we\'re tracking!');
+          console.log('🔍 This confirms the issue is stale session data with deleted user');
+        }
         
         // Check if there are any similar user IDs in database
         console.log('🔍 SERVICE: Checking for similar user IDs...');

@@ -7,9 +7,12 @@ import { useRouter } from 'next/navigation';
 import SubscriptionPlans from '@/components/subscription/subscription-plans';
 import BillingDashboard from '@/components/subscription/billing-dashboard';
 import PaymentSetup from '@/components/subscription/payment-setup';
+import { AddressAutocomplete } from '@/components/verification/address-autocomplete';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { MapPin } from 'lucide-react';
 
 export default function SubscriptionPage() {
   const { data: session, status } = useSession();
@@ -28,6 +31,18 @@ export default function SubscriptionPage() {
     planName: string;
     amount: number;
   } | null>(null);
+  
+  // 🔧 BILLING ADDRESS FIX: Add state for address collection
+  const [billingAddress, setBillingAddress] = useState('');
+  const [billingAddressValidation, setBillingAddressValidation] = useState<any>(null);
+  const [billingAddressFields, setBillingAddressFields] = useState({
+    street: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    fullAddress: ''
+  });
+  const [showAddressCollection, setShowAddressCollection] = useState(false);
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -94,11 +109,12 @@ export default function SubscriptionPage() {
       sessionUserEmail: session?.user?.email
     });
 
-    // For new users without active subscription, show payment setup
+    // For new users without active subscription, show address collection first
     if (!hasActiveSubscription) {
-      console.log('💳 New user detected - showing payment setup');
+      console.log('🏠 New user detected - showing address collection first');
+      console.log('🔧 BILLING ADDRESS DEBUG: Starting address collection for subscription');
       
-      // Fetch plan details for payment setup
+      // Fetch plan details for later use
       try {
         const response = await fetch('/api/stripe/plans-fixed');
         const data = await response.json();
@@ -116,7 +132,9 @@ export default function SubscriptionPage() {
             planName: plan.name,
             amount: amount
           });
-          setShowPaymentSetup(true);
+          
+          // 🔧 BILLING ADDRESS FIX: Show address collection before payment
+          setShowAddressCollection(true);
         } else {
           setPlanChangeError('Selected plan not found. Please try again.');
         }
@@ -248,6 +266,29 @@ export default function SubscriptionPage() {
     setPlanChangeError(error);
     setShowPaymentSetup(false);
     setSelectedPlan(null);
+  };
+
+  // 🔧 BILLING ADDRESS FIX: Address collection handlers
+  const handleAddressChange = (address: string) => {
+    console.log('🔧 BILLING ADDRESS DEBUG: Address changed:', address);
+    setBillingAddress(address);
+  };
+
+  const handleAddressValidationChange = (validation: any) => {
+    console.log('🔧 BILLING ADDRESS DEBUG: Address validation changed:', validation);
+    setBillingAddressValidation(validation);
+  };
+
+  const handleAddressFieldsChange = (fields: any) => {
+    console.log('🔧 BILLING ADDRESS DEBUG: Address fields extracted:', fields);
+    setBillingAddressFields(fields);
+  };
+
+  const handleAddressComplete = () => {
+    console.log('🔧 BILLING ADDRESS DEBUG: Address collection complete, proceeding to payment');
+    console.log('🔧 BILLING ADDRESS DEBUG: Collected address fields:', billingAddressFields);
+    setShowAddressCollection(false);
+    setShowPaymentSetup(true);
   };
 
   if (status === 'loading' || loading) {
@@ -402,6 +443,60 @@ export default function SubscriptionPage() {
         </div>
       )}
 
+      {/* 🔧 BILLING ADDRESS FIX: Address Collection Modal */}
+      <Dialog open={showAddressCollection} onOpenChange={setShowAddressCollection}>
+        <DialogContent className="max-w-lg p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Billing Address
+            </DialogTitle>
+          </DialogHeader>
+          <div className="px-6 py-4 space-y-4">
+            <p className="text-gray-600">
+              Please enter your billing address for the subscription.
+            </p>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Street Address
+              </label>
+              <AddressAutocomplete
+                value={billingAddress}
+                onChange={handleAddressChange}
+                onValidationChange={handleAddressValidationChange}
+                onFieldsChange={handleAddressFieldsChange}
+                placeholder="Enter your billing address"
+                required={true}
+                className="w-full"
+              />
+            </div>
+            
+            {billingAddressFields.street && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm font-medium text-green-800">Address Selected:</p>
+                <p className="text-sm text-green-700">{billingAddressFields.fullAddress}</p>
+              </div>
+            )}
+            
+            <div className="flex justify-end space-x-3 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAddressCollection(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAddressComplete}
+                disabled={!billingAddressFields.street}
+              >
+                Continue to Payment
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Payment Setup Modal for New Users */}
       <Dialog open={showPaymentSetup} onOpenChange={setShowPaymentSetup}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
@@ -418,18 +513,12 @@ export default function SubscriptionPage() {
                 amount={selectedPlan.amount}
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}
-                // BILLING ADDRESS FIX: Pass user information for billing address pre-population
+                // 🔧 BILLING ADDRESS FIX: Pass collected billing address data
                 userEmail={session?.user?.email || ''}
                 userName={session?.user?.name || ''}
-                prefilledBillingAddress=""
-                billingAddressValidation={null}
-                prefilledBillingFields={{
-                  street: '',
-                  city: '',
-                  state: '',
-                  zipCode: '',
-                  fullAddress: ''
-                }}
+                prefilledBillingAddress={billingAddress}
+                billingAddressValidation={billingAddressValidation}
+                prefilledBillingFields={billingAddressFields}
               />
             )}
           </div>
