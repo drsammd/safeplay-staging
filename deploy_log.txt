@@ -1,0 +1,479 @@
+npm warn exec The following package was not found and will be installed: vercel@44.4.0
+npm warn deprecated path-match@1.2.4: This package is archived and no longer maintained. For support, visit https://github.com/expressjs/express/discussions
+Vercel CLI 44.4.0
+WARN! `--confirm` is deprecated, please use `--yes` instead
+Retrieving project…
+Deploying my-safe-play/safeplay-staging
+Uploading [--------------------] (0.0B/495.1KB)
+Uploading [=====---------------] (138.5KB/495.1KB)
+Uploading [==========----------] (250.5KB/495.1KB)
+Uploading [===============-----] (378.5KB/495.1KB)
+Uploading [====================] (495.1KB/495.1KB)
+Inspect: https://vercel.com/my-safe-play/safeplay-staging/3XafaPmCH538VTtA81q4AufYVKof [2s]
+Production: https://safeplay-staging-qvpfe7vpi-my-safe-play.vercel.app [2s]
+https://safeplay-staging-qvpfe7vpi-my-safe-play.vercel.appQueued
+2025-07-11T05:01:02.376Z  Running build in Washington, D.C., USA (East) – iad1
+2025-07-11T05:01:02.377Z  Build machine configuration: 4 cores, 8 GB
+2025-07-11T05:01:02.392Z  Retrieving list of deployment files...
+2025-07-11T05:01:02.945Z  Downloading 923 deployment files...
+2025-07-11T05:01:08.029Z  Restored build cache from previous deployment (B8QrBPzi2wz8gMzqhGHjv64m7D6V)
+2025-07-11T05:01:09.703Z  Running "vercel build"
+2025-07-11T05:01:10.179Z  Vercel CLI 44.3.0
+2025-07-11T05:01:10.734Z  Running "install" command: `npm install --legacy-peer-deps`...
+2025-07-11T05:01:14.164Z  
+2025-07-11T05:01:14.164Z  > mysafeplay@1.2.9-test postinstall
+2025-07-11T05:01:14.164Z  > prisma generate
+2025-07-11T05:01:14.164Z  
+2025-07-11T05:01:14.994Z  Environment variables loaded from .env
+2025-07-11T05:01:14.996Z  Prisma schema loaded from prisma/schema.prisma
+2025-07-11T05:01:17.282Z  
+2025-07-11T05:01:17.283Z  ✔ Generated Prisma Client (v6.11.1) to ./node_modules/@prisma/client in 1.22s
+2025-07-11T05:01:17.283Z  
+2025-07-11T05:01:17.283Z  Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+2025-07-11T05:01:17.283Z  
+2025-07-11T05:01:17.283Z  Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+2025-07-11T05:01:17.283Z  
+2025-07-11T05:01:17.319Z  
+2025-07-11T05:01:17.320Z  up to date, audited 1289 packages in 6s
+2025-07-11T05:01:17.320Z  
+2025-07-11T05:01:17.320Z  222 packages are looking for funding
+2025-07-11T05:01:17.320Z    run `npm fund` for details
+2025-07-11T05:01:17.347Z  
+2025-07-11T05:01:17.347Z  15 vulnerabilities (2 low, 8 moderate, 5 high)
+2025-07-11T05:01:17.347Z  
+2025-07-11T05:01:17.347Z  To address issues that do not require attention, run:
+2025-07-11T05:01:17.347Z    npm audit fix
+2025-07-11T05:01:17.347Z  
+2025-07-11T05:01:17.347Z  To address all issues (including breaking changes), run:
+2025-07-11T05:01:17.347Z    npm audit fix --force
+2025-07-11T05:01:17.347Z  
+2025-07-11T05:01:17.348Z  Run `npm audit` for details.
+2025-07-11T05:01:17.381Z  Detected Next.js version: 15.3.5
+2025-07-11T05:01:17.382Z  Running "./build.sh"
+2025-07-11T05:01:17.385Z  Starting SafePlay build with TypeScript checking completely disabled...
+2025-07-11T05:01:17.385Z  Environment variables set:
+2025-07-11T05:01:17.385Z  SKIP_TYPE_CHECK=true
+2025-07-11T05:01:17.385Z  CI=false
+2025-07-11T05:01:17.385Z  TSC_COMPILE_ON_ERROR=true
+2025-07-11T05:01:17.385Z  Generating Prisma client...
+2025-07-11T05:01:18.397Z  Environment variables loaded from .env
+2025-07-11T05:01:18.434Z  Prisma schema loaded from prisma/schema.prisma
+2025-07-11T05:01:20.479Z  
+2025-07-11T05:01:20.479Z  ✔ Generated Prisma Client (v6.11.1) to ./node_modules/@prisma/client in 1.05s
+2025-07-11T05:01:20.479Z  
+2025-07-11T05:01:20.480Z  Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+2025-07-11T05:01:20.480Z  
+2025-07-11T05:01:20.480Z  Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+2025-07-11T05:01:20.480Z  
+2025-07-11T05:01:20.506Z  npm notice
+2025-07-11T05:01:20.506Z  npm notice New major version of npm available! 10.9.2 -> 11.4.2
+2025-07-11T05:01:20.506Z  npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.2
+2025-07-11T05:01:20.506Z  npm notice To update run: npm install -g npm@11.4.2
+2025-07-11T05:01:20.506Z  npm notice
+2025-07-11T05:01:20.512Z  Prisma client generated successfully
+2025-07-11T05:01:20.512Z  Creating database schema...
+2025-07-11T05:01:21.454Z  Environment variables loaded from .env
+2025-07-11T05:01:21.479Z  Prisma schema loaded from prisma/schema.prisma
+2025-07-11T05:01:21.510Z  Datasource "db": PostgreSQL database "neondb", schema "public" at "ep-tight-fog-adn7uvk9-pooler.c-2.us-east-1.aws.neon.tech"
+2025-07-11T05:01:21.995Z  
+2025-07-11T05:01:22.586Z  The PostgreSQL database "neondb" schema "public" at "ep-tight-fog-adn7uvk9-pooler.c-2.us-east-1.aws.neon.tech" was successfully reset.
+2025-07-11T05:01:25.494Z  
+2025-07-11T05:01:25.495Z  🚀  Your database is now in sync with your Prisma schema. Done in 2.91s
+2025-07-11T05:01:25.495Z  
+2025-07-11T05:01:25.496Z  Running generate... (Use --skip-generate to skip the generators)
+2025-07-11T05:01:26.462Z  [2K[2K[GRunning generate... - Prisma Client
+2025-07-11T05:01:27.463Z  [2K[2K[G✔ Generated Prisma Client (v6.11.1) to ./node_modules/@prisma/client in 1.00s
+2025-07-11T05:01:27.463Z  
+2025-07-11T05:01:27.499Z  ✅ Database schema created successfully
+2025-07-11T05:01:27.500Z  Starting Next.js build...
+2025-07-11T05:01:27.767Z  yarn run v1.22.19
+2025-07-11T05:01:27.779Z  warning package.json: No license field
+2025-07-11T05:01:27.792Z  $ next build
+2025-07-11T05:01:28.557Z     ▲ Next.js 15.3.5
+2025-07-11T05:01:28.557Z     - Environments: .env.production, .env
+2025-07-11T05:01:28.557Z  
+2025-07-11T05:01:28.597Z     Creating an optimized production build ...
+2025-07-11T05:02:05.397Z   ✓ Compiled successfully in 31.0s
+2025-07-11T05:02:05.399Z     Skipping validation of types
+2025-07-11T05:02:05.400Z     Skipping linting
+2025-07-11T05:02:05.689Z     Collecting page data ...
+2025-07-11T05:02:06.930Z  [dotenv@17.0.1] injecting env (0) from .env – [tip] encrypt with dotenvx: https://dotenvx.com
+2025-07-11T05:02:07.416Z  AWS Config: Using credentials from .env file (staging-...)
+2025-07-11T05:02:07.443Z  (node:486) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+2025-07-11T05:02:07.444Z   SDK releases are limited to address critical bug fixes and security issues only.
+2025-07-11T05:02:07.445Z  
+2025-07-11T05:02:07.445Z  Please migrate your code to use AWS SDK for JavaScript (v3).
+2025-07-11T05:02:07.445Z  For more information, check the blog post at https://a.co/cUPnyil
+2025-07-11T05:02:07.445Z  (Use `node --trace-warnings ...` to show where the warning was created)
+2025-07-11T05:02:07.465Z  AWS Config: Using credentials from .env file (staging-...)
+2025-07-11T05:02:07.477Z  (node:492) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+2025-07-11T05:02:07.478Z   SDK releases are limited to address critical bug fixes and security issues only.
+2025-07-11T05:02:07.478Z  
+2025-07-11T05:02:07.478Z  Please migrate your code to use AWS SDK for JavaScript (v3).
+2025-07-11T05:02:07.479Z  For more information, check the blog post at https://a.co/cUPnyil
+2025-07-11T05:02:07.480Z  (Use `node --trace-warnings ...` to show where the warning was created)
+2025-07-11T05:02:07.511Z  AWS Config: Using credentials from .env file (staging-...)
+2025-07-11T05:02:07.523Z  (node:485) NOTE: The AWS SDK for JavaScript (v2) is in maintenance mode.
+2025-07-11T05:02:07.523Z   SDK releases are limited to address critical bug fixes and security issues only.
+2025-07-11T05:02:07.524Z  
+2025-07-11T05:02:07.524Z  Please migrate your code to use AWS SDK for JavaScript (v3).
+2025-07-11T05:02:07.524Z  For more information, check the blog post at https://a.co/cUPnyil
+2025-07-11T05:02:07.524Z  (Use `node --trace-warnings ...` to show where the warning was created)
+2025-07-11T05:02:07.582Z  Handlebars disabled during build - email templating will use fallback
+2025-07-11T05:02:07.583Z  Handlebars not available, skipping helper registration
+2025-07-11T05:02:07.666Z  Handlebars disabled during build - email templating will use fallback
+2025-07-11T05:02:07.670Z  Handlebars not available, skipping helper registration
+2025-07-11T05:02:07.671Z  Handlebars disabled during build - email templating will use fallback
+2025-07-11T05:02:07.672Z  Handlebars disabled during build - email templating will use fallback
+2025-07-11T05:02:07.673Z  Handlebars disabled during build - email templating will use fallback
+2025-07-11T05:02:07.673Z  Handlebars not available, skipping helper registration
+2025-07-11T05:02:07.682Z  Handlebars disabled during build - email templating will use fallback
+2025-07-11T05:02:14.969Z     Generating static pages (0/84) ...
+2025-07-11T05:02:16.723Z     Generating static pages (21/84) 
+2025-07-11T05:02:16.723Z     Generating static pages (42/84) 
+2025-07-11T05:02:16.995Z     Generating static pages (63/84) 
+2025-07-11T05:02:17.156Z   ✓ Generating static pages (84/84)
+2025-07-11T05:02:19.697Z     Finalizing page optimization ...
+2025-07-11T05:02:19.698Z     Collecting build traces ...
+2025-07-11T05:02:36.851Z  
+2025-07-11T05:02:36.871Z  Route (app)                                                Size  First Load JS
+2025-07-11T05:02:36.871Z  ┌ ○ /                                                   8.69 kB         139 kB
+2025-07-11T05:02:36.871Z  ├ ○ /_not-found                                           686 B         103 kB
+2025-07-11T05:02:36.871Z  ├ ○ /admin                                              2.65 kB         105 kB
+2025-07-11T05:02:36.871Z  ├ ○ /admin/analytics                                    2.68 kB         105 kB
+2025-07-11T05:02:36.871Z  ├ ƒ /admin/discount-analytics                           20.8 kB         289 kB
+2025-07-11T05:02:36.871Z  ├ ƒ /admin/discount-codes                                5.4 kB         162 kB
+2025-07-11T05:02:36.872Z  ├ ƒ /admin/email-automation                             10.8 kB         134 kB
+2025-07-11T05:02:36.872Z  ├ ƒ /admin/payments                                     9.57 kB         254 kB
+2025-07-11T05:02:36.872Z  ├ ƒ /admin/settings                                     10.4 kB         158 kB
+2025-07-11T05:02:36.872Z  ├ ○ /admin/user-management                              7.87 kB         165 kB
+2025-07-11T05:02:36.872Z  ├ ƒ /admin/users                                        10.2 kB         158 kB
+2025-07-11T05:02:36.872Z  ├ ○ /admin/venues                                       2.92 kB         105 kB
+2025-07-11T05:02:36.872Z  ├ ○ /admin/verification                                 7.62 kB         162 kB
+2025-07-11T05:02:36.873Z  ├ ƒ /admin/verification/identity/[id]                   11.1 kB         154 kB
+2025-07-11T05:02:36.873Z  ├ ƒ /api/admin/deployment-seed                            686 B         103 kB
+2025-07-11T05:02:36.873Z  ├ ƒ /api/admin/users                                      686 B         103 kB
+2025-07-11T05:02:36.873Z  ├ ƒ /api/admin/users/[userId]                             686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/admin/verification/analytics                     686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/admin/verification/identity/[id]                 686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/admin/verification/pending                       686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/age-estimation                                686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/analysis                                      686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/analytics/export                              686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/behavior-detection                            686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/crowd-analysis                                686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/emotion-detection                             686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/insights                                      686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/model-performance                             686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/real-time                                     686 B         103 kB
+2025-07-11T05:02:36.874Z  ├ ƒ /api/ai/safety-scores                                 686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/ai/settings                                      686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/ai/visual-patterns                               686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/ai/voice-analysis                                686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/alert-rules                                      686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/alert-rules/[id]                                 686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/alerts                                           686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/alerts/[id]/resolve                              686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/aggregation                            686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/camera-performance                     686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/config                                 686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/engagement                             686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/events                                 686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/incidents                              686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/metrics                                686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/reports                                686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/analytics/traffic                                686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/auth/[...nextauth]                               686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/auth/auto-signin                                 686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/auth/check-2fa                                   686 B         103 kB
+2025-07-11T05:02:36.875Z  ├ ƒ /api/auth/check-email                                 686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/auth/signup                                      686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/auth/user                                        686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/auth/verify-auto-signin                          686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/aws/status                                       686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/biometric                                        686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/biometric/enroll                                 686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/cameras                                          686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/cameras/[id]                                     686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/cameras/recommendations                          686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/check-in-out                                     686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/check-in-out/bulk                                686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/check-in-out/status                              686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/child-sightings                                  686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/children                                         686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/contact                                          686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/connection-variations                      686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/database-connection-test                   686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/database-test                              686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/env                                        686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/environment                                686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/network-diagnostics                        686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/quick-health-check                         686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/staging-password                           686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/test-auth                                  686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/url-encoding-test                          686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/debug/users                                      686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/demo-diagnostics/complete-check                  686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/demo-diagnostics/emergency-session               686 B         103 kB
+2025-07-11T05:02:36.876Z  ├ ƒ /api/demo-diagnostics/force-create                    686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/demo-diagnostics/status                          686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/demo-diagnostics/test-auth                       686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/discount-codes                                   686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/discount-codes/[id]                              686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/discount-codes/analytics                         686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/discount-codes/apply                             686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/discount-codes/bulk-generate                     686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/discount-codes/validate                          686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/analytics                       686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/campaigns                       686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/campaigns/[id]                  686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/campaigns/[id]/analytics        686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/onboarding                      686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/onboarding/analytics            686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/onboarding/test                 686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/preferences                     686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/queue                           686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/rules                           686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/rules/[id]                      686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/templates                       686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/templates/[id]                  686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/templates/[id]/preview          686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/triggers                        686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/unsubscribe                     686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/weekly-campaigns                686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/weekly-campaigns/preferences    686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-automation/weekly-campaigns/test           686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-tracking/click                             686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/email-tracking/open                              686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/emergency-contacts                               686 B         103 kB
+2025-07-11T05:02:36.877Z  ├ ƒ /api/emergency-contacts/[id]                          686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/enhanced-alerts                                  686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/enhanced-alerts/[id]                             686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/enhanced-alerts/[id]/acknowledge                 686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/faces/collections                                686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/faces/detect                                     686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/faces/manage                                     686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/faces/recognize                                  686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/faces/register                                   686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/activity-logs                             686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/child-access/[id]                         686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/invitations                               686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/invitations/[id]                          686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/invitations/accept-by-token               686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/members                                   686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/members/[id]                              686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/members/[id]/child-access                 686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/permissions                               686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/family/permissions/[id]                          686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/floor-plans                                      686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/floor-plans/[id]                                 686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/floor-plans/upload                               686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/health                                           686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/kiosks                                           686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/kiosks/sessions                                  686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/membership                                       686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/membership/packages                              686 B         103 kB
+2025-07-11T05:02:36.878Z  ├ ƒ /api/memories                                         686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/memories/[id]/purchase                           686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/chats                                  686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/chats/[chatId]                         686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/chats/[chatId]/messages                686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/chats/[chatId]/messages/read           686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/community/events                       686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/community/groups                       686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/community/groups/[groupId]             686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/community/groups/[groupId]/join        686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/friendships                            686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/friendships/[friendshipId]             686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/media-sharing                          686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/navigation                             686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/navigation/[requestId]                 686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/notifications                          686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/parent-connections                     686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/parent-connections/[connectionId]      686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/permissions                            686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/permissions/[permissionId]             686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/messaging/privacy/settings                       686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/mobile/checkin                                   686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/mobile/devices                                   686 B         103 kB
+2025-07-11T05:02:36.880Z  ├ ƒ /api/mobile/location                                  686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/mobile/notifications                             686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/mobile/photos                                    686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/mobile/qr                                        686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/mobile/sync                                      686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/pickup                                           686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/pickup/events                                    686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/pickup/verify                                    686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/pos                                              686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/pos/refund                                       686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/qr-codes                                         686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/qr-codes/validate                                686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/security/audit                                   686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/security/compliance                              686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/setup-demo                                       686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/socket.io                                        686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/staging-auth                                     686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/stripe/confirm-payment-demo                      686 B         103 kB
+2025-07-11T05:02:36.881Z  ├ ƒ /api/stripe/connect/onboard                           686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/connect/status                            686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/connect/webhooks                          686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/payment-methods                           686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/payment-methods/attach                    686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/payment-methods/delete                    686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/plans                                     686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/plans-demo                                686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/plans-fixed                               686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/setup-intent                              686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/subscription-demo                         686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/subscription/cancel                       686 B         103 kB
+2025-07-11T05:02:36.882Z  ├ ƒ /api/stripe/subscription/create                       686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/stripe/subscription/create-fixed                 686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/stripe/subscription/create-signup                686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/stripe/subscription/modify                       686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/stripe/subscription/modify-fixed                 686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/stripe/subscription/status                       686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/stripe/usage/track                               686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/stripe/webhooks                                  686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/agents                                   686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/agents/[agentId]                         686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/ai-chat                                  686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/analytics                                686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/chat-sessions                            686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/chat-sessions/[sessionId]                686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/chat-sessions/[sessionId]/messages       686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/knowledge-base                           686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/knowledge-base/[slug]                    686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/knowledge-base/[slug]/feedback           686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/knowledge-base/search                    686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/tickets                                  686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/tickets/[id]                             686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/support/tickets/[id]/messages                    686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/venues                                           686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/verification/address/autocomplete                686 B         103 kB
+2025-07-11T05:02:36.883Z  ├ ƒ /api/verification/address/validate                    686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/email/send                          686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/email/verify                        686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/enhanced-status                     686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/identity/analysis/[id]              686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/identity/automated                  686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/identity/enhanced                   686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/identity/status                     686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/identity/upload                     686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/phone/initiate                      686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/phone/verify                        686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/push/register                       686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/push/send                           686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/status                              686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/two-factor/disable                  686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/two-factor/send-sms                 686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/two-factor/setup-app                686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/two-factor/setup-sms                686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/two-factor/verify-app               686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/webauthn/authenticate/options       686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/webauthn/authenticate/verify        686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/webauthn/credentials                686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/webauthn/register/options           686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/verification/webauthn/register/verify            686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/version                                          686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/workflows                                        686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/workflows/execute                                686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/zones                                            686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/zones/[zoneId]                                   686 B         103 kB
+2025-07-11T05:02:36.884Z  ├ ƒ /api/zones/[zoneId]/access-rules                      686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/[zoneId]/capacity                          686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/[zoneId]/evacuation                        686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/[zoneId]/notifications                     686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/[zoneId]/violations                        686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/analytics                                  686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/capacity-monitoring                        686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/emergency                                  686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/intelligence                               686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/optimization                               686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/realtime                                   686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ƒ /api/zones/websocket                                  686 B         103 kB
+2025-07-11T05:02:36.885Z  ├ ○ /auth-diagnostics                                   4.77 kB         115 kB
+2025-07-11T05:02:36.885Z  ├ ○ /auth/signin                                        7.98 kB         140 kB
+2025-07-11T05:02:36.885Z  ├ ○ /auth/signup                                        9.44 kB         200 kB
+2025-07-11T05:02:36.885Z  ├ ○ /contact                                            2.06 kB         113 kB
+2025-07-11T05:02:36.885Z  ├ ○ /demo-status                                        4.46 kB         115 kB
+2025-07-11T05:02:36.885Z  ├ ○ /docs                                                 147 B         124 kB
+2025-07-11T05:02:36.885Z  ├ ○ /docs/parent                                          147 B         124 kB
+2025-07-11T05:02:36.885Z  ├ ○ /docs/quick-reference                               3.06 kB         120 kB
+2025-07-11T05:02:36.885Z  ├ ○ /docs/venue-admin                                     147 B         124 kB
+2025-07-11T05:02:36.885Z  ├ ○ /emergency-access                                   5.43 kB         116 kB
+2025-07-11T05:02:36.885Z  ├ ○ /faq                                                3.32 kB         126 kB
+2025-07-11T05:02:36.885Z  ├ ○ /force-create-demo                                  4.72 kB         115 kB
+2025-07-11T05:02:36.885Z  ├ ○ /memory-features                                      187 B         106 kB
+2025-07-11T05:02:36.885Z  ├ ○ /offline                                            3.94 kB         118 kB
+2025-07-11T05:02:36.885Z  ├ ○ /parent                                             5.02 kB         154 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/account                                      2.9 kB         114 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/children                                    4.34 kB         153 kB
+2025-07-11T05:02:36.886Z  ├ ƒ /parent/discount-history                            5.06 kB         132 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/family                                      26.2 kB         181 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/memories                                    4.07 kB         111 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/mobile                                      10.9 kB         167 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/mobile/check-in                             9.75 kB         198 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/mobile/checkin                              8.65 kB         156 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/mobile/emergency                            8.49 kB         150 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/mobile/location                             7.76 kB         155 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/mobile/photos                               9.24 kB         156 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/mobile/settings                             8.58 kB         150 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/security-enhancement                        3.08 kB         105 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/subscription                                12.7 kB         209 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/subscription/checkout                       3.86 kB         147 kB
+2025-07-11T05:02:36.886Z  ├ ○ /parent/subscription/complete                       3.23 kB         123 kB
+2025-07-11T05:02:36.886Z  ├ ○ /privacy                                              194 B         111 kB
+2025-07-11T05:02:36.886Z  ├ ○ /safety                                               187 B         106 kB
+2025-07-11T05:02:36.886Z  ├ ○ /staging-auth                                       6.91 kB         109 kB
+2025-07-11T05:02:36.886Z  ├ ○ /terms                                                194 B         111 kB
+2025-07-11T05:02:36.886Z  ├ ○ /test-login                                         5.34 kB         116 kB
+2025-07-11T05:02:36.886Z  ├ ○ /testimonials                                         194 B         111 kB
+2025-07-11T05:02:36.887Z  ├ ○ /unauthorized                                         187 B         106 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin                                         3.9 kB         109 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/advanced-zones                         5.54 kB         132 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/ai-analytics                           5.64 kB         276 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/ai-features                            16.4 kB         181 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/alerts                                 9.68 kB         167 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/biometric                              10.5 kB         181 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/check-in-out                           9.06 kB         169 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/demo                                   12.4 kB         135 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/emergency-management                   8.38 kB         132 kB
+2025-07-11T05:02:36.887Z  ├ ƒ /venue-admin/floor-plans                            36.6 kB         204 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/kiosks                                   10 kB         198 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/payment-setup                          6.58 kB         133 kB
+2025-07-11T05:02:36.887Z  ├ ƒ /venue-admin/payment-setup/complete                   187 B         106 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/pickup                                 11.4 kB         179 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/qr-codes                               5.64 kB         199 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/revenue                                6.18 kB         157 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/tracking                               3.91 kB         119 kB
+2025-07-11T05:02:36.887Z  ├ ○ /venue-admin/zone-analytics                         5.84 kB         157 kB
+2025-07-11T05:02:36.887Z  ├ ƒ /venue-admin/zone-configuration                     9.36 kB         148 kB
+2025-07-11T05:02:36.887Z  └ ○ /verification                                       3.73 kB         124 kB
+2025-07-11T05:02:36.888Z  + First Load JS shared by all                            102 kB
+2025-07-11T05:02:36.888Z    ├ chunks/1684-020f1067e1ff8f9a.js                     46.8 kB
+2025-07-11T05:02:36.888Z    ├ chunks/4bd1b696-86b7f7b384ded616.js                 53.2 kB
+2025-07-11T05:02:36.888Z    └ other shared chunks (total)                         1.98 kB
+2025-07-11T05:02:36.888Z  
+2025-07-11T05:02:36.888Z  Route (pages)                                              Size  First Load JS
+2025-07-11T05:02:36.888Z  ─ ƒ /api/test-db                                            0 B        81.3 kB
+2025-07-11T05:02:36.888Z  + First Load JS shared by all                           81.3 kB
+2025-07-11T05:02:36.888Z    ├ chunks/framework-400494aa14c16ece.js                44.9 kB
+2025-07-11T05:02:36.888Z    ├ chunks/main-0396c3673df79382.js                     34.5 kB
+2025-07-11T05:02:36.888Z    └ other shared chunks (total)                         1.94 kB
+2025-07-11T05:02:36.888Z  
+2025-07-11T05:02:36.888Z  ƒ Middleware                                            60.9 kB
+2025-07-11T05:02:36.891Z  
+2025-07-11T05:02:36.891Z  ○  (Static)   prerendered as static content
+2025-07-11T05:02:36.891Z  ƒ  (Dynamic)  server-rendered on demand
+2025-07-11T05:02:36.891Z  
+2025-07-11T05:02:36.937Z  Done in 69.17s.
+2025-07-11T05:02:36.946Z  Running deployment database seeding...
+2025-07-11T05:02:37.800Z  [dotenv@17.0.1] injecting env (0) from .env – [tip] encrypt with dotenvx: https://dotenvx.com
+2025-07-11T05:02:37.806Z  🚀 DEPLOYMENT-READY DATABASE SETUP
+2025-07-11T05:02:37.806Z  ============================================================
+2025-07-11T05:02:37.806Z  Environment: production
+2025-07-11T05:02:37.806Z  Database: Connected
+2025-07-11T05:02:37.806Z  
+2025-07-11T05:02:37.806Z  🔐 ENSURING CRITICAL ACCOUNTS EXIST...
+2025-07-11T05:02:37.806Z  ============================================================
+2025-07-11T05:02:37.919Z  ➕ admin@mysafeplay.ai: Creating new account

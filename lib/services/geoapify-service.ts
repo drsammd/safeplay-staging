@@ -108,8 +108,12 @@ export class GeoapifyService {
 
       const data: any = await response.json();
       
-      // FIXED: Geoapify returns 'results' not 'features' 
+      console.log(`🔍 GEOAPIFY AUTOCOMPLETE DEBUG: Raw API response:`, JSON.stringify(data, null, 2));
+      
+      // FIXED: Geoapify autocomplete returns 'results' not 'features' 
       const results = data.results || [];
+      console.log(`🔍 GEOAPIFY AUTOCOMPLETE DEBUG: Found ${results.length} results`);
+      
       const suggestions = results.map((result: any, index: number) => {
         // FIXED: Access result properties directly (not result.properties)
         const props = result;
@@ -158,7 +162,7 @@ export class GeoapifyService {
       // IMPROVED: Filter out duplicates and ensure variety
       const uniqueSuggestions = this.removeDuplicateSuggestions(suggestions);
       
-      console.log(`📍 Geoapify returned ${data.features?.length || 0} features, processed to ${uniqueSuggestions.length} unique suggestions for: "${input}"`);
+      console.log(`📍 Geoapify returned ${results.length} results, processed to ${uniqueSuggestions.length} unique suggestions for: "${input}"`);
       
       return uniqueSuggestions.slice(0, 8); // Return up to 8 suggestions instead of 5
       
@@ -234,7 +238,9 @@ export class GeoapifyService {
       }
 
       // IMPROVED: If direct search failed, get MORE suggestions with better parameters
+      console.log(`🔍 GEOAPIFY VALIDATION DEBUG: Direct search failed, getting suggestions for: "${address}"`);
       const suggestions = await this.autocompleteAddress(address, countryRestriction);
+      console.log(`🔍 GEOAPIFY VALIDATION DEBUG: Got ${suggestions.length} suggestions from autocomplete`);
       
       return {
         isValid: false,
