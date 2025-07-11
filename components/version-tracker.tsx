@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 
 // Fallback version configuration
 const FALLBACK_VERSION_CONFIG = {
-  version: "1.2.23-staging",
+  version: "1.2.24-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
-  commit: "comprehensive-debugging-enhancements",
+  commit: "address-flow-and-signup-api-fixes",
   branch: "main"
 };
 

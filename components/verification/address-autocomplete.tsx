@@ -187,25 +187,37 @@ export function AddressAutocomplete({
   const validateAddress = async (address: string, placeId?: string) => {
     setIsValidating(true);
     try {
-      console.log(`🔍 Address validation: Validating "${address}"`);
+      console.log(`🔍 BILLING ADDRESS DEBUG: === STARTING ADDRESS VALIDATION ===`);
+      console.log(`🔍 BILLING ADDRESS DEBUG: address:`, address);
+      console.log(`🔍 BILLING ADDRESS DEBUG: placeId:`, placeId);
+      console.log(`🔍 BILLING ADDRESS DEBUG: countryRestriction:`, countryRestriction);
+      
+      const requestBody = {
+        address,
+        placeId,
+        countryRestriction
+      };
+      console.log(`🔍 BILLING ADDRESS DEBUG: API request body:`, JSON.stringify(requestBody, null, 2));
       
       const response = await fetch('/api/verification/address/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          address,
-          placeId,
-          countryRestriction
-        })
+        body: JSON.stringify(requestBody)
       });
+
+      console.log(`🔍 BILLING ADDRESS DEBUG: API response status:`, response.status, response.ok);
 
       if (response.ok) {
         const data = await response.json();
+        console.log(`🔍 BILLING ADDRESS DEBUG: Raw API response data:`, JSON.stringify(data, null, 2));
+        
         const validation = data.validation as AddressValidationResult;
         
-        console.log(`✅ Address validation result:`, {
+        console.log(`🔍 BILLING ADDRESS DEBUG: Extracted validation object:`, JSON.stringify(validation, null, 2));
+        console.log(`✅ BILLING ADDRESS DEBUG: Address validation result summary:`, {
           isValid: validation.isValid,
           confidence: validation.confidence,
+          hasStandardizedAddress: !!validation.standardizedAddress,
           hasSuggestions: validation.suggestions?.length || 0
         });
         
@@ -214,32 +226,74 @@ export function AddressAutocomplete({
 
         // Extract address fields if validation was successful
         if (validation.isValid && validation.standardizedAddress) {
+          console.log(`🔧 BILLING ADDRESS DEBUG: === CALLING parseAddressFields ===`);
+          console.log(`🔧 BILLING ADDRESS DEBUG: standardizedAddress being passed:`, JSON.stringify(validation.standardizedAddress, null, 2));
+          
           const fields = parseAddressFields(validation.standardizedAddress);
+          
+          console.log(`🔧 BILLING ADDRESS DEBUG: === CALLING onFieldsChange CALLBACK ===`);
+          console.log(`🔧 BILLING ADDRESS DEBUG: fields being passed to onFieldsChange:`, JSON.stringify(fields, null, 2));
+          
           onFieldsChange?.(fields);
+          
+          console.log(`🔧 BILLING ADDRESS DEBUG: ✅ onFieldsChange callback completed`);
+        } else {
+          console.log(`⚠️ BILLING ADDRESS DEBUG: No valid standardized address to parse`);
+          console.log(`⚠️ BILLING ADDRESS DEBUG: validation.isValid:`, validation.isValid);
+          console.log(`⚠️ BILLING ADDRESS DEBUG: validation.standardizedAddress:`, validation.standardizedAddress);
         }
       } else {
-        console.error('Address validation API error:', response.status);
+        console.error('🚨 BILLING ADDRESS DEBUG: Address validation API error:', response.status);
+        const errorText = await response.text();
+        console.error('🚨 BILLING ADDRESS DEBUG: Error response text:', errorText);
       }
     } catch (error) {
-      console.error('Error validating address:', error);
+      console.error('🚨 BILLING ADDRESS DEBUG: Exception during address validation:', error);
+      console.error('🚨 BILLING ADDRESS DEBUG: Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      });
     } finally {
       setIsValidating(false);
+      console.log(`🔍 BILLING ADDRESS DEBUG: === ADDRESS VALIDATION COMPLETED ===`);
     }
   };
 
   const parseAddressFields = (standardizedAddress: StandardizedAddress): AddressFields => {
-    const street = [
-      standardizedAddress.street_number,
-      standardizedAddress.route
-    ].filter(Boolean).join(' ');
+    console.log('🔧 BILLING ADDRESS DEBUG: === PARSING ADDRESS FIELDS ===');
+    console.log('🔧 BILLING ADDRESS DEBUG: standardizedAddress input:', JSON.stringify(standardizedAddress, null, 2));
+    
+    // Extract street address with more fallback options
+    let street = '';
+    if (standardizedAddress.street_number && standardizedAddress.route) {
+      street = `${standardizedAddress.street_number} ${standardizedAddress.route}`;
+    } else if (standardizedAddress.route) {
+      street = standardizedAddress.route;
+    } else if (standardizedAddress.formatted_address) {
+      // Try to extract street from formatted address as fallback
+      const addressParts = standardizedAddress.formatted_address.split(',');
+      street = addressParts[0]?.trim() || '';
+    }
 
-    return {
+    const result = {
       street: street || '',
       city: standardizedAddress.locality || '',
       state: standardizedAddress.administrative_area_level_1 || '',
       zipCode: standardizedAddress.postal_code || '',
       fullAddress: standardizedAddress.formatted_address || ''
     };
+    
+    console.log('🔧 BILLING ADDRESS DEBUG: Parsed fields result:', JSON.stringify(result, null, 2));
+    console.log('🔧 BILLING ADDRESS DEBUG: Field breakdown:');
+    console.log('🔧 BILLING ADDRESS DEBUG:   - street:', result.street, '(from:', standardizedAddress.street_number, '+', standardizedAddress.route, ')');
+    console.log('🔧 BILLING ADDRESS DEBUG:   - city:', result.city, '(from locality:', standardizedAddress.locality, ')');
+    console.log('🔧 BILLING ADDRESS DEBUG:   - state:', result.state, '(from admin_area_1:', standardizedAddress.administrative_area_level_1, ')');
+    console.log('🔧 BILLING ADDRESS DEBUG:   - zipCode:', result.zipCode, '(from postal_code:', standardizedAddress.postal_code, ')');
+    console.log('🔧 BILLING ADDRESS DEBUG:   - fullAddress:', result.fullAddress, '(from formatted_address:', standardizedAddress.formatted_address, ')');
+    console.log('🔧 BILLING ADDRESS DEBUG: === END PARSING ADDRESS FIELDS ===');
+    
+    return result;
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -257,9 +311,12 @@ export function AddressAutocomplete({
   };
 
   const handleSuggestionClick = (suggestion: AddressSuggestion) => {
-    console.log('🎯 Suggestion clicked:', suggestion);
-    console.log('🔧 BILLING ADDRESS DEBUG: Auto-triggering validation for address selection');
+    console.log('🎯 BILLING ADDRESS DEBUG: === SUGGESTION CLICKED ===');
+    console.log('🎯 BILLING ADDRESS DEBUG: suggestion object:', JSON.stringify(suggestion, null, 2));
+    console.log('🎯 BILLING ADDRESS DEBUG: suggestion.description:', suggestion.description);
+    console.log('🎯 BILLING ADDRESS DEBUG: suggestion.place_id:', suggestion.place_id);
     
+    console.log('🔧 BILLING ADDRESS DEBUG: Setting input value and state...');
     onChange(suggestion.description);
     setSelectedSuggestion(suggestion);
     setShowSuggestions(false);
@@ -269,11 +326,21 @@ export function AddressAutocomplete({
     
     // 🔧 BILLING ADDRESS FIX: Automatically trigger validation when address is selected
     // This will populate billing address fields via onFieldsChange callback
-    console.log('🔧 BILLING ADDRESS DEBUG: Triggering automatic validation for:', suggestion.description);
+    console.log('🔧 BILLING ADDRESS DEBUG: About to trigger automatic validation...');
+    console.log('🔧 BILLING ADDRESS DEBUG: Address to validate:', suggestion.description);
+    console.log('🔧 BILLING ADDRESS DEBUG: Place ID to use:', suggestion.place_id);
+    
+    // Trigger validation immediately for better UX
     setTimeout(() => {
-      validateAddress(suggestion.description);
-      inputRef.current?.focus();
-    }, 100); // Small delay to ensure state is updated
+      console.log('🔧 BILLING ADDRESS DEBUG: === STARTING AUTOMATIC VALIDATION AFTER SUGGESTION CLICK ===');
+      validateAddress(suggestion.description, suggestion.place_id).then(() => {
+        console.log('🔧 BILLING ADDRESS DEBUG: ✅ Automatic validation completed after suggestion click');
+        inputRef.current?.focus();
+      }).catch((error) => {
+        console.error('🔧 BILLING ADDRESS DEBUG: ❌ Automatic validation failed after suggestion click:', error);
+        inputRef.current?.focus();
+      });
+    }, 150); // Slightly longer delay to ensure all state updates are complete
   };
 
   const getValidationIcon = () => {

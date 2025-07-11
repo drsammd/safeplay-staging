@@ -47,19 +47,43 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   // COMPREHENSIVE DEBUGGING - START
   const debugId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Signup API called at ${new Date().toISOString()}`);
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: === SIGNUP API CALLED ===`);
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Timestamp: ${new Date().toISOString()}`);
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Request URL: ${request.url}`);
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Request method: ${request.method}`);
   
-  // Parse and validate request body
-  const body = await request.json();
-  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Request body received:`, {
-    email: body.email,
-    name: body.name,
-    role: body.role,
-    hasSubscriptionData: !!body.subscriptionData,
-    hasSelectedPlan: !!body.selectedPlan,
-    subscriptionDataDebugId: body.subscriptionData?.debugId,
-    fullBodyKeys: Object.keys(body)
-  });
+  // Parse and validate request body with comprehensive error handling
+  let body;
+  try {
+    console.log(`🔍 SIGNUP DEBUG [${debugId}]: === PARSING REQUEST BODY ===`);
+    body = await request.json();
+    console.log(`🔍 SIGNUP DEBUG [${debugId}]: ✅ Request body parsed successfully`);
+    console.log(`🔍 SIGNUP DEBUG [${debugId}]: Request body summary:`, {
+      email: body?.email,
+      name: body?.name,
+      role: body?.role,
+      hasSubscriptionData: !!body?.subscriptionData,
+      hasSelectedPlan: !!body?.selectedPlan,
+      subscriptionDataDebugId: body?.subscriptionData?.debugId,
+      fullBodyKeys: body ? Object.keys(body) : 'no body'
+    });
+    console.log(`🔍 SIGNUP DEBUG [${debugId}]: Full request body:`, JSON.stringify(body, null, 2));
+  } catch (parseError) {
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ CRITICAL: Failed to parse request body:`, parseError);
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Parse error details:`, {
+      message: parseError?.message,
+      stack: parseError?.stack,
+      name: parseError?.name
+    });
+    return new NextResponse(JSON.stringify({
+      error: 'Invalid JSON in request body',
+      debugId,
+      parseError: parseError?.message
+    }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
   
   const validation = signupSchema.safeParse(body);
   
@@ -95,10 +119,35 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   console.log(`✅ SIGNUP DEBUG [${debugId}]: Validation passed for email: ${email}, name: ${name}`);
 
   // Check if user already exists
-  console.log(`🔍 SIGNUP DEBUG [${debugId}]: Checking if user exists...`);
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  });
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: === CHECKING IF USER EXISTS ===`);
+  console.log(`🔍 SIGNUP DEBUG [${debugId}]: About to query database for email: ${email}`);
+  
+  let existingUser;
+  try {
+    console.log(`🔍 SIGNUP DEBUG [${debugId}]: Calling prisma.user.findUnique...`);
+    existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+    console.log(`🔍 SIGNUP DEBUG [${debugId}]: ✅ Database query completed`);
+    console.log(`🔍 SIGNUP DEBUG [${debugId}]: Existing user result:`, existingUser ? 'USER EXISTS' : 'USER NOT FOUND');
+  } catch (dbError) {
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ CRITICAL: Database query failed:`, dbError);
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Database error details:`, {
+      message: dbError?.message,
+      stack: dbError?.stack,
+      name: dbError?.name,
+      code: dbError?.code
+    });
+    return new NextResponse(JSON.stringify({
+      error: 'Database connection error during user lookup',
+      debugId,
+      dbError: dbError?.message,
+      timestamp: new Date().toISOString()
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
   if (existingUser) {
     console.error(`🚨 SIGNUP DEBUG [${debugId}]: User already exists with email: ${email}`);
@@ -114,9 +163,29 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   console.log(`✅ SIGNUP DEBUG [${debugId}]: User does not exist, proceeding with creation`);
 
   // Hash password
-  console.log(`🔐 SIGNUP DEBUG [${debugId}]: Hashing password...`);
-  const hashedPassword = await bcrypt.hash(password, 12);
-  console.log(`✅ SIGNUP DEBUG [${debugId}]: Password hashed successfully`);
+  console.log(`🔐 SIGNUP DEBUG [${debugId}]: === HASHING PASSWORD ===`);
+  let hashedPassword;
+  try {
+    console.log(`🔐 SIGNUP DEBUG [${debugId}]: Calling bcrypt.hash...`);
+    hashedPassword = await bcrypt.hash(password, 12);
+    console.log(`✅ SIGNUP DEBUG [${debugId}]: Password hashed successfully`);
+  } catch (hashError) {
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ CRITICAL: Password hashing failed:`, hashError);
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Hash error details:`, {
+      message: hashError?.message,
+      stack: hashError?.stack,
+      name: hashError?.name
+    });
+    return new NextResponse(JSON.stringify({
+      error: 'Password processing error',
+      debugId,
+      hashError: hashError?.message,
+      timestamp: new Date().toISOString()
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 
   // Get request metadata for compliance tracking
   const ipAddress = request.headers.get("x-forwarded-for") || 
@@ -129,21 +198,45 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   console.log(`⏰ SIGNUP DEBUG [${debugId}]: Creating user at ${currentTime.toISOString()}`);
 
   // Create user and legal agreements in a transaction
-  console.log(`🔄 SIGNUP DEBUG [${debugId}]: Starting database transaction...`);
-  const user = await prisma.$transaction(async (tx) => {
-    console.log(`📝 SIGNUP DEBUG [${debugId}]: Creating user record...`);
-    
-    // Create user
-    const newUser = await tx.user.create({
-      data: {
+  console.log(`🔄 SIGNUP DEBUG [${debugId}]: === STARTING DATABASE TRANSACTION ===`);
+  console.log(`🔄 SIGNUP DEBUG [${debugId}]: Transaction will create user, legal agreements, and subscription if applicable`);
+  
+  let user;
+  try {
+    console.log(`🔄 SIGNUP DEBUG [${debugId}]: Calling prisma.$transaction...`);
+    user = await prisma.$transaction(async (tx) => {
+      console.log(`📝 SIGNUP DEBUG [${debugId}]: === INSIDE TRANSACTION: Creating user record ===`);
+      console.log(`📝 SIGNUP DEBUG [${debugId}]: User data to create:`, {
         email,
-        password: hashedPassword,
         name,
         role,
-      },
-    });
-
-    console.log(`✅ SIGNUP DEBUG [${debugId}]: User created with ID: ${newUser.id}, email: ${newUser.email}, createdAt: ${newUser.createdAt}`);
+        hasPassword: !!hashedPassword
+      });
+      
+      // Create user
+      let newUser;
+      try {
+        console.log(`📝 SIGNUP DEBUG [${debugId}]: Calling tx.user.create...`);
+        newUser = await tx.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            name,
+            role,
+          },
+        });
+        console.log(`✅ SIGNUP DEBUG [${debugId}]: User created successfully`);
+        console.log(`✅ SIGNUP DEBUG [${debugId}]: User details: ID=${newUser.id}, email=${newUser.email}, createdAt=${newUser.createdAt}`);
+      } catch (userCreateError) {
+        console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ CRITICAL: User creation failed:`, userCreateError);
+        console.error(`🚨 SIGNUP DEBUG [${debugId}]: User creation error details:`, {
+          message: userCreateError?.message,
+          stack: userCreateError?.stack,
+          name: userCreateError?.name,
+          code: userCreateError?.code
+        });
+        throw userCreateError;
+      }
 
     // Log address information (database storage will be implemented later)
     if (homeAddress) {
@@ -170,33 +263,51 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
     // Create legal agreement records
     const agreementVersion = "1.0"; // Current version of legal documents
-    console.log(`📋 SIGNUP DEBUG [${debugId}]: Creating legal agreements...`);
+    console.log(`📋 SIGNUP DEBUG [${debugId}]: === CREATING LEGAL AGREEMENTS ===`);
+    console.log(`📋 SIGNUP DEBUG [${debugId}]: Agreement version: ${agreementVersion}`);
+    console.log(`📋 SIGNUP DEBUG [${debugId}]: User ID: ${newUser.id}`);
+    console.log(`📋 SIGNUP DEBUG [${debugId}]: IP Address: ${ipAddress}`);
+    console.log(`📋 SIGNUP DEBUG [${debugId}]: User Agent: ${userAgent}`);
 
     // Terms of Service agreement
-    await tx.legalAgreement.create({
-      data: {
-        userId: newUser.id,
-        agreementType: "TERMS_OF_SERVICE",
-        version: agreementVersion,
-        agreedAt: currentTime,
-        ipAddress,
-        userAgent,
-        content: "Terms of Service Agreement"
-      },
-    });
+    try {
+      console.log(`📋 SIGNUP DEBUG [${debugId}]: Creating Terms of Service agreement...`);
+      await tx.legalAgreement.create({
+        data: {
+          userId: newUser.id,
+          agreementType: "TERMS_OF_SERVICE",
+          version: agreementVersion,
+          agreedAt: currentTime,
+          ipAddress,
+          userAgent,
+          content: "Terms of Service Agreement"
+        },
+      });
+      console.log(`✅ SIGNUP DEBUG [${debugId}]: Terms of Service agreement created`);
+    } catch (tosError) {
+      console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ Terms of Service agreement creation failed:`, tosError);
+      throw tosError;
+    }
 
     // Privacy Policy agreement
-    await tx.legalAgreement.create({
-      data: {
-        userId: newUser.id,
-        agreementType: "PRIVACY_POLICY",
-        version: agreementVersion,
-        agreedAt: currentTime,
-        ipAddress,
-        userAgent,
-        content: "Privacy Policy Agreement"
-      },
-    });
+    try {
+      console.log(`📋 SIGNUP DEBUG [${debugId}]: Creating Privacy Policy agreement...`);
+      await tx.legalAgreement.create({
+        data: {
+          userId: newUser.id,
+          agreementType: "PRIVACY_POLICY",
+          version: agreementVersion,
+          agreedAt: currentTime,
+          ipAddress,
+          userAgent,
+          content: "Privacy Policy Agreement"
+        },
+      });
+      console.log(`✅ SIGNUP DEBUG [${debugId}]: Privacy Policy agreement created`);
+    } catch (privacyError) {
+      console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ Privacy Policy agreement creation failed:`, privacyError);
+      throw privacyError;
+    }
 
     // COPPA consent for parent accounts
     if (role === "PARENT") {
@@ -310,6 +421,30 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     console.log(`🎉 SIGNUP DEBUG [${debugId}]: Database transaction completed successfully`);
     return newUser;
   });
+  console.log(`✅ SIGNUP DEBUG [${debugId}]: Transaction wrapper completed successfully`);
+} catch (transactionError) {
+  console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ CRITICAL: Database transaction failed:`, transactionError);
+  console.error(`🚨 SIGNUP DEBUG [${debugId}]: Transaction error details:`, {
+    message: transactionError?.message,
+    stack: transactionError?.stack,
+    name: transactionError?.name,
+    code: transactionError?.code,
+    meta: transactionError?.meta
+  });
+  
+  // Return detailed error information
+  return new NextResponse(JSON.stringify({
+    error: 'Database transaction failed during account creation',
+    debugId,
+    transactionError: transactionError?.message,
+    errorCode: transactionError?.code,
+    timestamp: new Date().toISOString(),
+    stage: 'database_transaction'
+  }), {
+    status: 500,
+    headers: { 'Content-Type': 'application/json' }
+  });
+}
 
   console.log(`✅ SIGNUP DEBUG [${debugId}]: User and related data created successfully`);
   console.log(`📊 SIGNUP DEBUG [${debugId}]: Final user data:`, {
@@ -321,6 +456,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   });
 
   // Trigger 7-Day Onboarding Sequence (with comprehensive debugging)
+  console.log(`📧 SIGNUP DEBUG [${debugId}]: === STARTING EMAIL AUTOMATION ===`);
   try {
     console.log(`📧 SIGNUP DEBUG [${debugId}]: About to trigger email automation for user ${user.id} (${email}) at ${new Date().toISOString()}`);
     console.log(`📧 SIGNUP DEBUG [${debugId}]: User created successfully - ID: ${user.id}, Email: ${email}, CreatedAt: ${user.createdAt}`);
@@ -344,18 +480,21 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       transactionDelay: 750
     });
     
-    console.log(`✅ SIGNUP DEBUG [${debugId}]: Email automation completed for user ${email}:`, automationResult);
-  } catch (error) {
-    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Failed to trigger onboarding sequence for user ${email}:`, {
-      errorMessage: error?.message,
-      errorStack: error?.stack,
-      errorName: error?.name,
+    console.log(`✅ SIGNUP DEBUG [${debugId}]: Email automation completed for user ${email}:`, JSON.stringify(automationResult, null, 2));
+  } catch (emailError) {
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ Failed to trigger onboarding sequence for user ${email}:`, emailError);
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Email automation error details:`, {
+      message: emailError?.message,
+      stack: emailError?.stack,
+      name: emailError?.name,
       userId: user.id,
       userEmail: email,
       timestamp: new Date().toISOString(),
-      fullError: error
+      code: emailError?.code
     });
+    console.error(`🚨 SIGNUP DEBUG [${debugId}]: Full email error object:`, JSON.stringify(emailError, null, 2));
     // Don't fail the signup if email automation fails - this is not critical for user creation
+    console.log(`⚠️ SIGNUP DEBUG [${debugId}]: Continuing with signup despite email automation failure`);
   }
 
   // Remove password from response

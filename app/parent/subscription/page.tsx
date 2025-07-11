@@ -228,14 +228,14 @@ export default function SubscriptionPage() {
           console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: API Error Response Inspection:`);
           console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: response.status:`, response.status);
           console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data TYPE:`, typeof data);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data VALUE:`, data);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error TYPE:`, typeof data.error);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error VALUE:`, data.error);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error JSON:`, JSON.stringify(data.error, null, 2));
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details TYPE:`, typeof data.details);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details VALUE:`, data.details);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message TYPE:`, typeof data.message);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message VALUE:`, data.message);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data VALUE:`, JSON.stringify(data, null, 2));
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error TYPE:`, typeof data?.error);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error VALUE:`, JSON.stringify(data?.error, null, 2));
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error JSON:`, JSON.stringify(data?.error, null, 2));
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details TYPE:`, typeof data?.details);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details VALUE:`, JSON.stringify(data?.details, null, 2));
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message TYPE:`, typeof data?.message);
+          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message VALUE:`, JSON.stringify(data?.message, null, 2));
           console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: FULL DATA OBJECT:`, JSON.stringify(data, null, 2));
           
           // 🔧 ERROR HANDLING FIX: Safely extract error message from various formats
@@ -307,18 +307,23 @@ export default function SubscriptionPage() {
   const handlePaymentError = (error: string) => {
     console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: === PAYMENT ERROR RECEIVED ===');
     console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error TYPE:', typeof error);
-    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error VALUE:', error);
-    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error JSON:', JSON.stringify(error, null, 2));
+    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error VALUE:', JSON.stringify(error, null, 2));
     console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: === POTENTIAL OBJECT ERROR DETECTION ===');
     
     if (typeof error === 'object' && error !== null) {
       console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! Error is an object, not a string!');
       console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! This will show as "[object Object]"');
-      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! Object contents:', error);
+      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! Object contents:', JSON.stringify(error, null, 2));
+      
+      // Convert object error to string for display
+      const errorString = typeof error === 'object' ? JSON.stringify(error) : String(error);
+      console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: Converting object to string:', errorString);
+      setPlanChangeError(errorString);
+    } else {
+      console.error('❌ Payment failed - setting plan change error:', JSON.stringify(error, null, 2));
+      setPlanChangeError(String(error));
     }
     
-    console.error('❌ Payment failed - setting plan change error:', error);
-    setPlanChangeError(error);
     setShowPaymentSetup(false);
     setSelectedPlan(null);
   };
