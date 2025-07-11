@@ -61,7 +61,7 @@ export function AddressAutocomplete({
   onChange,
   onValidationChange,
   onFieldsChange,
-  placeholder = "Enter your address",
+  placeholder = "Start typing your address (e.g., 123 Main St)",
   required = false,
   countryRestriction = ['us', 'ca'],
   className = ""
@@ -77,18 +77,27 @@ export function AddressAutocomplete({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // IMPROVED: Fetch suggestions when user types (more responsive)
+  // IMPROVED: Smart suggestion fetching with better logic
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
-    // IMPROVED: Lower minimum character requirement and faster debounce
-    if (value.length >= 2 && !selectedSuggestion) {
+    // IMPROVED: Better input validation before calling autocomplete
+    const trimmedValue = value.trim();
+    const hasLetters = /[a-zA-Z]/.test(trimmedValue);
+    const hasNumbers = /[0-9]/.test(trimmedValue);
+    
+    // Only fetch suggestions for meaningful partial addresses
+    const shouldFetchSuggestions = trimmedValue.length >= 3 && 
+      (hasLetters || (hasNumbers && trimmedValue.length >= 6)) && 
+      !selectedSuggestion;
+
+    if (shouldFetchSuggestions) {
       debounceRef.current = setTimeout(async () => {
-        await fetchSuggestions(value);
-      }, 200); // Faster response - 200ms instead of 250ms
-    } else if (value.length < 2) {
+        await fetchSuggestions(trimmedValue);
+      }, 300); // Slightly slower to reduce API calls
+    } else if (trimmedValue.length < 3) {
       setSuggestions([]);
       setShowSuggestions(false);
     }

@@ -96,10 +96,28 @@ export class GeoapifyService {
         return [];
       }
 
+      // IMPROVED: Smart input filtering - only autocomplete for meaningful partial addresses
+      const trimmedInput = input.trim();
+      
+      // Check if input is likely to yield good autocomplete results
+      const hasLetters = /[a-zA-Z]/.test(trimmedInput);
+      const hasNumbers = /[0-9]/.test(trimmedInput);
+      
+      // For very short inputs or number-only inputs, don't call autocomplete
+      if (trimmedInput.length < 3 || (!hasLetters && trimmedInput.length < 5)) {
+        console.log(`📍 Skipping autocomplete for too-short input: "${trimmedInput}"`);
+        return [];
+      }
+      
+      // For number-only inputs that are short, also skip (like "1838")
+      if (!hasLetters && trimmedInput.length < 6) {
+        console.log(`📍 Skipping autocomplete for number-only input: "${trimmedInput}"`);
+        return [];
+      }
+
       const countries = countryRestriction.join(',');
-      // FIXED: Remove invalid 'type=address' parameter and increase limit for more suggestions
       const response = await fetch(
-        `${this.baseUrl}/geocode/autocomplete?text=${encodeURIComponent(input)}&filter=countrycode:${countries}&apiKey=${this.apiKey}&limit=10&bias=proximity:-74.0060,40.7128&format=json`
+        `${this.baseUrl}/geocode/autocomplete?text=${encodeURIComponent(trimmedInput)}&filter=countrycode:${countries}&apiKey=${this.apiKey}&limit=10&bias=proximity:-74.0060,40.7128&format=json`
       );
 
       if (!response.ok) {
@@ -108,18 +126,21 @@ export class GeoapifyService {
 
       const data: any = await response.json();
       
-      console.log(`🔍 GEOAPIFY AUTOCOMPLETE DEBUG: Raw API response:`, JSON.stringify(data, null, 2));
+      console.log(`🔍 GEOAPIFY AUTOCOMPLETE DEBUG: Raw API response for "${trimmedInput}":`, JSON.stringify(data, null, 2));
       
-      // FIXED: Geoapify autocomplete returns 'results' not 'features' 
       const results = data.results || [];
       console.log(`🔍 GEOAPIFY AUTOCOMPLETE DEBUG: Found ${results.length} results`);
       
+      if (results.length === 0) {
+        console.log(`📍 No autocomplete results for "${trimmedInput}" - this is expected for partial inputs`);
+        return [];
+      }
+      
       const suggestions = results.map((result: any, index: number) => {
-        // FIXED: Access result properties directly (not result.properties)
         const props = result;
         
         // Create a more reliable place_id
-        const placeId = props.place_id || `geoapify_${input}_${index}_${Date.now()}`;
+        const placeId = props.place_id || `geoapify_${trimmedInput}_${index}_${Date.now()}`;
         
         // Better main text extraction with more variety
         let mainText = '';
@@ -162,9 +183,9 @@ export class GeoapifyService {
       // IMPROVED: Filter out duplicates and ensure variety
       const uniqueSuggestions = this.removeDuplicateSuggestions(suggestions);
       
-      console.log(`📍 Geoapify returned ${results.length} results, processed to ${uniqueSuggestions.length} unique suggestions for: "${input}"`);
+      console.log(`✅ Geoapify autocomplete returned ${results.length} results, processed to ${uniqueSuggestions.length} unique suggestions for: "${trimmedInput}"`);
       
-      return uniqueSuggestions.slice(0, 8); // Return up to 8 suggestions instead of 5
+      return uniqueSuggestions.slice(0, 8); // Return up to 8 suggestions
       
     } catch (error) {
       console.error('Geoapify autocomplete error:', error);
@@ -237,18 +258,25 @@ export class GeoapifyService {
         };
       }
 
-      // IMPROVED: If direct search failed, get MORE suggestions with better parameters
-      console.log(`🔍 GEOAPIFY VALIDATION DEBUG: Direct search failed, getting suggestions for: "${address}"`);
+      // IMPROVED: If direct search failed, try autocomplete for better suggestions
+      console.log(`🔍 GEOAPIFY VALIDATION DEBUG: Direct search failed, trying autocomplete for: "${address}"`);
       const suggestions = await this.autocompleteAddress(address, countryRestriction);
       console.log(`🔍 GEOAPIFY VALIDATION DEBUG: Got ${suggestions.length} suggestions from autocomplete`);
       
-      return {
-        isValid: false,
-        confidence: 0.3, // IMPROVED: Higher base confidence for suggestions
-        originalInput: address,
-        suggestions: suggestions.slice(0, 5), // Show up to 5 suggestions
-        error: 'Address could not be validated, but here are some suggestions'
-      };
+      // IMPROVED: Be more lenient - if we have any suggestions, treat as partially valid
+      if (suggestions.length > 0) {
+        return {
+          isValid: true, // CHANGED: Accept as valid if we have suggestions
+          confidence: 0.6, // IMPROVED: Higher confidence for suggestions
+          originalInput: address,
+          suggestions: suggestions.slice(0, 5), // Show up to 5 suggestions
+          error: undefined // CHANGED: Remove error for suggested addresses
+        };
+      }
+      
+      // IMPROVED: Even if no suggestions, still try fallback validation
+      console.log(`🔍 GEOAPIFY VALIDATION DEBUG: No suggestions found, trying fallback validation for: "${address}"`);
+      return this.fallbackAddressValidation(address, countryRestriction);
 
     } catch (error) {
       console.error('Geoapify validation error:', error);

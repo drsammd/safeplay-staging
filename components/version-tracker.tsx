@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 // Fallback version configuration
 const FALLBACK_VERSION_CONFIG = {
-  version: "1.2.26-staging",
+  version: "1.2.27-staging",
   buildTimestamp: new Date().toISOString(),
   environment: "staging",
   commit: "address-dropdown-regression-and-signup-flow-fixed",

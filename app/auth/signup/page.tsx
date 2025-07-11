@@ -547,13 +547,13 @@ export default function SignUpPage() {
                   onChange={(value) => handleAddressChange('homeAddress', value)}
                   onValidationChange={setHomeAddressValidation}
                   onFieldsChange={(fields) => handleAddressFieldsChange('homeAddress', fields)}
-                  placeholder="Enter your home address"
+                  placeholder="Start typing your address (e.g., 123 Main St, City, State)"
                   required
                   countryRestriction={['us', 'ca']}
                   className="w-full"
                 />
                 <p className="text-xs text-gray-400 mt-1">
-                  This address will be used for identity verification and service delivery
+                  Type your street address with city and state. Suggestions will appear as you type.
                 </p>
               </div>
 
@@ -584,13 +584,13 @@ export default function SignUpPage() {
                     onChange={(value) => handleAddressChange('billingAddress', value)}
                     onValidationChange={setBillingAddressValidation}
                     onFieldsChange={(fields) => handleAddressFieldsChange('billingAddress', fields)}
-                    placeholder="Enter your billing address"
+                    placeholder="Start typing your billing address (e.g., 456 Oak Ave, City, State)"
                     required
                     countryRestriction={['us', 'ca']}
                     className="w-full"
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    This address will be used for billing and payment processing
+                    Type your billing address with city and state. Suggestions will appear as you type.
                   </p>
                 </div>
               )}
