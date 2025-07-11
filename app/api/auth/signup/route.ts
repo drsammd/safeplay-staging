@@ -343,8 +343,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     if (selectedPlan) {
       console.log(`💳 SIGNUP DEBUG [${debugId}]: Creating subscription for user: ${newUser.id}, Plan: ${selectedPlan.planType}`);
       
-      // Map plan type to subscription enum
-      const subscriptionPlan = selectedPlan.planType.toUpperCase() as 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
+      // Map plan type to subscription enum with validation
+      const planTypeUpper = selectedPlan.planType.toUpperCase();
+      const validPlanTypes = ['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'];
+      const subscriptionPlan = validPlanTypes.includes(planTypeUpper) ? planTypeUpper as 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE' : 'BASIC';
+      
+      console.log(`💳 SIGNUP DEBUG [${debugId}]: Mapped plan type from ${selectedPlan.planType} to ${subscriptionPlan}`);
       
       // Check if Stripe subscription was already created during payment
       if (subscriptionData?.subscription?.id && subscriptionData?.customer?.id) {
@@ -353,10 +357,28 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         const stripeSubscription = subscriptionData.subscription;
         const stripeCustomer = subscriptionData.customer;
         
+        // Map Stripe status to our enum with comprehensive handling
+        const mapStripeStatus = (stripeStatus: string): 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PAST_DUE' | 'UNPAID' | 'TRIALING' => {
+          const statusMap: Record<string, 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'PAST_DUE' | 'UNPAID' | 'TRIALING'> = {
+            'active': 'ACTIVE',
+            'trialing': 'TRIALING',
+            'past_due': 'PAST_DUE',
+            'unpaid': 'UNPAID',
+            'canceled': 'CANCELLED',
+            'cancelled': 'CANCELLED',
+            'incomplete': 'ACTIVE', // Treat incomplete as active since payment succeeded
+            'incomplete_expired': 'EXPIRED'
+          };
+          
+          const mappedStatus = statusMap[stripeStatus.toLowerCase()] || 'ACTIVE';
+          console.log(`💳 SIGNUP DEBUG [${debugId}]: Mapped Stripe status '${stripeStatus}' to '${mappedStatus}'`);
+          return mappedStatus;
+        };
+        
         const subscriptionRecord: any = {
           userId: newUser.id,
           planType: subscriptionPlan,
-          status: stripeSubscription.status === 'trialing' ? 'TRIALING' : 'ACTIVE',
+          status: mapStripeStatus(stripeSubscription.status),
           stripeCustomerId: String(stripeCustomer.id),
           stripeSubscriptionId: String(stripeSubscription.id),
           currentPeriodStart: stripeSubscription.current_period_start 
@@ -365,7 +387,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           currentPeriodEnd: stripeSubscription.current_period_end 
             ? new Date(stripeSubscription.current_period_end * 1000) 
             : new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000)),
-          cancelAtPeriodEnd: Boolean(stripeSubscription.cancel_at_period_end),
+          cancelAtPeriodEnd: Boolean(stripeSubscription.cancel_at_period_end || false),
           canceledAt: stripeSubscription.canceled_at ? new Date(stripeSubscription.canceled_at * 1000) : null,
           trialStart: stripeSubscription.trial_start ? new Date(stripeSubscription.trial_start * 1000) : null,
           trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null,
@@ -379,11 +401,31 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           }
         };
 
-        await tx.userSubscription.create({
-          data: subscriptionRecord,
-        });
+        console.log(`💳 SIGNUP DEBUG [${debugId}]: About to create subscription record:`, JSON.stringify({
+          userId: subscriptionRecord.userId,
+          planType: subscriptionRecord.planType,
+          status: subscriptionRecord.status,
+          stripeCustomerId: subscriptionRecord.stripeCustomerId,
+          stripeSubscriptionId: subscriptionRecord.stripeSubscriptionId,
+          autoRenew: subscriptionRecord.autoRenew
+        }, null, 2));
 
-        console.log(`✅ SIGNUP DEBUG [${debugId}]: Stripe subscription linked successfully for user: ${newUser.id}`);
+        try {
+          await tx.userSubscription.create({
+            data: subscriptionRecord,
+          });
+          console.log(`✅ SIGNUP DEBUG [${debugId}]: Stripe subscription linked successfully for user: ${newUser.id}`);
+        } catch (subscriptionError) {
+          console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ CRITICAL: Subscription creation failed:`, subscriptionError);
+          console.error(`🚨 SIGNUP DEBUG [${debugId}]: Subscription error details:`, {
+            message: subscriptionError?.message,
+            stack: subscriptionError?.stack,
+            name: subscriptionError?.name,
+            code: subscriptionError?.code,
+            meta: subscriptionError?.meta
+          });
+          throw subscriptionError;
+        }
       } else {
         // Create local subscription record (for free plans or fallback)
         console.log(`📝 SIGNUP DEBUG [${debugId}]: Creating local subscription record (no Stripe data)`);
@@ -408,11 +450,29 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           subscriptionRecord.trialEnd = new Date(currentTime.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days trial
         }
 
-        await tx.userSubscription.create({
-          data: subscriptionRecord,
-        });
+        console.log(`💳 SIGNUP DEBUG [${debugId}]: About to create local subscription record:`, JSON.stringify({
+          userId: subscriptionRecord.userId,
+          planType: subscriptionRecord.planType,
+          status: subscriptionRecord.status,
+          autoRenew: subscriptionRecord.autoRenew
+        }, null, 2));
 
-        console.log(`✅ SIGNUP DEBUG [${debugId}]: Local subscription created successfully for user: ${newUser.id}`);
+        try {
+          await tx.userSubscription.create({
+            data: subscriptionRecord,
+          });
+          console.log(`✅ SIGNUP DEBUG [${debugId}]: Local subscription created successfully for user: ${newUser.id}`);
+        } catch (localSubscriptionError) {
+          console.error(`🚨 SIGNUP DEBUG [${debugId}]: ❌ CRITICAL: Local subscription creation failed:`, localSubscriptionError);
+          console.error(`🚨 SIGNUP DEBUG [${debugId}]: Local subscription error details:`, {
+            message: localSubscriptionError?.message,
+            stack: localSubscriptionError?.stack,
+            name: localSubscriptionError?.name,
+            code: localSubscriptionError?.code,
+            meta: localSubscriptionError?.meta
+          });
+          throw localSubscriptionError;
+        }
       }
     } else {
       console.log(`ℹ️ SIGNUP DEBUG [${debugId}]: No plan selected, creating user without subscription`);

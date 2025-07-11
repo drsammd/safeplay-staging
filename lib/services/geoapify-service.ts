@@ -214,10 +214,16 @@ export class GeoapifyService {
 
       const data: any = await response.json();
       
-      if (data.results && data.results.length > 0) {
-        const result = data.results[0];
-        const standardizedAddress = this.parseGeoapifyResult(result);
-        const confidence = this.calculateConfidence(result, address);
+      console.log(`🔍 GEOAPIFY DEBUG: Search API response:`, JSON.stringify(data, null, 2));
+      
+      if (data.features && data.features.length > 0) {
+        const feature = data.features[0];
+        console.log(`🔍 GEOAPIFY DEBUG: First feature:`, JSON.stringify(feature, null, 2));
+        
+        const standardizedAddress = this.parseGeoapifyResult(feature.properties);
+        const confidence = this.calculateConfidence(feature.properties, address);
+
+        console.log(`✅ GEOAPIFY DEBUG: Standardized address:`, JSON.stringify(standardizedAddress, null, 2));
 
         return {
           isValid: true,
@@ -261,21 +267,24 @@ export class GeoapifyService {
     }
   }
 
-  private parseGeoapifyResult(result: any): StandardizedAddress {
-    // FIXED: Access result properties directly (not result.properties)
-    const props = result;
+  private parseGeoapifyResult(properties: any): StandardizedAddress {
+    // Parse Geoapify feature properties
+    console.log(`🔧 GEOAPIFY DEBUG: Parsing properties:`, JSON.stringify(properties, null, 2));
     
-    return {
-      formatted_address: props.formatted,
-      street_number: props.housenumber,
-      route: props.street,
-      locality: props.city,
-      administrative_area_level_1: props.state,
-      administrative_area_level_2: props.county,
-      country: props.country_code?.toUpperCase(),
-      postal_code: props.postcode,
-      place_id: props.place_id || `geoapify_${Date.now()}_${Math.random()}`
+    const standardized = {
+      formatted_address: properties.formatted,
+      street_number: properties.housenumber,
+      route: properties.street,
+      locality: properties.city,
+      administrative_area_level_1: properties.state,
+      administrative_area_level_2: properties.county,
+      country: properties.country_code?.toUpperCase(),
+      postal_code: properties.postcode,
+      place_id: properties.place_id || `geoapify_${Date.now()}_${Math.random()}`
     };
+    
+    console.log(`🔧 GEOAPIFY DEBUG: Parsed standardized address:`, JSON.stringify(standardized, null, 2));
+    return standardized;
   }
 
   private getSecondaryText(properties: any): string {
@@ -286,27 +295,36 @@ export class GeoapifyService {
     return parts.join(', ');
   }
 
-  private calculateConfidence(result: any, originalInput: string): number {
+  private calculateConfidence(properties: any, originalInput: string): number {
     let confidence = 0.4; // IMPROVED: Higher base confidence
 
-    // FIXED: Access result properties directly (not result.properties)
-    const props = result;
+    console.log(`📊 GEOAPIFY DEBUG: Calculating confidence for properties:`, {
+      housenumber: properties.housenumber,
+      street: properties.street,
+      city: properties.city,
+      state: properties.state,
+      postcode: properties.postcode,
+      formatted: properties.formatted
+    });
     
     // Higher confidence for complete addresses
-    if (props.housenumber) confidence += 0.2;
-    if (props.street) confidence += 0.2;
-    if (props.city) confidence += 0.1;
-    if (props.state) confidence += 0.1;
-    if (props.postcode) confidence += 0.1;
+    if (properties.housenumber) confidence += 0.2;
+    if (properties.street) confidence += 0.2;
+    if (properties.city) confidence += 0.1;
+    if (properties.state) confidence += 0.1;
+    if (properties.postcode) confidence += 0.1;
 
     // String similarity check
     const similarity = this.calculateStringSimilarity(
       originalInput.toLowerCase(),
-      props.formatted.toLowerCase()
+      properties.formatted.toLowerCase()
     );
     confidence += similarity * 0.2; // IMPROVED: Higher weight for similarity
 
-    return Math.min(confidence, 1.0);
+    const finalConfidence = Math.min(confidence, 1.0);
+    console.log(`📊 GEOAPIFY DEBUG: Calculated confidence: ${finalConfidence} (similarity: ${similarity})`);
+    
+    return finalConfidence;
   }
 
   private calculateStringSimilarity(str1: string, str2: string): number {
