@@ -154,16 +154,19 @@ export class SubscriptionService {
           console.log('❌ SERVICE: Could not fetch similar users:', similarError.message);
         }
         
-        // Enhanced error message for debugging
-        const enhancedError = new Error(`User not found for ID: ${userId}. This may be a stale session or cached user ID. Please sign out and sign back in.`);
-        enhancedError.name = 'UserNotFoundError';
+        // FIXED: Enhanced error message with better user guidance
+        const enhancedError = new Error(`STALE_SESSION_ERROR: Your session has expired or become invalid. Please sign out and sign back in to continue.`);
+        enhancedError.name = 'StaleSessionError';
         enhancedError.cause = 'PHANTOM_USER_ID';
-        enhancedError.details = {
+        (enhancedError as any).userFriendlyMessage = 'Your session has expired. Please sign out and sign back in to continue.';
+        (enhancedError as any).actionRequired = 'SIGN_OUT_AND_BACK_IN';
+        (enhancedError as any).details = {
           userId: userId,
           userIdType: typeof userId,
           userIdLength: userId?.length,
           timestamp: new Date().toISOString(),
-          suggestion: 'Sign out and sign back in to refresh session'
+          suggestion: 'Sign out and sign back in to refresh session',
+          isPhantomUser: isPhantomUser
         };
         
         throw enhancedError;

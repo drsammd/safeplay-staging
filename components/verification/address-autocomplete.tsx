@@ -77,29 +77,36 @@ export function AddressAutocomplete({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // IMPROVED: Smart suggestion fetching with better logic
+  // FIXED: Smart suggestion fetching with enhanced logic to prevent unnecessary API calls
   useEffect(() => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
 
-    // IMPROVED: Better input validation before calling autocomplete
+    // FIXED: Enhanced input validation before calling autocomplete
     const trimmedValue = value.trim();
     const hasLetters = /[a-zA-Z]/.test(trimmedValue);
     const hasNumbers = /[0-9]/.test(trimmedValue);
     
-    // Only fetch suggestions for meaningful partial addresses
-    const shouldFetchSuggestions = trimmedValue.length >= 3 && 
-      (hasLetters || (hasNumbers && trimmedValue.length >= 6)) && 
+    // FIXED: More restrictive filtering to prevent API calls for very short inputs
+    const shouldFetchSuggestions = trimmedValue.length >= 4 && 
+      hasLetters && 
+      (hasNumbers || trimmedValue.length >= 6) && 
       !selectedSuggestion;
+
+    console.log(`🔍 ADDRESS AUTOCOMPLETE: Input "${trimmedValue}" - shouldFetch: ${shouldFetchSuggestions}, hasLetters: ${hasLetters}, hasNumbers: ${hasNumbers}, length: ${trimmedValue.length}`);
 
     if (shouldFetchSuggestions) {
       debounceRef.current = setTimeout(async () => {
+        console.log(`📞 ADDRESS AUTOCOMPLETE: Making API call for "${trimmedValue}"`);
         await fetchSuggestions(trimmedValue);
-      }, 300); // Slightly slower to reduce API calls
+      }, 400); // Slightly slower to reduce API calls
     } else if (trimmedValue.length < 3) {
       setSuggestions([]);
       setShowSuggestions(false);
+      console.log(`🚫 ADDRESS AUTOCOMPLETE: Input too short, clearing suggestions`);
+    } else {
+      console.log(`🚫 ADDRESS AUTOCOMPLETE: Input "${trimmedValue}" filtered out (shouldFetch: ${shouldFetchSuggestions})`);
     }
 
     return () => {
@@ -439,41 +446,53 @@ export function AddressAutocomplete({
         )}
       </div>
 
-      {/* IMPROVED: Suggestions dropdown with better styling and more suggestions */}
+      {/* FIXED: Enhanced suggestions dropdown with better visibility and interaction */}
       {showSuggestions && suggestions.length > 0 && (
         <Card 
           ref={suggestionsRef}
-          className="absolute z-[9999] w-full mt-1 max-h-80 overflow-y-auto bg-white border shadow-lg"
+          className="absolute z-[9999] w-full mt-1 max-h-80 overflow-y-auto bg-white border-2 border-blue-200 shadow-xl"
           style={{ pointerEvents: 'auto' }}
         >
           <div className="p-2">
-            <div className="text-xs text-gray-500 mb-2 px-2">
-              {suggestions.length} address suggestion{suggestions.length !== 1 ? 's' : ''} found
+            <div className="text-xs text-blue-600 font-medium mb-2 px-2 bg-blue-50 rounded py-1">
+              {suggestions.length} address suggestion{suggestions.length !== 1 ? 's' : ''} found - click to select
             </div>
             {suggestions.map((suggestion, index) => (
               <div
                 key={suggestion.place_id}
-                className="p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 transition-colors rounded-sm"
+                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-all duration-200 rounded-sm hover:shadow-md"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log(`🎯 Dropdown item ${index + 1} clicked:`, suggestion);
+                  console.log(`🎯 ADDRESS AUTOCOMPLETE: Dropdown item ${index + 1} clicked:`, suggestion);
+                  console.log(`🎯 ADDRESS AUTOCOMPLETE: Suggestion details:`, {
+                    place_id: suggestion.place_id,
+                    description: suggestion.description,
+                    main_text: suggestion.main_text,
+                    secondary_text: suggestion.secondary_text
+                  });
                   handleSuggestionClick(suggestion);
                 }}
                 onMouseDown={(e) => {
                   // Prevent input blur while allowing click to process
                   e.preventDefault();
                 }}
+                onMouseEnter={() => {
+                  console.log(`🎯 ADDRESS AUTOCOMPLETE: Hovering over suggestion ${index + 1}: ${suggestion.main_text}`);
+                }}
               >
                 <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <MapPin className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-gray-900 truncate text-sm">
                       {suggestion.main_text}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">
+                    <div className="text-xs text-gray-600 truncate">
                       {suggestion.secondary_text}
                     </div>
+                  </div>
+                  <div className="text-xs text-blue-500 font-medium">
+                    Click
                   </div>
                 </div>
               </div>

@@ -152,13 +152,52 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     session: async ({ session, token }) => {
-      if (session?.user) {
-        session.user.id = token.sub as string;
-        session.user.role = token.role as string;
-        session.user.phoneVerified = token.phoneVerified as boolean;
-        session.user.identityVerified = token.identityVerified as boolean;
-        session.user.twoFactorEnabled = token.twoFactorEnabled as boolean;
-        session.user.verificationLevel = token.verificationLevel as string;
+      if (session?.user && token.sub) {
+        // FIXED: Validate user still exists in database before creating session
+        try {
+          const userId = token.sub as string;
+          console.log(`🔍 SESSION VALIDATION: Checking user existence for ID: ${userId}`);
+          
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              phoneVerified: true,
+              identityVerified: true,
+              twoFactorEnabled: true,
+              verificationLevel: true
+            }
+          });
+
+          if (!user) {
+            console.log(`❌ SESSION VALIDATION: User not found for ID: ${userId} - invalidating session`);
+            console.log(`🔍 SESSION VALIDATION: This prevents phantom user ID issues`);
+            
+            // Return null to invalidate the session
+            return null;
+          }
+
+          console.log(`✅ SESSION VALIDATION: User exists, creating session for: ${user.email}`);
+          
+          // Use fresh user data from database
+          session.user.id = user.id;
+          session.user.email = user.email;
+          session.user.name = user.name;
+          session.user.role = user.role;
+          session.user.phoneVerified = user.phoneVerified;
+          session.user.identityVerified = user.identityVerified;
+          session.user.twoFactorEnabled = user.twoFactorEnabled;
+          session.user.verificationLevel = user.verificationLevel;
+        } catch (error) {
+          console.error(`❌ SESSION VALIDATION: Database error during session validation:`, error);
+          console.log(`🔍 SESSION VALIDATION: Invalidating session due to database error`);
+          
+          // Return null to invalidate the session on database errors
+          return null;
+        }
       }
       return session;
     },
