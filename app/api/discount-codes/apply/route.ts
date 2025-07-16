@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { discountService } from '@/lib/stripe/discount-service';
 import { prisma } from '@/lib/db';
-import { SubscriptionPlanType, BillingInterval } from '@prisma/client';
+import { SubscriptionPlan } from '@prisma/client';
 
 // POST - Apply discount code
 export async function POST(request: NextRequest) {
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     const validation = await discountService.validateDiscountCode(
       discountCode.code,
       session.user.id,
-      planType as SubscriptionPlanType,
+      planType as SubscriptionPlan,
       originalAmount
     );
 
@@ -57,10 +57,10 @@ export async function POST(request: NextRequest) {
     // Calculate discount amount
     let discountAmount = 0;
     if (originalAmount) {
-      if (discountCode.discountType === 'PERCENTAGE') {
-        discountAmount = (originalAmount * discountCode.discountValue) / 100;
-      } else if (discountCode.discountType === 'FIXED_AMOUNT') {
-        discountAmount = Math.min(discountCode.discountValue, originalAmount);
+      if (discountCode.type === 'PERCENTAGE') {
+        discountAmount = (originalAmount * discountCode.value) / 100;
+      } else if (discountCode.type === 'FIXED_AMOUNT') {
+        discountAmount = Math.min(discountCode.value, originalAmount);
       }
     }
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         originalAmount,
         discountAmount,
         finalAmount,
-        planType: planType as SubscriptionPlanType,
+        planType: planType as SubscriptionPlan,
         ipAddress: headers.get('x-forwarded-for') || headers.get('x-real-ip') || undefined,
         userAgent: headers.get('user-agent') || undefined
       }

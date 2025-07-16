@@ -2,160 +2,192 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { demoSubscriptionService } from '@/lib/stripe/demo-subscription-service';
+import { SubscriptionService } from '@/lib/stripe/subscription-service';
+import { stripe } from '@/lib/stripe/config';
 
 export const dynamic = 'force-dynamic';
 
+const subscriptionService = new SubscriptionService();
+
 export async function POST(request: NextRequest) {
-  // COMPREHENSIVE DEBUGGING - START
-  const debugId = `subscription_demo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  // Forward to real subscription endpoint with compatibility layer
+  const debugId = `subscription_demo_compat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
-    console.log(`🔍 SUBSCRIPTION DEMO DEBUG [${debugId}]: API endpoint called at ${new Date().toISOString()}`);
+    console.log(`🔍 SUBSCRIPTION DEMO COMPAT [${debugId}]: API endpoint called (forwarding to real Stripe)`);
     
     const session = await getServerSession(authOptions);
-    console.log(`🔍 SUBSCRIPTION DEMO DEBUG [${debugId}]: Session check:`, {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email,
-      userName: session?.user?.name
-    });
-
     const requestBody = await request.json();
-    const { planId, paymentMethodId, isSignupFlow, debugId: clientDebugId } = requestBody;
+    const { planId, paymentMethodId, isSignupFlow, email, name, debugId: clientDebugId } = requestBody;
     
-    console.log(`🔍 SUBSCRIPTION DEMO DEBUG [${debugId}]: Request body:`, {
+    console.log(`🔍 SUBSCRIPTION DEMO COMPAT [${debugId}]: Request body:`, {
       planId,
       paymentMethodId,
       isSignupFlow,
-      clientDebugId,
-      fullRequestBody: requestBody
+      email,
+      name,
+      clientDebugId
     });
 
-    if (!planId) {
-      console.error(`🚨 SUBSCRIPTION DEMO DEBUG [${debugId}]: Missing planId`);
+    // Convert planId to priceId using environment variables
+    let priceId: string | null = null;
+    switch (planId) {
+      case 'basic':
+        priceId = process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || null;
+        break;
+      case 'premium':
+        priceId = process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || null;
+        break;
+      case 'family':
+        priceId = process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || null;
+        break;
+      default:
+        // If planId is already a price ID, use it directly
+        if (planId?.startsWith('price_')) {
+          priceId = planId;
+        }
+    }
+
+    if (!priceId) {
+      console.error(`🚨 SUBSCRIPTION DEMO COMPAT [${debugId}]: Unable to resolve price ID for plan:`, planId);
       return NextResponse.json(
-        { error: 'Plan ID is required', debugId },
+        { error: `Unable to resolve price ID for plan: ${planId}`, debugId },
         { status: 400 }
       );
     }
 
+    console.log(`✅ SUBSCRIPTION DEMO COMPAT [${debugId}]: Resolved price ID:`, { planId, priceId });
+
     // Handle signup flow (no authentication required)
-    if (!session?.user?.id) {
-      console.log(`🚀 SUBSCRIPTION DEMO DEBUG [${debugId}]: Handling signup flow - no authentication required`);
-      console.log(`🚀 SUBSCRIPTION DEMO DEBUG [${debugId}]: Creating temporary subscription for signup with plan:`, planId);
+    if (!session?.user?.id && isSignupFlow) {
+      if (!email || !name) {
+        console.error(`🚨 SUBSCRIPTION DEMO COMPAT [${debugId}]: Missing email or name for signup`);
+        return NextResponse.json(
+          { error: 'Email and name are required for signup', debugId },
+          { status: 400 }
+        );
+      }
 
       try {
-        console.log(`📞 SUBSCRIPTION DEMO DEBUG [${debugId}]: Calling demoSubscriptionService.createSignupSubscription...`);
+        console.log(`🏪 SUBSCRIPTION DEMO COMPAT [${debugId}]: Creating real Stripe customer for signup...`);
         
-        // Create a temporary subscription for signup flow
-        const tempSubscription = await demoSubscriptionService.createSignupSubscription(
-          planId,
-          paymentMethodId
-        );
+        // Create Stripe customer first
+        const customer = await stripe.customers.create({
+          email,
+          name,
+          metadata: {
+            signupFlow: 'true',
+            platform: 'safeplay',
+            compatibilityMode: 'demo'
+          }
+        });
 
-        console.log(`✅ SUBSCRIPTION DEMO DEBUG [${debugId}]: Demo subscription service returned:`, tempSubscription);
+        // Attach payment method if provided
+        if (paymentMethodId) {
+          await stripe.paymentMethods.attach(paymentMethodId, {
+            customer: customer.id,
+          });
+          
+          await stripe.customers.update(customer.id, {
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+        }
+
+        // Create subscription
+        const subscriptionParams: any = {
+          customer: customer.id,
+          items: [{ price: priceId }],
+          metadata: {
+            signupFlow: 'true',
+            platform: 'safeplay',
+            compatibilityMode: 'demo',
+            debugId: debugId
+          },
+          expand: ['latest_invoice.payment_intent'],
+        };
+
+        if (paymentMethodId) {
+          subscriptionParams.default_payment_method = paymentMethodId;
+        }
+
+        subscriptionParams.trial_period_days = 7;
+
+        const subscription = await stripe.subscriptions.create(subscriptionParams);
+
+        console.log(`✅ SUBSCRIPTION DEMO COMPAT [${debugId}]: Real Stripe subscription created:`, {
+          subscriptionId: subscription.id,
+          status: subscription.status,
+          customerId: subscription.customer
+        });
 
         const response = {
           success: true,
-          subscription: tempSubscription,
-          customer: tempSubscription.customer,
+          subscription,
+          customer,
           isSignupFlow: true,
-          message: 'Demo subscription prepared for signup! This is a test environment.',
+          message: 'Real Stripe subscription created successfully!',
           debugId
         };
 
-        console.log(`🎉 SUBSCRIPTION DEMO DEBUG [${debugId}]: Returning successful response:`, response);
         return NextResponse.json(response);
         
-      } catch (demoServiceError) {
-        console.error(`🚨 SUBSCRIPTION DEMO DEBUG [${debugId}]: Demo subscription service error:`, {
-          errorMessage: demoServiceError?.message,
-          errorStack: demoServiceError?.stack,
-          errorName: demoServiceError?.name,
-          fullError: demoServiceError
-        });
-        
+      } catch (signupError) {
+        console.error(`🚨 SUBSCRIPTION DEMO COMPAT [${debugId}]: Signup error:`, signupError);
         return NextResponse.json(
           { 
-            error: demoServiceError?.message || 'Failed to create demo subscription',
-            debugId,
-            errorDetails: {
-              service: 'demoSubscriptionService',
-              method: 'createSignupSubscription',
-              planId,
-              paymentMethodId
-            }
+            error: signupError?.message || 'Failed to create subscription for signup',
+            debugId
           },
           { status: 500 }
         );
       }
     }
 
-    // Handle authenticated user flow (existing logic)
-    console.log(`🎭 SUBSCRIPTION DEMO DEBUG [${debugId}]: Creating subscription for authenticated user:`, session.user.id, 'Plan:', planId);
+    // Handle authenticated user flow
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Authentication required', debugId },
+        { status: 401 }
+      );
+    }
 
     try {
-      console.log(`📞 SUBSCRIPTION DEMO DEBUG [${debugId}]: Calling demoSubscriptionService.createSubscription...`);
+      console.log(`📞 SUBSCRIPTION DEMO COMPAT [${debugId}]: Using real SubscriptionService...`);
       
-      // Create subscription using demo service
-      const subscription = await demoSubscriptionService.createSubscription(
+      const subscription = await subscriptionService.createSubscription(
         session.user.id,
-        planId,
+        priceId,
         paymentMethodId
       );
-
-      console.log(`✅ SUBSCRIPTION DEMO DEBUG [${debugId}]: Authenticated subscription created:`, subscription);
 
       const response = {
         success: true,
         subscription,
-        message: 'Demo subscription created successfully! This is a test environment.',
+        message: 'Real Stripe subscription created successfully!',
         debugId
       };
 
-      console.log(`🎉 SUBSCRIPTION DEMO DEBUG [${debugId}]: Returning authenticated response:`, response);
       return NextResponse.json(response);
       
-    } catch (authServiceError) {
-      console.error(`🚨 SUBSCRIPTION DEMO DEBUG [${debugId}]: Authenticated subscription service error:`, {
-        errorMessage: authServiceError?.message,
-        errorStack: authServiceError?.stack,
-        errorName: authServiceError?.name,
-        fullError: authServiceError
-      });
-      
+    } catch (serviceError) {
+      console.error(`🚨 SUBSCRIPTION DEMO COMPAT [${debugId}]: Service error:`, serviceError);
       return NextResponse.json(
         { 
-          error: authServiceError?.message || 'Failed to create authenticated subscription',
-          debugId,
-          errorDetails: {
-            service: 'demoSubscriptionService',
-            method: 'createSubscription',
-            userId: session.user.id,
-            planId,
-            paymentMethodId
-          }
+          error: serviceError?.message || 'Failed to create subscription',
+          debugId
         },
         { status: 500 }
       );
     }
 
   } catch (error) {
-    console.error(`🚨 SUBSCRIPTION DEMO DEBUG [${debugId}]: General API error:`, {
-      errorMessage: error?.message,
-      errorStack: error?.stack,
-      errorName: error?.name,
-      fullError: error
-    });
-    
+    console.error(`🚨 SUBSCRIPTION DEMO COMPAT [${debugId}]: General error:`, error);
     return NextResponse.json(
       { 
         error: error?.message || 'Failed to create subscription',
-        debugId,
-        errorDetails: {
-          location: 'subscription-demo API root catch block'
-        }
+        debugId
       },
       { status: 500 }
     );
@@ -163,37 +195,43 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const debugId = `subscription_demo_get_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const debugId = `subscription_demo_get_compat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
-    console.log(`🔍 SUBSCRIPTION DEMO GET DEBUG [${debugId}]: Status check called`);
+    console.log(`🔍 SUBSCRIPTION DEMO GET COMPAT [${debugId}]: Status check called (using real database)`);
     
     const session = await getServerSession(authOptions);
-    console.log(`🔍 SUBSCRIPTION DEMO GET DEBUG [${debugId}]: Session check:`, {
-      hasSession: !!session,
-      userId: session?.user?.id
-    });
     
     if (!session?.user?.id) {
-      console.log(`❌ SUBSCRIPTION DEMO GET DEBUG [${debugId}]: No authentication for status check`);
       return NextResponse.json(
         { error: 'Authentication required', debugId },
         { status: 401 }
       );
     }
 
-    console.log(`📞 SUBSCRIPTION DEMO GET DEBUG [${debugId}]: Calling getSubscriptionStatus...`);
-    const status = await demoSubscriptionService.getSubscriptionStatus(session.user.id);
-    console.log(`✅ SUBSCRIPTION DEMO GET DEBUG [${debugId}]: Status retrieved:`, status);
+    // Get subscription status from real database
+    const { prisma } = await import('@/lib/db');
+    const subscription = await prisma.userSubscription.findUnique({
+      where: { userId: session.user.id }
+    });
+
+    console.log(`✅ SUBSCRIPTION DEMO GET COMPAT [${debugId}]: Real subscription status:`, {
+      hasSubscription: !!subscription,
+      status: subscription?.status,
+      planType: subscription?.planType
+    });
 
     return NextResponse.json({
       success: true,
       debugId,
-      ...status
+      hasSubscription: !!subscription,
+      subscription: subscription || null,
+      isActive: subscription ? ['ACTIVE', 'TRIALING'].includes(subscription.status) : false,
+      isTrialing: subscription?.status === 'TRIALING'
     });
 
   } catch (error) {
-    console.error(`🚨 SUBSCRIPTION DEMO GET DEBUG [${debugId}]: Status API error:`, error);
+    console.error(`🚨 SUBSCRIPTION DEMO GET COMPAT [${debugId}]: Status API error:`, error);
     return NextResponse.json(
       { 
         error: error?.message || 'Failed to get subscription status',

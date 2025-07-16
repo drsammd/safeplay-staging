@@ -1,0 +1,43 @@
+
+# Manual Environment Variable Update Template
+# Copy the real price IDs from your Stripe dashboard and replace the placeholder values
+
+# === CURRENT PLACEHOLDER VALUES (TO BE REPLACED) ===
+# STRIPE_BASIC_MONTHLY_PRICE_ID="price_basic_monthly"
+# STRIPE_PREMIUM_MONTHLY_PRICE_ID="price_premium_monthly"
+# STRIPE_ENTERPRISE_MONTHLY_PRICE_ID="price_family_monthly"
+# STRIPE_LIFETIME_PRICE_ID="price_lifetime_onetime"
+
+# === NEW VALUES WITH YOUR REAL STRIPE PRICE IDs ===
+# Replace the values below with the actual price IDs from your Stripe dashboard:
+
+# Basic Plan ($9.99/month) - Find this in Stripe Dashboard > Products > Basic Plan
+STRIPE_BASIC_MONTHLY_PRICE_ID="price_________________"
+
+# Premium Plan ($19.99/month) - Find this in Stripe Dashboard > Products > Premium Plan  
+STRIPE_PREMIUM_MONTHLY_PRICE_ID="price_________________"
+
+# Family Plan ($29.99/month) - Find this in Stripe Dashboard > Products > Family Plan
+STRIPE_ENTERPRISE_MONTHLY_PRICE_ID="price_________________"
+
+# Lifetime Plan ($599.99) - Find this in Stripe Dashboard > Products > Lifetime Plan
+STRIPE_LIFETIME_PRICE_ID="price_________________"
+
+# === OPTIONAL: YEARLY PRICING (if you have yearly prices) ===
+# STRIPE_BASIC_YEARLY_PRICE_ID="price_________________"
+# STRIPE_PREMIUM_YEARLY_PRICE_ID="price_________________" 
+# STRIPE_ENTERPRISE_YEARLY_PRICE_ID="price_________________"
+
+# === INSTRUCTIONS ===
+# 1. Go to https://dashboard.stripe.com/products
+# 2. Click on each product (Basic Plan, Premium Plan, etc.)
+# 3. Copy the Price ID from the pricing section (starts with "price_")
+# 4. Replace the placeholder values above
+# 5. Copy the updated lines to your .env file
+# 6. Restart your application: yarn dev
+
+# === EXAMPLE OF WHAT REAL PRICE IDs LOOK LIKE ===
+# STRIPE_BASIC_MONTHLY_PRICE_ID="price_1OQK8eH1234567890abcdef"
+# STRIPE_PREMIUM_MONTHLY_PRICE_ID="price_1OQK9fH1234567890abcdef"
+# STRIPE_ENTERPRISE_MONTHLY_PRICE_ID="price_1OQKAgH1234567890abcdef"
+# STRIPE_LIFETIME_PRICE_ID="price_1OQKBhH1234567890abcdef"

@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { discountService, stripe } from '@/lib/stripe/discount-service';
-import { UserRole } from '@prisma/client';
+import { UserRole, DiscountCodeStatus } from '@prisma/client';
 
 // GET - Get specific discount code
 export async function GET(

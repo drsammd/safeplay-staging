@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const users = await prisma.user.findMany({
+    const usersData = await prisma.user.findMany({
       select: {
         id: true,
         email: true,
@@ -26,18 +26,53 @@ export async function GET(request: NextRequest) {
         role: true,
         phone: true,
         createdAt: true,
+        updatedAt: true,
         phoneVerified: true,
         identityVerified: true,
         verificationLevel: true,
+        // Include related counts
+        children: {
+          select: { id: true }
+        },
+        managedVenues: {
+          select: { id: true }
+        }
       },
       orderBy: {
         createdAt: 'desc'
       }
     });
 
+    // Transform data to match frontend expectations
+    const users = usersData.map(user => ({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      phone: user.phone,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      phoneVerified: user.phoneVerified,
+      identityVerified: user.identityVerified,
+      verificationLevel: user.verificationLevel,
+      // Add missing fields expected by frontend
+      isActive: true, // Default to active since we don't track this yet
+      lastLogin: null, // We don't track last login yet
+      emailVerified: null, // We don't have email verification timestamps
+      status: user.verificationLevel === 'FULLY_VERIFIED' ? 'ACTIVE' : 'PENDING',
+      childrenCount: user.children.length,
+      venueCount: user.managedVenues.length
+    }));
+
     return NextResponse.json({
       success: true,
-      users
+      users,
+      pagination: {
+        page: 1,
+        limit: 100,
+        total: users.length,
+        totalPages: 1
+      }
     });
 
   } catch (error) {

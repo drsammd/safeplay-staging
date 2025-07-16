@@ -8,14 +8,17 @@ import { User, Mail, Phone, CreditCard, Bell, Shield, Save, Loader2 } from "luci
 interface SubscriptionData {
   id: string;
   status: string;
+  planType: string;
   planId: string;
   currentPeriodEnd: string;
-  plan: {
-    id: string;
-    name: string;
-    price: number;
-    currency: string;
-  };
+  stripeCustomerId: string;
+  stripeSubscriptionId: string;
+  currentPeriodStart: string;
+  autoRenew: boolean;
+  cancelAtPeriodEnd: boolean;
+  isActive: boolean;
+  isPaid: boolean;
+  isFree: boolean;
 }
 
 interface UserData {
@@ -25,6 +28,18 @@ interface UserData {
   role: string;
   subscription: SubscriptionData | null;
 }
+
+// Helper function to get plan display information
+const getPlanInfo = (planType: string) => {
+  const planMap = {
+    'FREE': { name: 'Free Plan', price: 0, currency: 'usd' },
+    'BASIC': { name: 'Basic Plan', price: 9.99, currency: 'usd' },
+    'PREMIUM': { name: 'Premium Plan', price: 19.99, currency: 'usd' },
+    'FAMILY': { name: 'Family Plan', price: 29.99, currency: 'usd' },
+    'LIFETIME': { name: 'Lifetime Plan', price: 499.99, currency: 'usd' }
+  };
+  return planMap[planType as keyof typeof planMap] || { name: 'Unknown Plan', price: 0, currency: 'usd' };
+};
 
 export default function AccountPage() {
   const { data: session } = useSession();
@@ -231,9 +246,13 @@ export default function AccountPage() {
           <>
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-medium text-gray-900">{userData.subscription.plan.name}</h3>
+                <h3 className="text-lg font-medium text-gray-900">
+                  {getPlanInfo(userData.subscription.planType).name}
+                </h3>
                 <span className="text-2xl font-bold text-green-600">
-                  ${userData.subscription.plan.price}/month
+                  {userData.subscription.planType === 'FREE' ? 'Free' : 
+                   userData.subscription.planType === 'LIFETIME' ? 'One-time' :
+                   `$${getPlanInfo(userData.subscription.planType).price}/month`}
                 </span>
               </div>
               <p className="text-sm text-gray-600 mb-2">
@@ -247,15 +266,41 @@ export default function AccountPage() {
                   {userData.subscription.status === 'TRIALING' && ' (Trial Period)'}
                 </span>
               </p>
-              <p className="text-sm text-gray-600">
-                Next billing date: {new Date(userData.subscription.currentPeriodEnd).toLocaleDateString()}
-              </p>
+              {userData.subscription.currentPeriodEnd && (
+                <p className="text-sm text-gray-600">
+                  {userData.subscription.planType === 'FREE' ? 'Active until: ' : 'Next billing date: '}
+                  {new Date(userData.subscription.currentPeriodEnd).toLocaleDateString()}
+                </p>
+              )}
+              {userData.subscription.cancelAtPeriodEnd && (
+                <p className="text-sm text-orange-600 mt-2">
+                  ⚠️ Your subscription will cancel at the end of the current billing period.
+                </p>
+              )}
             </div>
             
             <div className="flex space-x-4">
-              <button className="btn-primary">Upgrade Plan</button>
-              <button className="btn-secondary">Update Payment</button>
-              <button className="text-red-600 hover:text-red-700 font-medium">Cancel Subscription</button>
+              {userData.subscription.planType === 'FREE' ? (
+                <button 
+                  className="btn-primary"
+                  onClick={() => window.location.href = '/parent/subscription'}
+                >
+                  Upgrade Plan
+                </button>
+              ) : (
+                <>
+                  <button 
+                    className="btn-primary"
+                    onClick={() => window.location.href = '/parent/subscription'}
+                  >
+                    Change Plan
+                  </button>
+                  <button className="btn-secondary">Update Payment</button>
+                  <button className="text-red-600 hover:text-red-700 font-medium">
+                    Cancel Subscription
+                  </button>
+                </>
+              )}
             </div>
           </>
         ) : (

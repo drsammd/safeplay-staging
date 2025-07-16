@@ -5,10 +5,10 @@ import { useEffect, useState } from "react";
 import { Plus, Edit, MapPin, Calendar, Camera, Shield, Eye, Settings } from "lucide-react";
 import Image from "next/image";
 import { FaceRegistrationWizard, FaceManagement } from "@/components/face-recognition";
-import { useEffectiveSession } from "@/components/providers/demo-session-provider";
+import { useSecureSession } from "@/components/providers/fixed-session-provider";
 
 export default function ChildrenPage() {
-  const { data: session } = useEffectiveSession();
+  const { data: session } = useSecureSession();
   const [children, setChildren] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);

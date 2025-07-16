@@ -5,24 +5,24 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Hardcoded subscription plans since SubscriptionPlan model doesn't exist
+    // Updated subscription plans with FREE plan (v1.5.0)
     const plans = [
       {
-        id: 'basic',
-        name: 'Basic',
-        description: 'Perfect for small families',
-        planType: 'BASIC',
-        price: 9.99,
-        yearlyPrice: 99.99,
+        id: 'free',
+        name: 'Free Plan',
+        description: 'Get started with basic safety features - No credit card required!',
+        planType: 'FREE',
+        price: 0,
+        yearlyPrice: 0,
         lifetimePrice: null,
-        stripePriceId: 'price_basic_monthly',
-        stripeYearlyPriceId: 'price_basic_yearly',
+        stripePriceId: null, // No Stripe price ID needed - bypass payment
+        stripeYearlyPriceId: null,
         stripeLifetimePriceId: null,
         currency: 'USD',
-        trialDays: 14,
-        maxChildren: 2,
-        maxPhotoDownloads: 50,
-        maxVideoDownloads: 10,
+        trialDays: 0, // No trial needed for free plan
+        maxChildren: 1,
+        maxPhotoDownloads: 1, // 1 photo per month
+        maxVideoDownloads: 1, // 1 video per month
         unlimitedDownloads: false,
         premiumAlerts: false,
         aiInsights: false,
@@ -32,50 +32,105 @@ export async function GET() {
         realTimeTracking: true,
         emergencyFeatures: true,
         familySharing: false,
+        // v1.5.0 - New FREE plan features
+        basicSafety: true,
+        emailSupport: true,
+        allSafetyFeatures: false,
+        priorityEmailSupport: false,
+        archiveAccess: false,
+        customBranding: false,
+        phoneSupport: false,
+        premiumFeatures: false,
+        isActive: true,
+        displayOrder: 0
+      },
+      {
+        id: 'basic',
+        name: 'Basic Plan', // Renamed from "Starter"
+        description: 'Perfect for families with up to 2 children',
+        planType: 'BASIC',
+        price: 9.99,
+        yearlyPrice: 99.99,
+        lifetimePrice: null,
+        stripePriceId: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
+        stripeYearlyPriceId: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
+        stripeLifetimePriceId: null,
+        currency: 'USD',
+        trialDays: 7,
+        maxChildren: 2,
+        maxPhotoDownloads: 5, // Updated: 5 photos per month
+        maxVideoDownloads: 3, // Updated: 3 videos per month
+        unlimitedDownloads: false,
+        premiumAlerts: false,
+        aiInsights: false,
+        prioritySupport: false,
+        advancedAnalytics: false,
+        biometricFeatures: true,
+        realTimeTracking: true,
+        emergencyFeatures: true,
+        familySharing: false,
+        // v1.5.0 - New Basic plan features
+        basicSafety: true,
+        emailSupport: true,
+        allSafetyFeatures: true,
+        priorityEmailSupport: true,
+        archiveAccess: true,
+        customBranding: false,
+        phoneSupport: false,
+        premiumFeatures: false,
         isActive: true,
         displayOrder: 1
       },
       {
         id: 'premium',
-        name: 'Premium',
-        description: 'Most popular choice for families',
+        name: 'Premium Plan', // Renamed from "Professional"
+        description: 'Enhanced features for active families',
         planType: 'PREMIUM',
         price: 19.99,
         yearlyPrice: 199.99,
         lifetimePrice: null,
-        stripePriceId: 'price_premium_monthly',
-        stripeYearlyPriceId: 'price_premium_yearly',
+        stripePriceId: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
+        stripeYearlyPriceId: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
         stripeLifetimePriceId: null,
         currency: 'USD',
-        trialDays: 14,
-        maxChildren: 5,
-        maxPhotoDownloads: 200,
-        maxVideoDownloads: 50,
+        trialDays: 7,
+        maxChildren: 3,
+        maxPhotoDownloads: 10, // Updated: 10 photos per month
+        maxVideoDownloads: 6, // Updated: 6 videos per month
         unlimitedDownloads: false,
         premiumAlerts: true,
         aiInsights: true,
-        prioritySupport: true,
+        prioritySupport: false,
         advancedAnalytics: true,
         biometricFeatures: true,
         realTimeTracking: true,
         emergencyFeatures: true,
         familySharing: true,
+        // v1.5.0 - New Premium plan features
+        basicSafety: true,
+        emailSupport: true,
+        allSafetyFeatures: true,
+        priorityEmailSupport: true,
+        archiveAccess: true,
+        customBranding: true,
+        phoneSupport: false,
+        premiumFeatures: false,
         isActive: true,
         displayOrder: 2
       },
       {
         id: 'family',
-        name: 'Family',
+        name: 'Family Plan', // Renamed from "Enterprise"
         description: 'Unlimited access for large families',
         planType: 'FAMILY',
         price: 29.99,
         yearlyPrice: 299.99,
         lifetimePrice: null,
-        stripePriceId: 'price_family_monthly',
-        stripeYearlyPriceId: 'price_family_yearly',
+        stripePriceId: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID,
+        stripeYearlyPriceId: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID,
         stripeLifetimePriceId: null,
         currency: 'USD',
-        trialDays: 14,
+        trialDays: 7,
         maxChildren: -1, // Unlimited
         maxPhotoDownloads: -1, // Unlimited
         maxVideoDownloads: -1, // Unlimited
@@ -88,40 +143,21 @@ export async function GET() {
         realTimeTracking: true,
         emergencyFeatures: true,
         familySharing: true,
+        // v1.5.0 - New Family plan features
+        basicSafety: true,
+        emailSupport: true,
+        allSafetyFeatures: true,
+        priorityEmailSupport: true,
+        archiveAccess: true,
+        customBranding: true,
+        phoneSupport: true,
+        premiumFeatures: true,
         isActive: true,
         displayOrder: 3
-      },
-      {
-        id: 'lifetime',
-        name: 'Lifetime',
-        description: 'One-time payment, lifetime access',
-        planType: 'LIFETIME',
-        price: 0,
-        yearlyPrice: null,
-        lifetimePrice: 499.99,
-        stripePriceId: null,
-        stripeYearlyPriceId: null,
-        stripeLifetimePriceId: 'price_lifetime_onetime',
-        currency: 'USD',
-        trialDays: 0,
-        maxChildren: -1, // Unlimited
-        maxPhotoDownloads: -1, // Unlimited
-        maxVideoDownloads: -1, // Unlimited
-        unlimitedDownloads: true,
-        premiumAlerts: true,
-        aiInsights: true,
-        prioritySupport: true,
-        advancedAnalytics: true,
-        biometricFeatures: true,
-        realTimeTracking: true,
-        emergencyFeatures: true,
-        familySharing: true,
-        isActive: true,
-        displayOrder: 4
       }
     ];
 
-    console.log('📋 Returning subscription plans:', plans.map(p => `${p.name}: $${p.planType === 'LIFETIME' ? p.lifetimePrice : p.price}`));
+    console.log('📋 Returning subscription plans with real Stripe price IDs:', plans.map(p => `${p.name}: ${p.stripePriceId} (monthly), ${p.stripeYearlyPriceId} (yearly)`));
 
     return NextResponse.json({ plans });
   } catch (error) {

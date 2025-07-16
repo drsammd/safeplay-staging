@@ -84,14 +84,14 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Fetching user subscription...');
     const userSub = await prisma.userSubscription.findUnique({
       where: { userId: session.user.id },
-      include: { plan: true }
+      include: { user: true, paymentMethod: true }
     });
 
     console.log('📊 User subscription data:', {
       exists: !!userSub,
       stripeSubscriptionId: userSub?.stripeSubscriptionId,
       stripeCustomerId: userSub?.stripeCustomerId,
-      currentPlan: userSub?.plan?.name,
+      currentPlanType: userSub?.planType,
       status: userSub?.status
     });
 

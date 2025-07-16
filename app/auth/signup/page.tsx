@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
-import { Eye, EyeOff, User, Mail, Lock, Building, ArrowRight, ArrowLeft, CheckCircle, MapPin, Home } from "lucide-react";
+import { Eye, EyeOff, User, Mail, Lock, Building, ArrowRight, ArrowLeft, CheckCircle, MapPin, Home, AlertCircle } from "lucide-react";
 import SubscriptionPlans from "@/components/subscription/subscription-plans";
 import PaymentSetup from "@/components/subscription/payment-setup";
 import { AddressAutocomplete } from "@/components/verification/address-autocomplete";
@@ -95,8 +95,8 @@ export default function SignUpPage() {
       return;
     }
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (formData.password.length < 8) {
+      setError("Password must be at least 8 characters long");
       setIsLoading(false);
       return;
     }
@@ -167,8 +167,8 @@ export default function SignUpPage() {
   };
 
   const handlePlanSelect = (stripePriceId: string, billingInterval: 'monthly' | 'yearly' | 'lifetime', planId: string) => {
-    // Fetch plan details from the SAME API that SubscriptionPlans component uses
-    fetch('/api/stripe/plans-demo')
+    // Fetch plan details from the REAL API that SubscriptionPlans component uses
+    fetch('/api/stripe/plans')
       .then(res => res.json())
       .then(data => {
         const plan = data.plans?.find((p: any) => p.id === planId);
@@ -177,14 +177,16 @@ export default function SignUpPage() {
                         billingInterval === 'yearly' ? plan.yearlyPrice : 
                         plan.price;
           
-          setSelectedPlan({
+          const planObject = {
             id: planId,
             name: plan.name,
             stripePriceId,
             billingInterval,
             amount,
             planType: plan.planType
-          });
+          };
+
+          setSelectedPlan(planObject);
 
           console.log('✅ Plan selected successfully:', {
             planId,
@@ -193,14 +195,15 @@ export default function SignUpPage() {
             amount
           });
 
-          // If free plan, create account directly
+          // 🔧 CRITICAL FIX v1.5.8: Pass the plan object directly instead of relying on state
+          // If free plan, create account directly with the plan object
           if (plan.planType === 'FREE') {
-            handleAccountCreation(null);
+            handleAccountCreation(null, planObject);
           } else {
             setCurrentStep('payment-setup');
           }
         } else {
-          console.error('❌ Plan not found in demo API:', { planId, availablePlans: data.plans?.map((p: any) => p.id) });
+          console.error('❌ Plan not found in real API:', { planId, availablePlans: data.plans?.map((p: any) => p.id) });
           setError('Selected plan not found. Please refresh and try again.');
         }
       })
@@ -212,45 +215,284 @@ export default function SignUpPage() {
 
   const handlePaymentSuccess = (subscriptionData: any) => {
     // Move to account creation with subscription data
-    handleAccountCreation(subscriptionData);
+    handleAccountCreation(subscriptionData, selectedPlan);
   };
 
-  const handleAccountCreation = async (subscriptionData: any) => {
+  const handleAccountCreation = async (subscriptionData: any, planObject: SelectedPlan | null = null) => {
     setCurrentStep('account-creation');
     setIsLoading(true);
     setError("");
 
     try {
+      // 🔧 CRITICAL FIX v1.5.7: Pre-submission validation and form state verification
+      console.log(`🔧 SIGNUP FIX v1.5.7: === PRE-SUBMISSION VALIDATION ===`);
+      
+      // Validate form state is fully populated before proceeding
+      if (!formData.name?.trim()) {
+        throw new Error("Name is required");
+      }
+      if (!formData.email?.trim()) {
+        throw new Error("Email is required");
+      }
+      if (!formData.password?.trim()) {
+        throw new Error("Password is required");
+      }
+      if (!formData.homeAddress?.trim()) {
+        throw new Error("Home address is required");
+      }
+      if (formData.agreeToTerms !== true) {
+        throw new Error("You must agree to the Terms of Service");
+      }
+      if (formData.agreeToPrivacy !== true) {
+        throw new Error("You must agree to the Privacy Policy");
+      }
+      
+      console.log(`✅ SIGNUP FIX v1.5.7: Pre-submission validation passed`);
+      
+      // 🔍 COMPREHENSIVE DEBUG v1.5.7: Capture attempt information and timing
+      const attemptTimestamp = new Date().toISOString();
+      const attemptId = `signup_attempt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Determine if this is a retry attempt based on error state
+      const isRetryAttempt = error && error.includes("Invalid signup data");
+      const attemptType = isRetryAttempt ? "RETRY_ATTEMPT" : "FIRST_ATTEMPT";
+      
+      console.log(`🚀 SIGNUP DEBUG [${attemptId}]: === ${attemptType} STARTED ===`);
+      console.log(`🚀 SIGNUP DEBUG [${attemptId}]: Timestamp: ${attemptTimestamp}`);
+      console.log(`🚀 SIGNUP DEBUG [${attemptId}]: Previous error state: "${error}"`);
+      console.log(`🚀 SIGNUP DEBUG [${attemptId}]: Current step: ${currentStep}`);
+      console.log(`🚀 SIGNUP DEBUG [${attemptId}]: Is loading: ${isLoading}`);
+      
+      // 🔍 FORM STATE DEBUG: Capture exact form state at submission time
+      console.log(`📋 SIGNUP DEBUG [${attemptId}]: === FORM STATE ANALYSIS ===`);
+      console.log(`📋 SIGNUP DEBUG [${attemptId}]: Complete formData object:`, JSON.stringify(formData, null, 2));
+      console.log(`📋 SIGNUP DEBUG [${attemptId}]: Form data types:`, {
+        name: typeof formData.name,
+        email: typeof formData.email,
+        password: typeof formData.password,
+        role: typeof formData.role,
+        agreeToTerms: typeof formData.agreeToTerms,
+        agreeToPrivacy: typeof formData.agreeToPrivacy,
+        homeAddress: typeof formData.homeAddress,
+        useDifferentBillingAddress: typeof formData.useDifferentBillingAddress,
+        billingAddress: typeof formData.billingAddress
+      });
+      
+      // 🔍 FORM FIELD VALUES: Log exact values
+      console.log(`📋 SIGNUP DEBUG [${attemptId}]: Form field values:`, {
+        name: formData.name,
+        email: formData.email,
+        passwordLength: formData.password?.length,
+        role: formData.role,
+        agreeToTerms: formData.agreeToTerms,
+        agreeToPrivacy: formData.agreeToPrivacy,
+        homeAddress: formData.homeAddress,
+        homeAddressLength: formData.homeAddress?.length,
+        useDifferentBillingAddress: formData.useDifferentBillingAddress,
+        billingAddress: formData.billingAddress,
+        billingAddressLength: formData.billingAddress?.length
+      });
+      
+      // 🔍 VALIDATION STATE DEBUG: Capture validation and address state
+      console.log(`📍 SIGNUP DEBUG [${attemptId}]: === ADDRESS VALIDATION STATE ===`);
+      console.log(`📍 SIGNUP DEBUG [${attemptId}]: homeAddressValidation:`, homeAddressValidation);
+      console.log(`📍 SIGNUP DEBUG [${attemptId}]: billingAddressValidation:`, billingAddressValidation);
+      console.log(`📍 SIGNUP DEBUG [${attemptId}]: homeAddressFields:`, homeAddressFields);
+      console.log(`📍 SIGNUP DEBUG [${attemptId}]: billingAddressFields:`, billingAddressFields);
+      
+      // 🔍 PLAN SELECTION DEBUG: Capture selected plan state
+      console.log(`💳 SIGNUP DEBUG [${attemptId}]: === PLAN SELECTION STATE ===`);
+      console.log(`💳 SIGNUP DEBUG [${attemptId}]: selectedPlan (state):`, selectedPlan);
+      console.log(`💳 SIGNUP DEBUG [${attemptId}]: planObject (parameter):`, planObject);
+      console.log(`💳 SIGNUP DEBUG [${attemptId}]: Final plan to use:`, planObject || selectedPlan || null);
+      console.log(`💳 SIGNUP DEBUG [${attemptId}]: subscriptionData:`, subscriptionData);
+      
+      // 🔧 CRITICAL FIX v1.5.7: Enhanced data preparation with robust type handling
+      const requestData = {
+        // String fields - ensure they are trimmed and non-empty
+        name: String(formData.name || "").trim(),
+        email: String(formData.email || "").trim().toLowerCase(),
+        password: String(formData.password || ""),
+        role: String(formData.role || "PARENT"),
+        
+        // 🔧 CRITICAL FIX: Triple-safe boolean conversion to prevent any type inconsistencies
+        agreeToTerms: !!(formData.agreeToTerms === true || formData.agreeToTerms === "true"),
+        agreeToPrivacy: !!(formData.agreeToPrivacy === true || formData.agreeToPrivacy === "true"),
+        useDifferentBillingAddress: !!(formData.useDifferentBillingAddress === true || formData.useDifferentBillingAddress === "true"),
+        
+        // Address fields - ensure they exist and are strings
+        homeAddress: String(formData.homeAddress || "").trim(),
+        homeAddressValidation: homeAddressValidation || null,
+        billingAddress: String(formData.billingAddress || "").trim(),
+        billingAddressValidation: billingAddressValidation || null,
+        
+        // 🔧 CRITICAL FIX v1.5.8: Use passed planObject parameter instead of state to avoid timing issues
+        selectedPlan: planObject || selectedPlan || null,
+        subscriptionData: subscriptionData || null,
+        
+        // Address fields - ensure they exist with proper defaults
+        homeAddressFields: homeAddressFields || {
+          street: "", city: "", state: "", zipCode: "", fullAddress: ""
+        },
+        billingAddressFields: billingAddressFields || {
+          street: "", city: "", state: "", zipCode: "", fullAddress: ""
+        },
+        
+        // 🔍 DEBUG METADATA: Add debugging information
+        debugMetadata: {
+          attemptId,
+          attemptType,
+          attemptTimestamp,
+          frontendVersion: "1.5.7",
+          previousError: error || "",
+          formStateSnapshot: JSON.stringify(formData),
+          dataPreparationTimestamp: new Date().toISOString()
+        }
+      };
+      
+      // 🔧 CRITICAL FIX v1.5.7: Final validation of prepared data
+      console.log(`🔧 SIGNUP FIX v1.5.7: === PREPARED DATA VALIDATION ===`);
+      
+      // Validate all required fields are present and correct type
+      if (typeof requestData.name !== 'string' || requestData.name.length === 0) {
+        throw new Error("Invalid name field after preparation");
+      }
+      if (typeof requestData.email !== 'string' || requestData.email.length === 0) {
+        throw new Error("Invalid email field after preparation");
+      }
+      if (typeof requestData.password !== 'string' || requestData.password.length === 0) {
+        throw new Error("Invalid password field after preparation");
+      }
+      if (typeof requestData.homeAddress !== 'string' || requestData.homeAddress.length === 0) {
+        throw new Error("Invalid home address field after preparation");
+      }
+      if (typeof requestData.agreeToTerms !== 'boolean' || requestData.agreeToTerms !== true) {
+        throw new Error("Invalid agreeToTerms field after preparation");
+      }
+      if (typeof requestData.agreeToPrivacy !== 'boolean' || requestData.agreeToPrivacy !== true) {
+        throw new Error("Invalid agreeToPrivacy field after preparation");
+      }
+      if (typeof requestData.useDifferentBillingAddress !== 'boolean') {
+        throw new Error("Invalid useDifferentBillingAddress field after preparation");
+      }
+      
+      console.log(`✅ SIGNUP FIX v1.5.7: All prepared data validated successfully`);
+
+      // 🔍 REQUEST DATA DEBUG: Comprehensive logging of prepared request data
+      console.log(`📤 SIGNUP DEBUG [${attemptId}]: === REQUEST DATA PREPARATION ===`);
+      console.log(`📤 SIGNUP DEBUG [${attemptId}]: Request data before boolean conversion:`, {
+        agreeToTerms: formData.agreeToTerms,
+        agreeToPrivacy: formData.agreeToPrivacy,
+        useDifferentBillingAddress: formData.useDifferentBillingAddress
+      });
+      console.log(`📤 SIGNUP DEBUG [${attemptId}]: Request data after boolean conversion:`, {
+        agreeToTerms: requestData.agreeToTerms,
+        agreeToPrivacy: requestData.agreeToPrivacy,
+        useDifferentBillingAddress: requestData.useDifferentBillingAddress
+      });
+      console.log(`📤 SIGNUP DEBUG [${attemptId}]: Boolean conversion types:`, {
+        agreeToTerms: typeof requestData.agreeToTerms,
+        agreeToPrivacy: typeof requestData.agreeToPrivacy,
+        useDifferentBillingAddress: typeof requestData.useDifferentBillingAddress
+      });
+      
+      // 🔍 COMPLETE REQUEST PAYLOAD: Log complete request data
+      console.log(`📤 SIGNUP DEBUG [${attemptId}]: Complete request payload:`, JSON.stringify(requestData, null, 2));
+      console.log(`📤 SIGNUP DEBUG [${attemptId}]: Request payload keys:`, Object.keys(requestData));
+      console.log(`📤 SIGNUP DEBUG [${attemptId}]: Request payload size: ${JSON.stringify(requestData).length} characters`);
+
+      // 🔍 API REQUEST DEBUG: Log the actual fetch request
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: === SENDING API REQUEST ===`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: URL: /api/auth/signup`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Method: POST`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Headers: Content-Type: application/json`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Body size: ${JSON.stringify(requestData).length} characters`);
+      
+      const requestStartTime = Date.now();
+      
       const response = await fetch("/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-          agreeToTerms: formData.agreeToTerms,
-          agreeToPrivacy: formData.agreeToPrivacy,
-          homeAddress: formData.homeAddress,
-          homeAddressValidation: homeAddressValidation,
-          useDifferentBillingAddress: formData.useDifferentBillingAddress,
-          billingAddress: formData.billingAddress,
-          billingAddressValidation: billingAddressValidation,
-          selectedPlan: selectedPlan,
-          subscriptionData: subscriptionData,
-          // Add parsed address fields
-          homeAddressFields: homeAddressFields,
-          billingAddressFields: billingAddressFields,
-        }),
+        body: JSON.stringify(requestData),
       });
 
+      const requestEndTime = Date.now();
+      const requestDuration = requestEndTime - requestStartTime;
+
+      // 🔍 API RESPONSE DEBUG: Log response details
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: === API RESPONSE RECEIVED ===`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Request duration: ${requestDuration}ms`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Response status: ${response.status}`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Response statusText: ${response.statusText}`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Response ok: ${response.ok}`);
+      console.log(`🌐 SIGNUP DEBUG [${attemptId}]: Response headers:`, Object.fromEntries(response.headers.entries()));
+
       const data = await response.json();
+      
+      // 🔍 RESPONSE DATA DEBUG: Log complete response data
+      console.log(`📥 SIGNUP DEBUG [${attemptId}]: === RESPONSE DATA ANALYSIS ===`);
+      console.log(`📥 SIGNUP DEBUG [${attemptId}]: Response data:`, JSON.stringify(data, null, 2));
+      console.log(`📥 SIGNUP DEBUG [${attemptId}]: Response data keys:`, Object.keys(data || {}));
+      console.log(`📥 SIGNUP DEBUG [${attemptId}]: Has error field:`, 'error' in (data || {}));
+      console.log(`📥 SIGNUP DEBUG [${attemptId}]: Error field type:`, typeof data?.error);
+      console.log(`📥 SIGNUP DEBUG [${attemptId}]: Error field value:`, data?.error);
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to create account");
+        console.error(`🚨 SIGNUP ERROR [${attemptId}]: === API RESPONSE FAILED ===`);
+        console.error(`🚨 SIGNUP ERROR [${attemptId}]: Status: ${response.status}`);
+        console.error(`🚨 SIGNUP ERROR [${attemptId}]: StatusText: ${response.statusText}`);
+        console.error(`🚨 SIGNUP ERROR [${attemptId}]: Response data:`, data);
+        console.error(`🚨 SIGNUP ERROR [${attemptId}]: Attempt type: ${attemptType}`);
+        console.error(`🚨 SIGNUP ERROR [${attemptId}]: Request duration: ${requestDuration}ms`);
+        
+        // 🔍 ERROR ANALYSIS: Detailed error breakdown
+        console.error(`🔍 SIGNUP ERROR [${attemptId}]: === ERROR ANALYSIS ===`);
+        if (data?.error?.issues) {
+          console.error(`🔍 SIGNUP ERROR [${attemptId}]: Validation issues found:`, data.error.issues);
+          data.error.issues.forEach((issue: any, index: number) => {
+            console.error(`🔍 SIGNUP ERROR [${attemptId}]: Issue ${index + 1}:`, {
+              path: issue.path,
+              message: issue.message,
+              code: issue.code,
+              received: issue.received,
+              expected: issue.expected
+            });
+          });
+        }
+        
+        // Handle error message properly to avoid "[object Object]" display
+        let errorMessage = "Account Creation Failed - Invalid signup data";
+        if (typeof data.error === 'string' && data.error.trim() !== '') {
+          errorMessage = data.error;
+        } else if (typeof data.error === 'object' && data.error !== null) {
+          if (typeof data.error.message === 'string' && data.error.message.trim() !== '') {
+            errorMessage = data.error.message;
+          } else if (typeof data.error.details === 'string' && data.error.details.trim() !== '') {
+            errorMessage = data.error.details;
+          } else {
+            errorMessage = `Account creation failed - ${JSON.stringify(data.error)}`;
+          }
+        } else if (typeof data.message === 'string' && data.message.trim() !== '') {
+          errorMessage = data.message;
+        } else if (typeof data.details === 'string' && data.details.trim() !== '') {
+          errorMessage = data.details;
+        } else {
+          errorMessage = `Account creation failed (Status ${response.status}) - Please check all required fields`;
+        }
+        
+        console.error(`🚨 SIGNUP ERROR [${attemptId}]: Final error message: "${errorMessage}"`);
+        
+        throw new Error(errorMessage);
       }
+      
+      // 🔍 SUCCESS RESPONSE DEBUG: Log successful response
+      console.log(`✅ SIGNUP SUCCESS [${attemptId}]: === API REQUEST SUCCESSFUL ===`);
+      console.log(`✅ SIGNUP SUCCESS [${attemptId}]: Status: ${response.status}`);
+      console.log(`✅ SIGNUP SUCCESS [${attemptId}]: Request duration: ${requestDuration}ms`);
+      console.log(`✅ SIGNUP SUCCESS [${attemptId}]: Attempt type: ${attemptType}`);
+      console.log(`✅ SIGNUP SUCCESS [${attemptId}]: Response data keys:`, Object.keys(data || {}));
 
       // Auto-login after successful account creation
       const signInResult = await signIn("credentials", {
@@ -266,8 +508,29 @@ export default function SignUpPage() {
 
       setCurrentStep('verification-prompt');
     } catch (error: any) {
+      // 🔍 EXCEPTION DEBUG: Comprehensive error logging
+      const attemptId = `signup_exception_${Date.now()}`;
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: === EXCEPTION DURING ACCOUNT CREATION ===`);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Error type:`, typeof error);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Error constructor:`, error?.constructor?.name);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Error message:`, error?.message);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Error stack:`, error?.stack);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Complete error object:`, error);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Current step:`, currentStep);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Selected plan (state):`, selectedPlan);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Plan object (parameter):`, planObject);
+      console.error(`🚨 SIGNUP EXCEPTION [${attemptId}]: Form data summary:`, {
+        hasName: !!formData.name,
+        hasEmail: !!formData.email,
+        hasPassword: !!formData.password,
+        agreeToTerms: formData.agreeToTerms,
+        agreeToPrivacy: formData.agreeToPrivacy,
+        hasHomeAddress: !!formData.homeAddress
+      });
+      
       setError(error.message || "Something went wrong. Please try again.");
-      setCurrentStep('plan-selection'); // Go back to plan selection on error
+      // Keep user on current step (account-creation) so they can see the error and retry
+      // Don't automatically go back to plan selection
     } finally {
       setIsLoading(false);
     }
@@ -628,10 +891,10 @@ export default function SignUpPage() {
 
       case 'plan-selection':
         return (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl p-8 border border-white/20 shadow-xl">
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">Choose Your Plan</h3>
-              <p className="text-gray-300">Select the plan that best fits your needs</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Plan</h3>
+              <p className="text-gray-600">Select the plan that best fits your needs</p>
             </div>
             
             {error && (
@@ -662,10 +925,10 @@ export default function SignUpPage() {
 
       case 'payment-setup':
         return (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
+          <div className="bg-white/95 backdrop-blur-sm rounded-xl p-8 border border-white/20 shadow-xl">
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">Payment Setup</h3>
-              <p className="text-gray-300">Complete your subscription to {selectedPlan?.name}</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment Setup</h3>
+              <p className="text-gray-600">Complete your subscription to {selectedPlan?.name}</p>
             </div>
 
             {error && (
@@ -722,16 +985,63 @@ export default function SignUpPage() {
         return (
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
             <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center animate-pulse">
-                <User className="w-8 h-8 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Creating Your Account</h3>
-                <p className="text-gray-300">Please wait while we set up your SafePlay account...</p>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
-              </div>
+              {isLoading ? (
+                <>
+                  <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center animate-pulse">
+                    <User className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Creating Your Account</h3>
+                    <p className="text-gray-300">Please wait while we set up your SafePlay account...</p>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
+                  </div>
+                </>
+              ) : error ? (
+                <>
+                  <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                    <AlertCircle className="w-8 h-8 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Account Creation Failed</h3>
+                    <p className="text-gray-300 mb-4">We encountered an issue while creating your account</p>
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm mb-6">
+                      {error}
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setCurrentStep('payment-setup')}
+                      className="flex-1 text-white border-white/20 hover:bg-white/10"
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Go Back
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setError("");
+                        handleAccountCreation(selectedPlan?.planType === 'FREE' ? null : { subscription: { id: 'retry' } }, selectedPlan);
+                      }}
+                      className="flex-1 btn-primary"
+                    >
+                      Try Again
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-8 h-8 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Account Created Successfully!</h3>
+                    <p className="text-gray-300">Redirecting to verification...</p>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         );
@@ -754,11 +1064,16 @@ export default function SignUpPage() {
                 <div className="bg-green-900/30 border border-green-400/20 rounded-lg p-4">
                   <p className="text-green-100">
                     <strong>Plan:</strong> {selectedPlan.name}
-                    {selectedPlan.billingInterval !== 'lifetime' && (
+                    {/* 🔧 SUCCESS MESSAGE FIX v1.5.6: Only show trial badge for paid plans, not FREE plans */}
+                    {selectedPlan.planType === 'FREE' ? (
+                      <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
+                        No credit card required!
+                      </Badge>
+                    ) : selectedPlan.billingInterval !== 'lifetime' ? (
                       <Badge variant="outline" className="ml-2 text-green-600 border-green-200">
                         7 day free trial
                       </Badge>
-                    )}
+                    ) : null}
                   </p>
                 </div>
               )}

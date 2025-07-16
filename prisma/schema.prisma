@@ -17,6 +17,8 @@ model User {
   name              String
   role              UserRole
   phone             String?
+  isActive          Boolean   @default(true)  // Added missing field for authentication
+  lastLoginAt       DateTime? // Added missing field for authentication
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   
@@ -30,6 +32,16 @@ model User {
   twoFactorSecret   String?   // For authenticator apps
   twoFactorPhone    String?   // Phone number for SMS 2FA
   verificationNotes String?   // Admin notes about verification status
+  
+  // Freemium Usage Tracking Fields (v1.5.0)
+  photosUsedThisMonth    Int       @default(0)    // Monthly photo usage count
+  videosUsedThisMonth    Int       @default(0)    // Monthly video usage count  
+  usageResetDate         DateTime  @default(now()) // When monthly limits reset
+  totalPhotoPurchases    Int       @default(0)    // Total individual photo purchases
+  totalVideoPurchases    Int       @default(0)    // Total individual video purchases
+  freePhotoUsed          Boolean   @default(false) // Free photo used (for FREE plan)
+  freeVideoUsed          Boolean   @default(false) // Free video used (for FREE plan)
+  
   accounts          Account[]
   children          Child[]   @relation("ParentChildren")
   purchasedMemories Memory[]  @relation("MemoryPurchaser")
@@ -138,6 +150,11 @@ model User {
   receivedPermissions       FamilyPermission[]        @relation("UserReceivedPermissions")
   childAccessGrants         ChildAccess[]             @relation("UserChildAccessGrants")
   childAccessReceived       ChildAccess[]             @relation("UserChildAccessReceived")
+
+  // Individual Purchase Relations (v1.5.0)
+  individualPurchases       IndividualPurchase[]      @relation("UserIndividualPurchases")
+  photoVideoPackPurchases   PhotoVideoPackPurchase[]  @relation("UserPhotoVideoPackPurchases")
+  photoVideoPackCredits     PhotoVideoPackCredit[]    @relation("UserPhotoVideoPackCredits")
 
   @@map("users")
 }
@@ -334,6 +351,10 @@ model Memory {
   child             Child                  @relation(fields: [childId], references: [id])
   purchaser         User?                  @relation("MemoryPurchaser", fields: [purchaserId], references: [id])
   venue             Venue                  @relation(fields: [venueId], references: [id])
+
+  // Individual Purchase Relations (v1.5.0)
+  individualPurchases    IndividualPurchase[]    @relation("MemoryIndividualPurchases")
+  packCreditUses         PhotoVideoPackCredit[]  @relation("MemoryPackCreditUses")
 
   @@map("memories")
 }
@@ -760,6 +781,7 @@ model FloorPlanZone {
   evacuationFromRoutes EvacuationRoute[]   @relation("EvacuationFromZone")
   evacuationToRoutes   EvacuationRoute[]   @relation("EvacuationToZone")
   cameras           Camera[]               @relation("ZoneCameras")
+  childSightings    ChildSighting[]        @relation("ChildSightingZone")
   
   @@index([floorPlanId, isActive])
   @@index([type, isActive])
@@ -1084,12 +1106,17 @@ model ChildSighting {
   id                String                 @id @default(cuid())
   childId           String
   venueId           String
+  floorPlanZoneId   String?                // Added missing field for zone reference
   location          Json                   // Specific location where child was sighted
+  position          Json?                  // Added missing position field
+  boundingBox       Json?                  // Added missing bounding box field  
   timestamp         DateTime               @default(now())
   confidence        Float                  // Confidence level of the sighting
   source            SightingSource         @default(CAMERA)
+  sightingType      String?                @default("DETECTED") // Added missing sighting type field
   sourceId          String?                // ID of camera, staff member, etc.
   imageUrl          String?
+  imageKey          String?                // Added missing image key field
   verified          Boolean                @default(false)
   verifiedBy        String?
   verifiedAt        DateTime?
@@ -1099,10 +1126,12 @@ model ChildSighting {
   recognitionEventId String?
   child             Child                  @relation(fields: [childId], references: [id])
   venue             Venue                  @relation(fields: [venueId], references: [id])
+  zone              FloorPlanZone?         @relation("ChildSightingZone", fields: [floorPlanZoneId], references: [id])
   recognitionEvent  FaceRecognitionEvent?  @relation(fields: [recognitionEventId], references: [id])
   
   @@index([childId, timestamp])
   @@index([venueId, timestamp])
+  @@index([floorPlanZoneId, timestamp])
   @@map("child_sightings")
 }
 
@@ -1206,9 +1235,11 @@ model CheckInOutEvent {
   biometricUsed     Boolean                @default(false)
   photoTaken        String?                // Photo URL for verification
   duration          Int?                   // Duration of stay (for check-out events)
+  identityVerificationId String?            // Added missing field for identity verification
   child             Child                  @relation(fields: [childId], references: [id])
   venue             Venue                  @relation(fields: [venueId], references: [id])
   user              User                   @relation("UserCheckInOutEvents", fields: [userId], references: [id])
+  identityVerifications IdentityVerification[] @relation("CheckInOutIdentityVerifications") // Added missing relation
   
   @@index([childId, timestamp])
   @@index([venueId, eventType])
@@ -2450,9 +2481,13 @@ model IdentityVerification {
   reviewedBy        String?                // Admin who reviewed
   rejectionReason   String?
   verificationScore Float?                 // Confidence score
+  verificationResult String?               // Added missing verification result field
+  matchConfidence   Float?                 // Added missing match confidence field
   externalReference String?                // Reference from external service
   metadata          Json?
+  checkInOutEventId String?                // Added field for check-in-out relation
   user              User                   @relation("UserIdentityVerifications", fields: [userId], references: [id])
+  checkInOutEvent   CheckInOutEvent?       @relation("CheckInOutIdentityVerifications", fields: [checkInOutEventId], references: [id])
   
   @@index([userId, status])
   @@index([status, submittedAt])
@@ -2701,6 +2736,7 @@ model DiscountCode {
   name              String?
   description       String?
   type              DiscountType
+  category          DiscountCategory?      // Added missing category field
   value             Float                  // Percentage or fixed amount
   currency          String?                @default("USD")
   minimumAmount     Float?                 // Minimum order amount
@@ -2710,13 +2746,19 @@ model DiscountCode {
   userUsageLimit    Int?                   // Per-user usage limit
   validFrom         DateTime               @default(now())
   validUntil        DateTime?
+  expiresAt         DateTime?              // Added missing field
+  maxUses           Int?                   // Added missing field (alias for usageLimit)
+  currentUses       Int                    @default(0) // Added missing field (alias for usageCount)
+  clickCount        Int                    @default(0) // Added missing field
+  stripePromotionCodeId String?            // Added missing field
   isActive          Boolean                @default(true)
   applicableProducts Json?                 // Which products/plans this applies to
   restrictedUsers   Json?                  // Users who cannot use this code
   createdBy         String?
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
-  usages            DiscountCodeUsage[]
+  discountCodeUsages DiscountCodeUsage[] @relation("DiscountCodeUsages") // Relation for tracking usage
+  usageHistory      DiscountCodeUsage[] @relation("DiscountCodeHistory") // Relation for usage history
   
   @@index([code, isActive])
   @@index([validFrom, validUntil])
@@ -2733,8 +2775,11 @@ model DiscountCodeUsage {
   originalAmount    Float
   finalAmount       Float
   usedAt            DateTime               @default(now())
+  usageStatus       String?                // Added missing usage status field
   metadata          Json?
-  code              DiscountCode           @relation(fields: [codeId], references: [id])
+  code              DiscountCode           @relation("DiscountCodeUsages", fields: [codeId], references: [id])
+  historyCode       DiscountCode?          @relation("DiscountCodeHistory", fields: [historyCodeId], references: [id])
+  historyCodeId     String?                // Added field for history relation
   user              User                   @relation("UserDiscountUsages", fields: [userId], references: [id])
   venue             Venue?                 @relation("VenueDiscountUsages", fields: [venueId], references: [id])
   
@@ -2837,6 +2882,7 @@ model EmailLog {
   templateId        String?
   campaignId        String?
   status            EmailStatus            @default(SENT)
+  createdAt         DateTime               @default(now()) // Added missing createdAt field
   sentAt            DateTime               @default(now())
   deliveredAt       DateTime?
   openedAt          DateTime?
@@ -3111,6 +3157,74 @@ model ChildAccess {
   @@unique([childId, granteeId])
   @@index([granteeId, isActive])
   @@map("child_access")
+}
+
+// Individual Purchase Models (v1.5.0)
+
+model IndividualPurchase {
+  id                     String                   @id @default(cuid())
+  userId                 String
+  purchaseType           IndividualPurchaseType
+  amount                 Float                    // $0.99 for photo, $2.99 for video
+  currency               String                   @default("usd")
+  stripePaymentIntentId  String?                  // For payment tracking
+  stripeSessionId        String?                  // For checkout session tracking
+  paymentStatus          PaymentStatus
+  memoryId               String?                  // If purchasing specific memory
+  downloadUrl            String?                  // Generated download URL
+  downloadExpiresAt      DateTime?                // When download link expires
+  purchasedAt            DateTime                 @default(now())
+  downloadedAt           DateTime?
+  metadata               Json?                    // Additional purchase data
+  user                   User                     @relation("UserIndividualPurchases", fields: [userId], references: [id])
+  memory                 Memory?                  @relation("MemoryIndividualPurchases", fields: [memoryId], references: [id])
+  
+  @@index([userId, purchaseType])
+  @@index([paymentStatus])
+  @@map("individual_purchases")
+}
+
+model PhotoVideoPackPurchase {
+  id                     String                   @id @default(cuid())
+  userId                 String
+  packType               PhotoVideoPackType
+  amount                 Float                    // $9.99, $19.99, or $29.99
+  currency               String                   @default("usd")
+  stripePaymentIntentId  String?
+  stripeSessionId        String?
+  paymentStatus          PaymentStatus
+  photoCredits           Int                      // Number of photo downloads included
+  videoCredits           Int                      // Number of video downloads included
+  purchasedAt            DateTime                 @default(now())
+  expiresAt              DateTime?                // When credits expire (if applicable)
+  metadata               Json?
+  user                   User                     @relation("UserPhotoVideoPackPurchases", fields: [userId], references: [id])
+  credits                PhotoVideoPackCredit[]   @relation("PackPurchaseCredits")
+  
+  @@index([userId, packType])
+  @@index([paymentStatus])
+  @@map("photo_video_pack_purchases")
+}
+
+model PhotoVideoPackCredit {
+  id                     String                   @id @default(cuid())
+  userId                 String
+  packPurchaseId         String
+  creditType             IndividualPurchaseType   // PHOTO or VIDEO_MONTAGE
+  isUsed                 Boolean                  @default(false)
+  usedAt                 DateTime?
+  memoryId               String?                  // If used for specific memory
+  downloadUrl            String?
+  downloadExpiresAt      DateTime?
+  createdAt              DateTime                 @default(now())
+  expiresAt              DateTime?
+  user                   User                     @relation("UserPhotoVideoPackCredits", fields: [userId], references: [id])
+  packPurchase           PhotoVideoPackPurchase   @relation("PackPurchaseCredits", fields: [packPurchaseId], references: [id])
+  memory                 Memory?                  @relation("MemoryPackCreditUses", fields: [memoryId], references: [id])
+  
+  @@index([userId, creditType, isUsed])
+  @@index([packPurchaseId])
+  @@map("photo_video_pack_credits")
 }
 
 // Enums
@@ -4170,7 +4284,7 @@ enum SubscriptionPlan {
   FREE
   BASIC
   PREMIUM
-  ENTERPRISE
+  FAMILY
 }
 
 enum SubscriptionStatus {
@@ -4180,6 +4294,17 @@ enum SubscriptionStatus {
   PAST_DUE
   UNPAID
   TRIALING
+}
+
+enum IndividualPurchaseType {
+  PHOTO
+  VIDEO_MONTAGE
+}
+
+enum PhotoVideoPackType {
+  PACK_1    // 5 photos + 3 montages = $9.99
+  PACK_2    // 10 photos + 5 montages = $19.99
+  PACK_3    // 20 photos + 10 montages = $29.99
 }
 
 enum PaymentMethodType {
@@ -4243,6 +4368,31 @@ enum DiscountType {
   FIXED_AMOUNT
   FREE_SHIPPING
   BUY_ONE_GET_ONE
+  FREE_TRIAL_EXTENSION
+}
+
+enum DiscountCodeStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  PAUSED
+}
+
+enum DiscountCategory {
+  WELCOME
+  LOYALTY
+  SEASONAL
+  FLASH_SALE
+  STUDENT
+  REFERRAL
+  BULK
+  PROMOTIONAL
+}
+
+enum DiscountApplication {
+  AUTOMATIC
+  USER_INPUT
+  ADMIN_APPLIED
 }
 
 // Payment and Revenue Sharing Enums

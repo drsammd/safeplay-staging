@@ -103,15 +103,16 @@ export class GeoapifyService {
       const hasLetters = /[a-zA-Z]/.test(trimmedInput);
       const hasNumbers = /[0-9]/.test(trimmedInput);
       
-      // For very short inputs or number-only inputs, don't call autocomplete
-      if (trimmedInput.length < 3 || (!hasLetters && trimmedInput.length < 5)) {
+      // 🔧 UX IMPROVEMENT: More lenient input requirements for better user experience
+      // Allow autocomplete for shorter inputs to help users get suggestions sooner
+      if (trimmedInput.length < 2) {
         console.log(`📍 Skipping autocomplete for too-short input: "${trimmedInput}"`);
         return [];
       }
       
-      // For number-only inputs that are short, also skip (like "1838")
-      if (!hasLetters && trimmedInput.length < 6) {
-        console.log(`📍 Skipping autocomplete for number-only input: "${trimmedInput}"`);
+      // For number-only inputs, be more lenient (allow 3+ characters instead of 6+)
+      if (!hasLetters && trimmedInput.length < 3) {
+        console.log(`📍 Skipping autocomplete for short number-only input: "${trimmedInput}"`);
         return [];
       }
 
@@ -185,7 +186,7 @@ export class GeoapifyService {
       
       console.log(`✅ Geoapify autocomplete returned ${results.length} results, processed to ${uniqueSuggestions.length} unique suggestions for: "${trimmedInput}"`);
       
-      return uniqueSuggestions.slice(0, 8); // Return up to 8 suggestions
+      return uniqueSuggestions.slice(0, 5); // 🔧 UX IMPROVEMENT: Return exactly 4-5 suggestions as requested
       
     } catch (error) {
       console.error('Geoapify autocomplete error:', error);

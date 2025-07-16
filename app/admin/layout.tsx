@@ -1,6 +1,6 @@
 
 import { Metadata } from "next";
-import Providers from "@/components/providers/session-provider";
+import Providers from "@/components/providers/fixed-session-provider";
 import AdminLayout from "@/components/layouts/admin-layout";
 
 export const metadata: Metadata = {

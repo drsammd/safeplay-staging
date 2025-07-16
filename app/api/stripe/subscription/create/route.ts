@@ -58,14 +58,14 @@ export async function POST(request: NextRequest) {
     // Check if user already has a subscription
     const existingSubscription = await prisma.userSubscription.findUnique({
       where: { userId: session.user.id },
-      include: { plan: true }
+      include: { user: true, paymentMethod: true }
     });
 
     console.log('📋 SUBSCRIPTION API: Existing subscription check:', {
       hasExisting: !!existingSubscription,
       hasStripeSubId: !!existingSubscription?.stripeSubscriptionId,
       hasStripeCustomerId: !!existingSubscription?.stripeCustomerId,
-      currentPlan: existingSubscription?.plan?.name
+      currentPlanType: existingSubscription?.planType
     });
 
     let subscription;

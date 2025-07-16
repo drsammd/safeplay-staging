@@ -7,7 +7,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { BetaBanner } from "@/components/staging/beta-banner";
 import { VersionTracker } from "@/components/version-tracker";
 import { NO_INDEX_META_TAGS } from "@/lib/security-headers";
-import Providers from "@/components/providers/session-provider";
+import Providers from "@/components/providers/fixed-session-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {

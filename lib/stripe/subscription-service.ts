@@ -176,14 +176,43 @@ export class SubscriptionService {
       console.log('🔍 SERVICE: Looking up existing subscription...');
       let userSub = await prisma.userSubscription.findUnique({
         where: { userId },
-        include: { user: true, plan: true }
+        include: { user: true, paymentMethod: true }
       });
 
       console.log('🔍 SERVICE: Existing subscription lookup result:', {
         found: !!userSub,
         hasStripeCustomerId: !!userSub?.stripeCustomerId,
-        currentPlan: userSub?.plan?.name
+        currentPlanType: userSub?.planType,
+        hasActiveStripeSubscription: !!userSub?.stripeSubscriptionId
       });
+
+      // 🚨 CRITICAL FIX: Cancel existing subscription before creating new one
+      if (userSub?.stripeSubscriptionId) {
+        console.log('🔄 SERVICE: CANCELING existing subscription before creating new one:', userSub.stripeSubscriptionId);
+        console.log('🔄 SERVICE: This prevents duplicate active subscriptions in Stripe');
+        
+        try {
+          // Cancel the existing subscription immediately
+          await stripe.subscriptions.cancel(userSub.stripeSubscriptionId);
+          console.log('✅ SERVICE: Successfully canceled old subscription:', userSub.stripeSubscriptionId);
+          
+          // Update database record to reflect cancellation
+          await prisma.userSubscription.update({
+            where: { userId },
+            data: {
+              status: 'CANCELED',
+              canceledAt: new Date(),
+              cancelAtPeriodEnd: false
+            }
+          });
+          console.log('✅ SERVICE: Database updated to reflect canceled subscription');
+          
+        } catch (cancelError) {
+          console.error('⚠️ SERVICE: Error canceling existing subscription:', cancelError);
+          // Continue anyway - might be already canceled or invalid
+          console.log('⚠️ SERVICE: Continuing with new subscription creation despite cancel error');
+        }
+      }
 
       let stripeCustomerId: string;
 
@@ -198,33 +227,74 @@ export class SubscriptionService {
         console.log('✅ SERVICE: Using existing customer:', stripeCustomerId);
       }
 
-      // Find the plan associated with this price ID (use hardcoded plans since SubscriptionPlan table doesn't exist)
+      // Find the plan associated with this price ID (v1.5.4 - Enhanced validation)
       console.log('📋 SERVICE: Looking up subscription plan for price:', priceId);
+      console.log('📋 SERVICE: Environment variables check:');
+      console.log('📋 SERVICE: STRIPE_STARTER_MONTHLY_PRICE_ID:', process.env.STRIPE_STARTER_MONTHLY_PRICE_ID);
+      console.log('📋 SERVICE: STRIPE_STARTER_YEARLY_PRICE_ID:', process.env.STRIPE_STARTER_YEARLY_PRICE_ID);
+      console.log('📋 SERVICE: STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID:', process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID);
+      console.log('📋 SERVICE: STRIPE_PROFESSIONAL_YEARLY_PRICE_ID:', process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID);
+      console.log('📋 SERVICE: STRIPE_ENTERPRISE_MONTHLY_PRICE_ID:', process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID);
+      console.log('📋 SERVICE: STRIPE_ENTERPRISE_YEARLY_PRICE_ID:', process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID);
       
-      // Hardcoded plan definitions to match the plans API
+      // Updated plan definitions using environment variables (v1.5.4 - Enhanced with fallbacks)
       const PLAN_DEFINITIONS = {
-        'price_basic_monthly': { id: 'basic', name: 'Basic Plan', planType: 'BASIC', trialDays: 7, billingInterval: 'MONTHLY' },
-        'price_basic_yearly': { id: 'basic', name: 'Basic Plan', planType: 'BASIC', trialDays: 7, billingInterval: 'YEARLY' },
-        'price_premium_monthly': { id: 'premium', name: 'Premium Plan', planType: 'PREMIUM', trialDays: 7, billingInterval: 'MONTHLY' },
-        'price_premium_yearly': { id: 'premium', name: 'Premium Plan', planType: 'PREMIUM', trialDays: 7, billingInterval: 'YEARLY' },
-        'price_family_monthly': { id: 'family', name: 'Family Plan', planType: 'FAMILY', trialDays: 7, billingInterval: 'MONTHLY' },
-        'price_family_yearly': { id: 'family', name: 'Family Plan', planType: 'FAMILY', trialDays: 7, billingInterval: 'YEARLY' },
-        'price_lifetime_onetime': { id: 'lifetime', name: 'Lifetime Plan', planType: 'LIFETIME', trialDays: 0, billingInterval: 'LIFETIME' }
+        // Basic Plan
+        [process.env.STRIPE_STARTER_MONTHLY_PRICE_ID || 'price_basic_monthly']: { id: 'basic', name: 'Basic Plan', planType: 'BASIC', trialDays: 7, billingInterval: 'MONTHLY' },
+        [process.env.STRIPE_STARTER_YEARLY_PRICE_ID || 'price_basic_yearly']: { id: 'basic', name: 'Basic Plan', planType: 'BASIC', trialDays: 7, billingInterval: 'YEARLY' },
+        
+        // Premium Plan
+        [process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID || 'price_premium_monthly']: { id: 'premium', name: 'Premium Plan', planType: 'PREMIUM', trialDays: 7, billingInterval: 'MONTHLY' },
+        [process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID || 'price_premium_yearly']: { id: 'premium', name: 'Premium Plan', planType: 'PREMIUM', trialDays: 7, billingInterval: 'YEARLY' },
+        
+        // Family Plan  
+        [process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_family_monthly']: { id: 'family', name: 'Family Plan', planType: 'FAMILY', trialDays: 7, billingInterval: 'MONTHLY' },
+        [process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_family_yearly']: { id: 'family', name: 'Family Plan', planType: 'FAMILY', trialDays: 7, billingInterval: 'YEARLY' },
+        
+        // Common test price IDs (for development/testing)
+        'price_1234567890': { id: 'basic', name: 'Basic Plan (Test)', planType: 'BASIC', trialDays: 7, billingInterval: 'MONTHLY' },
+        'price_test_basic': { id: 'basic', name: 'Basic Plan (Test)', planType: 'BASIC', trialDays: 7, billingInterval: 'MONTHLY' }
       };
       
-      const plan = PLAN_DEFINITIONS[priceId];
+      // Filter out undefined/null keys
+      const validPlanDefinitions = Object.fromEntries(
+        Object.entries(PLAN_DEFINITIONS).filter(([key]) => key && key !== 'undefined' && key !== 'null')
+      );
+      
+      const plan = validPlanDefinitions[priceId];
 
       console.log('📋 SERVICE: Plan lookup result:', {
         found: !!plan,
         planName: plan?.name,
         planType: plan?.planType,
-        trialDays: plan?.trialDays
+        trialDays: plan?.trialDays,
+        billingInterval: plan?.billingInterval
       });
+
+      console.log('📋 SERVICE: Available valid price IDs:', Object.keys(validPlanDefinitions));
 
       if (!plan) {
         console.log('❌ SERVICE: No plan found for price ID:', priceId);
-        console.log('📋 SERVICE: Available price IDs:', Object.keys(PLAN_DEFINITIONS));
-        throw new Error(`No plan found for price ID: ${priceId}. Available: ${Object.keys(PLAN_DEFINITIONS).join(', ')}`);
+        console.log('📋 SERVICE: Requested price ID type:', typeof priceId);
+        console.log('📋 SERVICE: Requested price ID length:', priceId?.length);
+        
+        // Enhanced error message with debugging info
+        const errorMessage = `Invalid price ID: "${priceId}". This price ID is not configured in our system. Available price IDs: ${Object.keys(validPlanDefinitions).join(', ')}. Please check your Stripe configuration or contact support.`;
+        
+        console.error('❌ SERVICE: DETAILED ERROR:', {
+          requestedPriceId: priceId,
+          availablePriceIds: Object.keys(validPlanDefinitions),
+          environmentVariables: {
+            basic_monthly: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
+            basic_yearly: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
+            premium_monthly: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
+            premium_yearly: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
+            family_monthly: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID,
+            family_yearly: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID
+          }
+        });
+        
+        throw new Error(errorMessage);
       }
 
       console.log('⚙️ SERVICE: Building subscription parameters...');
@@ -239,8 +309,37 @@ export class SubscriptionService {
       };
 
       if (paymentMethodId) {
-        console.log('💳 SERVICE: Adding payment method to subscription');
-        subscriptionParams.default_payment_method = paymentMethodId;
+        console.log('💳 SERVICE: Attaching payment method to customer...');
+        
+        try {
+          // Attach payment method to customer first
+          await stripe.paymentMethods.attach(paymentMethodId, {
+            customer: stripeCustomerId,
+          });
+          console.log('✅ SERVICE: Payment method attached to customer:', stripeCustomerId);
+          
+          // Set as default payment method for customer
+          await stripe.customers.update(stripeCustomerId, {
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+          console.log('✅ SERVICE: Payment method set as default for customer');
+          
+          // Add to subscription params
+          subscriptionParams.default_payment_method = paymentMethodId;
+          console.log('✅ SERVICE: Payment method added to subscription params');
+          
+        } catch (attachError) {
+          console.error('❌ SERVICE: Error attaching payment method:', attachError);
+          // If payment method is already attached, continue
+          if (attachError?.message?.includes('already attached')) {
+            console.log('⚠️ SERVICE: Payment method already attached, continuing...');
+            subscriptionParams.default_payment_method = paymentMethodId;
+          } else {
+            throw new Error(`Failed to attach payment method: ${attachError?.message}`);
+          }
+        }
       }
 
       // Handle discount code if provided
@@ -536,6 +635,486 @@ export class SubscriptionService {
     }
   }
 
+  // Create FREE Plan Subscription (v1.5.4) - Create actual $0 subscription in Stripe
+  async createFreePlanSubscription(userId: string, email: string, name: string) {
+    try {
+      console.log('=== CREATE FREE PLAN SUBSCRIPTION DEBUG START ===');
+      console.log('🆓 SERVICE: Creating FREE plan subscription for:', { userId, email, name });
+      console.log('🆓 SERVICE: Timestamp:', new Date().toISOString());
+      
+      // Check if user already has a subscription
+      const existingSubscription = await prisma.userSubscription.findUnique({
+        where: { userId }
+      });
+      
+      console.log('🔍 SERVICE: Existing subscription check:', {
+        hasExisting: !!existingSubscription,
+        existingPlanType: existingSubscription?.planType,
+        existingStatus: existingSubscription?.status
+      });
+
+      // Get or create Stripe customer
+      let stripeCustomerId: string;
+      
+      if (existingSubscription?.stripeCustomerId) {
+        console.log('✅ SERVICE: Using existing Stripe customer:', existingSubscription.stripeCustomerId);
+        stripeCustomerId = existingSubscription.stripeCustomerId;
+        
+        // Verify customer exists in Stripe
+        try {
+          await stripe.customers.retrieve(stripeCustomerId);
+          console.log('✅ SERVICE: Verified existing customer in Stripe');
+        } catch (stripeError) {
+          console.log('⚠️ SERVICE: Customer not found in Stripe, creating new one');
+          const customer = await this.createCustomer(userId, email, name);
+          stripeCustomerId = customer.id;
+        }
+      } else {
+        console.log('🏪 SERVICE: Creating new Stripe customer for FREE plan...');
+        const customer = await this.createCustomer(userId, email, name);
+        stripeCustomerId = customer.id;
+      }
+
+      // Create FREE plan as actual $0 subscription for consistency
+      console.log('💰 SERVICE: Creating $0 subscription in Stripe for FREE plan...');
+      
+      // First, create a $0 price in Stripe if it doesn't exist
+      let freePlanPriceId = process.env.STRIPE_FREE_PLAN_PRICE_ID;
+      
+      if (!freePlanPriceId) {
+        console.log('🆓 SERVICE: Creating $0 price for FREE plan in Stripe...');
+        
+        // Create a product for FREE plan
+        const freeProduct = await stripe.products.create({
+          name: 'SafePlay FREE Plan',
+          description: 'No credit card required - Basic safety features',
+          metadata: {
+            planType: 'FREE',
+            platform: 'safeplay'
+          }
+        });
+        
+        // Create $0 price for the product
+        const freePrice = await stripe.prices.create({
+          unit_amount: 0, // $0.00
+          currency: 'usd',
+          recurring: {
+            interval: 'month'
+          },
+          product: freeProduct.id,
+          metadata: {
+            planType: 'FREE',
+            platform: 'safeplay'
+          }
+        });
+        
+        freePlanPriceId = freePrice.id;
+        console.log('✅ SERVICE: Created FREE plan price in Stripe:', freePlanPriceId);
+      }
+
+      // Create the subscription
+      const subscriptionParams: any = {
+        customer: stripeCustomerId,
+        items: [{ price: freePlanPriceId }],
+        metadata: {
+          userId,
+          planType: 'FREE',
+          platform: 'safeplay'
+        }
+      };
+
+      console.log('🚀 SERVICE: Creating $0 subscription with params:', {
+        customer: stripeCustomerId,
+        priceId: freePlanPriceId,
+        planType: 'FREE'
+      });
+
+      const subscription = await stripe.subscriptions.create(subscriptionParams);
+      
+      console.log('✅ SERVICE: Stripe $0 subscription created:', {
+        subscriptionId: subscription.id,
+        status: subscription.status,
+        customerId: subscription.customer
+      });
+
+      // Update or create database record
+      const currentTime = new Date();
+      const subscriptionData = {
+        userId,
+        planType: 'FREE' as any,
+        status: this.mapStripeStatusToPrisma(subscription.status),
+        stripeCustomerId,
+        stripeSubscriptionId: subscription.id,
+        currentPeriodStart: subscription.current_period_start 
+          ? new Date(subscription.current_period_start * 1000) 
+          : currentTime,
+        currentPeriodEnd: subscription.current_period_end 
+          ? new Date(subscription.current_period_end * 1000) 
+          : new Date(currentTime.getTime() + (365 * 24 * 60 * 60 * 1000)), // 1 year
+        cancelAtPeriodEnd: false,
+        autoRenew: false // FREE plans don't auto-renew
+      };
+
+      if (existingSubscription) {
+        console.log('📝 SERVICE: Updating existing subscription record');
+        await prisma.userSubscription.update({
+          where: { userId },
+          data: subscriptionData
+        });
+      } else {
+        console.log('📝 SERVICE: Creating new subscription record');
+        await prisma.userSubscription.create({
+          data: subscriptionData
+        });
+      }
+
+      console.log('✅ SERVICE: FREE plan subscription created successfully');
+      
+      return {
+        success: true,
+        subscription,
+        customer: { id: stripeCustomerId },
+        planType: 'FREE'
+      };
+
+    } catch (error) {
+      console.error('❌ SERVICE: Error creating FREE plan subscription:', error);
+      throw error;
+    }
+  }
+
+  // Downgrade to Free Plan (v1.5.3) - Cancel paid subscription and switch to FREE
+  async downgradeToFreePlan(userId: string) {
+    try {
+      console.log('=== DOWNGRADE TO FREE PLAN DEBUG START ===');
+      console.log('🔄 SERVICE: Downgrading to Free Plan for user:', { userId });
+      
+      // Get current subscription
+      const userSub = await prisma.userSubscription.findUnique({
+        where: { userId },
+        include: { user: true }
+      });
+      
+      if (!userSub) {
+        throw new Error('No subscription found for user');
+      }
+      
+      console.log('🔍 SERVICE: Current subscription:', {
+        planType: userSub.planType,
+        status: userSub.status,
+        hasStripeSubscription: !!userSub.stripeSubscriptionId,
+        hasStripeCustomer: !!userSub.stripeCustomerId
+      });
+      
+      // Cancel active Stripe subscription if exists
+      if (userSub.stripeSubscriptionId) {
+        console.log('🔄 SERVICE: Canceling active Stripe subscription:', userSub.stripeSubscriptionId);
+        
+        try {
+          await stripe.subscriptions.cancel(userSub.stripeSubscriptionId);
+          console.log('✅ SERVICE: Stripe subscription canceled successfully');
+        } catch (cancelError) {
+          console.error('⚠️ SERVICE: Error canceling Stripe subscription:', cancelError);
+          // Continue with downgrade even if cancellation fails
+        }
+      }
+      
+      // Ensure user has Stripe customer for future upgrades
+      let stripeCustomerId = userSub.stripeCustomerId;
+      if (!stripeCustomerId && userSub.user) {
+        console.log('🏪 SERVICE: Creating Stripe customer for FREE plan user...');
+        try {
+          const customer = await this.createCustomer(userId, userSub.user.email, userSub.user.name);
+          stripeCustomerId = customer.id;
+          console.log('✅ SERVICE: Stripe customer created for FREE plan user:', stripeCustomerId);
+        } catch (customerError) {
+          console.error('⚠️ SERVICE: Failed to create Stripe customer, continuing without:', customerError);
+        }
+      }
+      
+      // Update subscription to FREE plan
+      const updatedSubscription = await prisma.userSubscription.update({
+        where: { userId },
+        data: {
+          planType: 'FREE',
+          status: 'ACTIVE',
+          stripeCustomerId: stripeCustomerId,
+          stripeSubscriptionId: null, // No Stripe subscription for FREE plan
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+          cancelAtPeriodEnd: false,
+          canceledAt: new Date(), // Mark when downgrade occurred
+          trialStart: null,
+          trialEnd: null,
+          autoRenew: false,
+          metadata: {
+            ...userSub.metadata,
+            downgradedToFree: true,
+            downgradedAt: new Date().toISOString(),
+            previousPlanType: userSub.planType
+          }
+        }
+      });
+      
+      console.log('✅ SERVICE: Subscription updated to FREE plan');
+      
+      // Log subscription change
+      await this.logSubscriptionChange(userId, 'DOWNGRADED', {
+        id: 'free_plan_downgrade',
+        status: 'active',
+        customer: stripeCustomerId,
+        metadata: { 
+          planType: 'FREE',
+          downgradedFrom: userSub.planType,
+          downgradedAt: new Date().toISOString()
+        }
+      });
+      
+      console.log('🎉 SERVICE: Downgrade to FREE plan completed successfully!');
+      return updatedSubscription;
+      
+    } catch (error) {
+      console.error('❌ SERVICE: Error downgrading to FREE plan:', error);
+      throw error;
+    }
+  }
+
+  // Downgrade to Free Plan (v1.5.1) - Cancel current subscription and create free plan
+  async downgradeToFreePlan(userId: string) {
+    try {
+      console.log('=== DOWNGRADE TO FREE PLAN DEBUG START ===');
+      console.log('🔽 SERVICE: Starting downgrade to Free Plan for userId:', userId);
+
+      // Get current subscription
+      const userSub = await prisma.userSubscription.findUnique({
+        where: { userId },
+        include: { user: true }
+      });
+
+      if (!userSub) {
+        throw new Error('No subscription found to downgrade');
+      }
+
+      console.log('🔍 SERVICE: Current subscription found:', {
+        planType: userSub.planType,
+        status: userSub.status,
+        stripeSubscriptionId: userSub.stripeSubscriptionId
+      });
+
+      // Cancel current Stripe subscription if it exists
+      if (userSub.stripeSubscriptionId) {
+        console.log('🚫 SERVICE: Canceling current Stripe subscription:', userSub.stripeSubscriptionId);
+        try {
+          await stripe.subscriptions.cancel(userSub.stripeSubscriptionId);
+          console.log('✅ SERVICE: Current subscription canceled successfully');
+        } catch (cancelError) {
+          console.log('⚠️ SERVICE: Error canceling subscription (continuing anyway):', cancelError);
+        }
+      }
+
+      // Update subscription to Free Plan
+      console.log('🆓 SERVICE: Updating subscription to FREE plan...');
+      const updatedSubscription = await prisma.userSubscription.update({
+        where: { userId },
+        data: {
+          planType: 'FREE',
+          status: 'ACTIVE',
+          stripeSubscriptionId: null, // No Stripe subscription for free plan
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
+          cancelAtPeriodEnd: false,
+          canceledAt: null,
+          trialStart: null,
+          trialEnd: null,
+        }
+      });
+
+      console.log('✅ SERVICE: Subscription updated to FREE plan:', updatedSubscription);
+
+      // Log subscription change
+      await this.logSubscriptionChange(userId, 'DOWNGRADED', { 
+        id: 'free_plan_downgrade',
+        from: userSub.planType,
+        to: 'FREE',
+        timestamp: new Date().toISOString()
+      });
+
+      console.log('✅ SERVICE: Downgrade to Free Plan completed successfully');
+      return updatedSubscription;
+
+    } catch (error) {
+      console.error('❌ SERVICE: Error downgrading to Free Plan:', error);
+      throw error;
+    }
+  }
+
+  // Create individual purchase (v1.5.0) - $0.99 photo or $2.99 video
+  async createIndividualPurchase(
+    userId: string,
+    purchaseType: 'PHOTO' | 'VIDEO_MONTAGE',
+    memoryId?: string,
+    paymentMethodId?: string
+  ) {
+    try {
+      console.log('=== INDIVIDUAL PURCHASE DEBUG START ===');
+      console.log('💰 SERVICE: Creating individual purchase:', { userId, purchaseType, memoryId });
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { subscription: true }
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Get pricing
+      const amount = purchaseType === 'PHOTO' ? 0.99 : 2.99;
+      const priceId = purchaseType === 'PHOTO' 
+        ? process.env.STRIPE_INDIVIDUAL_PHOTO_PRICE_ID
+        : process.env.STRIPE_INDIVIDUAL_VIDEO_PRICE_ID;
+
+      if (!priceId) {
+        throw new Error(`No Stripe price ID configured for ${purchaseType}`);
+      }
+
+      // Get or create Stripe customer
+      let stripeCustomerId = user.subscription?.stripeCustomerId;
+      if (!stripeCustomerId) {
+        const customer = await this.createCustomer(userId, user.email, user.name);
+        stripeCustomerId = customer.id;
+      }
+
+      // Create Stripe checkout session for individual purchase
+      const checkoutSession = await stripe.checkout.sessions.create({
+        customer: stripeCustomerId,
+        payment_method_types: ['card'],
+        line_items: [{
+          price: priceId,
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${process.env.NEXTAUTH_URL}/parent/memories?purchase_success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXTAUTH_URL}/parent/memories?purchase_canceled=true`,
+        metadata: {
+          userId,
+          purchaseType,
+          memoryId: memoryId || '',
+          amount: amount.toString()
+        }
+      });
+
+      // Create purchase record in database
+      const purchase = await prisma.individualPurchase.create({
+        data: {
+          userId,
+          purchaseType: purchaseType as any,
+          amount,
+          currency: 'usd',
+          stripeSessionId: checkoutSession.id,
+          paymentStatus: 'PENDING' as any,
+          memoryId,
+          metadata: {
+            checkoutSessionId: checkoutSession.id,
+            priceId,
+            createdAt: new Date().toISOString()
+          }
+        }
+      });
+
+      console.log('✅ SERVICE: Individual purchase created:', purchase.id);
+      return { purchase, checkoutUrl: checkoutSession.url };
+    } catch (error) {
+      console.error('❌ SERVICE: Error creating individual purchase:', error);
+      throw error;
+    }
+  }
+
+  // Create photo/video pack purchase (v1.5.0) - $9.99, $19.99, or $29.99
+  async createPhotoVideoPackPurchase(
+    userId: string,
+    packType: 'PACK_1' | 'PACK_2' | 'PACK_3',
+    paymentMethodId?: string
+  ) {
+    try {
+      console.log('=== PHOTO/VIDEO PACK PURCHASE DEBUG START ===');
+      console.log('📦 SERVICE: Creating pack purchase:', { userId, packType });
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { subscription: true }
+      });
+
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Get pack configuration
+      const packConfig = {
+        PACK_1: { price: 9.99, photoCredits: 5, videoCredits: 3, priceId: process.env.STRIPE_PACK_1_PRICE_ID },
+        PACK_2: { price: 19.99, photoCredits: 10, videoCredits: 5, priceId: process.env.STRIPE_PACK_2_PRICE_ID },
+        PACK_3: { price: 29.99, photoCredits: 20, videoCredits: 10, priceId: process.env.STRIPE_PACK_3_PRICE_ID }
+      }[packType];
+
+      if (!packConfig.priceId) {
+        throw new Error(`No Stripe price ID configured for ${packType}`);
+      }
+
+      // Get or create Stripe customer
+      let stripeCustomerId = user.subscription?.stripeCustomerId;
+      if (!stripeCustomerId) {
+        const customer = await this.createCustomer(userId, user.email, user.name);
+        stripeCustomerId = customer.id;
+      }
+
+      // Create Stripe checkout session for pack purchase
+      const checkoutSession = await stripe.checkout.sessions.create({
+        customer: stripeCustomerId,
+        payment_method_types: ['card'],
+        line_items: [{
+          price: packConfig.priceId,
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${process.env.NEXTAUTH_URL}/parent/memories?pack_purchase_success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXTAUTH_URL}/parent/memories?pack_purchase_canceled=true`,
+        metadata: {
+          userId,
+          packType,
+          amount: packConfig.price.toString(),
+          photoCredits: packConfig.photoCredits.toString(),
+          videoCredits: packConfig.videoCredits.toString()
+        }
+      });
+
+      // Create pack purchase record in database
+      const packPurchase = await prisma.photoVideoPackPurchase.create({
+        data: {
+          userId,
+          packType: packType as any,
+          amount: packConfig.price,
+          currency: 'usd',
+          stripeSessionId: checkoutSession.id,
+          paymentStatus: 'PENDING' as any,
+          photoCredits: packConfig.photoCredits,
+          videoCredits: packConfig.videoCredits,
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year expiry
+          metadata: {
+            checkoutSessionId: checkoutSession.id,
+            priceId: packConfig.priceId,
+            createdAt: new Date().toISOString()
+          }
+        }
+      });
+
+      console.log('✅ SERVICE: Photo/video pack purchase created:', packPurchase.id);
+      return { packPurchase, checkoutUrl: checkoutSession.url };
+    } catch (error) {
+      console.error('❌ SERVICE: Error creating pack purchase:', error);
+      throw error;
+    }
+  }
+
   // Helper methods
   private mapStripeStatusToPrisma(stripeStatus: string): SubscriptionStatus {
     const statusMap: Record<string, SubscriptionStatus> = {
@@ -580,36 +1159,35 @@ export class SubscriptionService {
   async checkSubscriptionAccess(userId: string, feature: string): Promise<boolean> {
     try {
       const userSub = await prisma.userSubscription.findUnique({
-        where: { userId },
-        include: { plan: true }
+        where: { userId }
       });
 
       if (!userSub || userSub.status !== SubscriptionStatus.ACTIVE) {
         return false;
       }
 
-      const plan = userSub.plan;
+      const planType = userSub.planType;
       
-      // Check feature access based on plan
+      // Check feature access based on plan type
       switch (feature) {
         case 'premiumAlerts':
-          return plan.premiumAlerts;
+          return ['PREMIUM', 'ENTERPRISE'].includes(planType);
         case 'aiInsights':
-          return plan.aiInsights;
+          return ['PREMIUM', 'ENTERPRISE'].includes(planType);
         case 'prioritySupport':
-          return plan.prioritySupport;
+          return ['PREMIUM', 'ENTERPRISE'].includes(planType);
         case 'unlimitedDownloads':
-          return plan.unlimitedDownloads;
+          return ['PREMIUM', 'ENTERPRISE'].includes(planType);
         case 'advancedAnalytics':
-          return plan.advancedAnalytics;
+          return ['PREMIUM', 'ENTERPRISE'].includes(planType);
         case 'biometricFeatures':
-          return plan.biometricFeatures;
+          return ['ENTERPRISE'].includes(planType);
         case 'realTimeTracking':
-          return plan.realTimeTracking;
+          return ['BASIC', 'PREMIUM', 'ENTERPRISE'].includes(planType);
         case 'emergencyFeatures':
-          return plan.emergencyFeatures;
+          return ['BASIC', 'PREMIUM', 'ENTERPRISE'].includes(planType);
         case 'familySharing':
-          return plan.familySharing;
+          return ['PREMIUM', 'ENTERPRISE'].includes(planType);
         default:
           return false;
       }

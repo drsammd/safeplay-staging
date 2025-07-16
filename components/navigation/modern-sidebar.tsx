@@ -33,6 +33,7 @@ import {
   Phone,
   MapPin,
   User,
+  Package,
 } from "lucide-react";
 
 interface NavigationItem {
@@ -108,6 +109,7 @@ const getNavigationItems = (role: string): NavigationItem[] => {
           children: [
             { name: "Venues", href: "/admin/venues", icon: Building },
             { name: "Payment Management", href: "/admin/payments", icon: CreditCard },
+            { name: "Stripe Products", href: "/admin/stripe-products", icon: Package, badge: "New!" },
             { name: "Discount Codes", href: "/admin/discount-codes", icon: Tag },
           ]
         },
@@ -190,7 +192,16 @@ const getNavigationItems = (role: string): NavigationItem[] => {
 export default function ModernSidebar({ userRole, isOpen, onToggle }: ModernSidebarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const [expandedItems, setExpandedItems] = useState<string[]>([]);
+  
+  // Auto-expand Business Management for admin users to make Stripe Products visible
+  const getInitialExpandedItems = () => {
+    if (userRole === 'admin') {
+      return ['Business Management']; // Always expand Business Management for admins
+    }
+    return [];
+  };
+  
+  const [expandedItems, setExpandedItems] = useState<string[]>(getInitialExpandedItems());
 
   const navigationItems = getNavigationItems(userRole);
 

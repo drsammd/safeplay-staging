@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -58,7 +59,7 @@ export default function SubscriptionPage() {
 
   const fetchUserData = async () => {
     try {
-      console.log('🔍 Fetching real user subscription data...');
+      console.log('🔍 SUBSCRIPTION PAGE: Fetching real user subscription data...');
       
       // Fetch real user subscription data
       const response = await fetch('/api/auth/user', {
@@ -70,7 +71,7 @@ export default function SubscriptionPage() {
 
       if (response.ok) {
         const userData = await response.json();
-        console.log('✅ User data fetched:', userData);
+        console.log('✅ SUBSCRIPTION PAGE: User data fetched:', userData);
         
         setUser({
           id: userData.id,
@@ -78,7 +79,7 @@ export default function SubscriptionPage() {
           subscription: userData.subscription || null,
         });
       } else {
-        console.log('❌ Failed to fetch user data, using fallback');
+        console.log('❌ SUBSCRIPTION PAGE: Failed to fetch user data, using fallback');
         // Fallback to basic user data if API call fails
         setUser({
           id: session?.user?.id,
@@ -87,7 +88,7 @@ export default function SubscriptionPage() {
         });
       }
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error('❌ SUBSCRIPTION PAGE: Error fetching user data:', error);
       // Fallback to basic user data on error
       setUser({
         id: session?.user?.id,
@@ -100,7 +101,7 @@ export default function SubscriptionPage() {
   };
 
   const handlePlanChange = async (stripePriceId: string, interval: 'monthly' | 'yearly' | 'lifetime', planId: string) => {
-    console.log('🚀 Starting plan selection process...', { 
+    console.log('🚀 SUBSCRIPTION PAGE: Starting plan selection process...', { 
       planId,
       stripePriceId,
       interval,
@@ -109,221 +110,132 @@ export default function SubscriptionPage() {
       sessionUserEmail: session?.user?.email
     });
 
-    // For new users without active subscription, show address collection first
-    if (!hasActiveSubscription) {
-      console.log('🏠 New user detected - showing address collection first');
-      console.log('🔧 BILLING ADDRESS DEBUG: Starting address collection for subscription');
+    // 🔧 CRITICAL FIX: Handle FREE plan selection (downgrade)
+    if (planId === 'free' || stripePriceId === null) {
+      console.log('🆓 SUBSCRIPTION PAGE: Processing FREE plan selection (downgrade)');
       
-      // Fetch plan details for later use
+      setPlanChangeLoading(true);
+      setPlanChangeError(null);
+      setPlanChangeSuccess(null);
+
       try {
-        const response = await fetch('/api/stripe/plans-fixed');
+        const response = await fetch('/api/stripe/subscription/modify-fixed', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ priceId: null }), // null indicates FREE plan
+        });
+
         const data = await response.json();
-        const plan = data.plans?.find((p: any) => p.id === planId);
-        
-        if (plan) {
-          const amount = interval === 'lifetime' && plan.lifetimePrice ? plan.lifetimePrice :
-                        interval === 'yearly' && plan.yearlyPrice ? plan.yearlyPrice : 
-                        plan.price;
+
+        if (response.ok) {
+          setPlanChangeSuccess('🎉 Successfully downgraded to FREE plan! Your subscription has been updated.');
+          console.log('✅ SUBSCRIPTION PAGE: FREE plan downgrade successful');
           
-          setSelectedPlan({
-            planId,
-            stripePriceId, // FIXED: Include the actual Stripe price ID
-            interval,
-            planName: plan.name,
-            amount: amount
-          });
+          // Refresh user data to get updated subscription info
+          await fetchUserData();
           
-          // 🔧 BILLING ADDRESS FIX: Show address collection before payment
-          setShowAddressCollection(true);
+          setTimeout(() => {
+            console.log('🔄 SUBSCRIPTION PAGE: Auto-clearing downgrade success message');
+            setPlanChangeSuccess(null);
+          }, 8000);
         } else {
-          setPlanChangeError('Selected plan not found. Please try again.');
+          console.error('❌ SUBSCRIPTION PAGE: FREE plan downgrade failed:', data);
+          setPlanChangeError(data.error || 'Failed to downgrade to FREE plan. Please try again.');
         }
       } catch (error) {
-        console.error('Error fetching plan details:', error);
-        setPlanChangeError('Failed to load plan details. Please try again.');
+        console.error('❌ SUBSCRIPTION PAGE: Error during FREE plan downgrade:', error);
+        setPlanChangeError('Failed to downgrade to FREE plan. Please try again.');
+      } finally {
+        setPlanChangeLoading(false);
       }
+      
       return;
     }
 
-    // For existing subscribers, proceed with plan change
-    console.log('🔄 Existing subscriber - proceeding with plan change');
+    // 🔧 CRITICAL FIX: For ANY user upgrading to paid plans, show payment method collection
+    console.log('💳 SUBSCRIPTION PAGE: Paid plan selected - showing payment method collection');
     
-    setPlanChangeLoading(true);
-    setPlanChangeError(null);
-    setPlanChangeSuccess(null);
-
+    // Fetch plan details for payment setup
     try {
-      const requestBody = { planId };
-      console.log('📡 Sending request to modify subscription...');
-      console.log('📋 Request body:', JSON.stringify(requestBody, null, 2));
+      const response = await fetch('/api/stripe/plans-fixed');
+      const data = await response.json();
+      const plan = data.plans?.find((p: any) => p.id === planId);
       
-      const response = await fetch('/api/stripe/subscription/modify-fixed', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ priceId: stripePriceId }),
-      });
-
-      console.log('📥 Response received:', { 
-        status: response.status, 
-        ok: response.ok,
-        statusText: response.statusText
-      });
-      
-      const responseText = await response.text();
-      console.log('📄 Raw response text:', responseText);
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log('📊 Parsed response data:', data);
-      } catch (parseError) {
-        console.error('❌ Failed to parse response as JSON:', parseError);
-        throw new Error(`Invalid JSON response: ${responseText}`);
-      }
-
-      if (response.ok) {
-        setPlanChangeSuccess('Plan changed successfully! Your subscription has been updated.');
-        console.log('✅ Plan change successful');
+      if (plan) {
+        const amount = interval === 'lifetime' && plan.lifetimePrice ? plan.lifetimePrice :
+                      interval === 'yearly' && plan.yearlyPrice ? plan.yearlyPrice : 
+                      plan.price;
         
-        // Refresh user data to get updated subscription info
-        await fetchUserData();
-        
-        // Auto-close the Change Plan window after 2 seconds
-        setTimeout(() => {
-          console.log('🔄 Auto-closing Change Plan window - switching to dashboard tab');
-          setActiveTab('dashboard');
-          setPlanChangeSuccess(null); // Clear success message
-        }, 2000);
-      } else {
-        console.error('❌ API call failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: data
+        setSelectedPlan({
+          planId,
+          stripePriceId, // FIXED: Include the actual Stripe price ID
+          interval,
+          planName: plan.name,
+          amount: amount
         });
         
-        let errorMessage = 'Failed to change plan. Please try again.';
-        
-        // 🔧 ERROR HANDLING FIX: Properly extract error messages from different response formats
-        if (response.status === 401) {
-          errorMessage = 'Please log in again to change your plan. Your session may have expired.';
-        } else if (response.status === 404) {
-          const errorStr = typeof data.error === 'string' ? data.error : 
-                          typeof data.error === 'object' ? JSON.stringify(data.error) : 
-                          'Not found';
-          if (errorStr.includes('Plan not found')) {
-            errorMessage = 'The selected plan is no longer available. Please refresh the page and try again.';
-          } else if (errorStr.includes('subscription not found')) {
-            errorMessage = 'No active subscription found. Please contact support for assistance.';
-          } else {
-            errorMessage = 'Service not found. Please try again later.';
-          }
-        } else if (response.status === 403) {
-          errorMessage = 'You do not have permission to change your plan. Please contact support.';
-        } else if (response.status === 500) {
-          errorMessage = 'Server error occurred. Please try again in a few minutes.';
+        // 🔧 CRITICAL FIX: Show payment method collection for ALL paid plan upgrades
+        if (!hasActiveSubscription) {
+          // New users: Address collection first, then payment
+          console.log('🏠 SUBSCRIPTION PAGE: New user - showing address collection first');
+          setShowAddressCollection(true);
         } else {
-          // 🚨🚨🚨 PHANTOM ERROR OBJECT DETECTION - SUBSCRIPTION PAGE 🚨🚨🚨
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: API Error Response Inspection:`);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: response.status:`, response.status);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data TYPE:`, typeof data);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data VALUE:`, JSON.stringify(data, null, 2));
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error TYPE:`, typeof data?.error);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error VALUE:`, JSON.stringify(data?.error, null, 2));
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.error JSON:`, JSON.stringify(data?.error, null, 2));
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details TYPE:`, typeof data?.details);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.details VALUE:`, JSON.stringify(data?.details, null, 2));
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message TYPE:`, typeof data?.message);
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: data.message VALUE:`, JSON.stringify(data?.message, null, 2));
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: FULL DATA OBJECT:`, JSON.stringify(data, null, 2));
-          
-          // 🔧 ERROR HANDLING FIX: Safely extract error message from various formats
-          if (typeof data.error === 'string' && data.error.trim() !== '') {
-            errorMessage = data.error;
-            console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.error string:`, errorMessage);
-          } else if (typeof data.error === 'object' && data.error !== null) {
-            // If error is an object, try to extract message or details
-            if (typeof data.error.message === 'string' && data.error.message.trim() !== '') {
-              errorMessage = data.error.message;
-              console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.error.message:`, errorMessage);
-            } else if (typeof data.error.details === 'string' && data.error.details.trim() !== '') {
-              errorMessage = data.error.details;
-              console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.error.details:`, errorMessage);
-            } else {
-              errorMessage = `Failed to change plan - Error object: ${JSON.stringify(data.error)}`;
-              console.log(`⚠️ SUBSCRIPTION PAGE ERROR DEBUG: Using stringified error object:`, errorMessage);
-            }
-          } else if (data.details && typeof data.details === 'string' && data.details.trim() !== '') {
-            errorMessage = data.details;
-            console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.details:`, errorMessage);
-          } else if (data.message && typeof data.message === 'string' && data.message.trim() !== '') {
-            errorMessage = data.message;
-            console.log(`✅ SUBSCRIPTION PAGE ERROR DEBUG: Using data.message:`, errorMessage);
-          } else {
-            errorMessage = `Failed to change plan (Error ${response.status}) - No clear error message found`;
-            console.log(`⚠️ SUBSCRIPTION PAGE ERROR DEBUG: Using fallback error message:`, errorMessage);
-          }
-          
-          console.error(`🚨🚨🚨 SUBSCRIPTION PAGE ERROR DEBUG: FINAL ERROR MESSAGE:`, errorMessage);
+          // Existing users: Skip address collection, go straight to payment
+          console.log('👤 SUBSCRIPTION PAGE: Existing user - showing payment method collection');
+          setShowPaymentSetup(true);
         }
-        
-        console.error('❌ Plan change failed:', errorMessage);
-        throw new Error(errorMessage);
+      } else {
+        setPlanChangeError('Selected plan not found. Please try again.');
       }
     } catch (error) {
-      console.error('💥 Error changing plan:', error);
-      
-      let errorMessage = 'Failed to change plan. Please try again.';
-      
-      if (error instanceof Error) {
-        // Use the error message we already constructed above
-        errorMessage = error.message;
-      }
-      
-      setPlanChangeError(errorMessage);
-    } finally {
-      setPlanChangeLoading(false);
-      console.log('🏁 Plan change process completed');
+      console.error('❌ SUBSCRIPTION PAGE: Error fetching plan details:', error);
+      setPlanChangeError('Failed to load plan details. Please try again.');
     }
   };
 
-  const handlePaymentSuccess = async () => {
-    console.log('✅ Payment successful - refreshing user data');
+  const handlePaymentSuccess = async (subscriptionData?: any) => {
+    console.log('✅ SUBSCRIPTION PAGE: Payment successful - refreshing user data');
     setShowPaymentSetup(false);
     setSelectedPlan(null);
-    setPlanChangeSuccess('Welcome to SafePlay! Your subscription is now active.');
+    
+    // 🔧 CRITICAL FIX: Handle different success scenarios for new vs existing users
+    if (hasActiveSubscription) {
+      // Existing user upgrade - show plan change success message
+      setPlanChangeSuccess('🎉 Plan changed successfully! Your subscription has been updated and your payment method has been saved.');
+      console.log('✅ SUBSCRIPTION PAGE: Existing user plan change successful');
+      
+      // Switch to dashboard to show updated billing info
+      setTimeout(() => {
+        console.log('🔄 SUBSCRIPTION PAGE: Switching to dashboard to show updated subscription details');
+        setActiveTab('dashboard');
+      }, 2000);
+    } else {
+      // New user signup - show welcome message
+      setPlanChangeSuccess('🎉 Welcome to SafePlay! Your subscription is now active and your 7-day free trial has started. You can cancel anytime from your dashboard.');
+      console.log('✅ SUBSCRIPTION PAGE: New user signup successful');
+      
+      // Switch to dashboard to show new subscription details
+      setTimeout(() => {
+        console.log('🔄 SUBSCRIPTION PAGE: Switching to dashboard to show new subscription details');
+        setActiveTab('dashboard');
+      }, 2000);
+    }
     
     // Refresh user data to get updated subscription info
     await fetchUserData();
     
-    // Show success message for a few seconds then redirect to dashboard
+    // Clear success message after user has had time to read it
     setTimeout(() => {
-      setActiveTab('dashboard');
+      console.log('🔄 SUBSCRIPTION PAGE: Auto-clearing payment success message after user has had time to read it');
       setPlanChangeSuccess(null);
-    }, 3000);
+    }, 10000);
   };
 
   const handlePaymentError = (error: string) => {
-    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: === PAYMENT ERROR RECEIVED ===');
-    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error TYPE:', typeof error);
-    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: error VALUE:', JSON.stringify(error, null, 2));
-    console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: === POTENTIAL OBJECT ERROR DETECTION ===');
-    
-    if (typeof error === 'object' && error !== null) {
-      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! Error is an object, not a string!');
-      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! This will show as "[object Object]"');
-      console.error('🚨🚨🚨 PHANTOM USER ID DETECTED! Object contents:', JSON.stringify(error, null, 2));
-      
-      // Convert object error to string for display
-      const errorString = typeof error === 'object' ? JSON.stringify(error) : String(error);
-      console.error('🚨🚨🚨 PAYMENT ERROR HANDLER DEBUG: Converting object to string:', errorString);
-      setPlanChangeError(errorString);
-    } else {
-      console.error('❌ Payment failed - setting plan change error:', JSON.stringify(error, null, 2));
-      setPlanChangeError(String(error));
-    }
-    
+    console.error('❌ SUBSCRIPTION PAGE: Payment failed:', error);
+    setPlanChangeError(String(error));
     setShowPaymentSetup(false);
     setSelectedPlan(null);
   };
@@ -340,36 +252,14 @@ export default function SubscriptionPage() {
   };
 
   const handleAddressFieldsChange = (fields: any) => {
-    console.log('🔧 BILLING ADDRESS DEBUG: === ADDRESS FIELDS RECEIVED IN SUBSCRIPTION PAGE ===');
-    console.log('🔧 BILLING ADDRESS DEBUG: fields TYPE:', typeof fields);
-    console.log('🔧 BILLING ADDRESS DEBUG: fields VALUE:', fields);
-    console.log('🔧 BILLING ADDRESS DEBUG: fields JSON:', JSON.stringify(fields, null, 2));
-    
-    if (fields) {
-      console.log('🔧 BILLING ADDRESS DEBUG: Field breakdown:');
-      console.log('🔧 BILLING ADDRESS DEBUG:   - street:', fields.street, '(type:', typeof fields.street, ')');
-      console.log('🔧 BILLING ADDRESS DEBUG:   - city:', fields.city, '(type:', typeof fields.city, ')');
-      console.log('🔧 BILLING ADDRESS DEBUG:   - state:', fields.state, '(type:', typeof fields.state, ')');
-      console.log('🔧 BILLING ADDRESS DEBUG:   - zipCode:', fields.zipCode, '(type:', typeof fields.zipCode, ')');
-      console.log('🔧 BILLING ADDRESS DEBUG:   - fullAddress:', fields.fullAddress, '(type:', typeof fields.fullAddress, ')');
-    }
-    
-    console.log('🔧 BILLING ADDRESS DEBUG: Setting billingAddressFields state...');
+    console.log('🔧 BILLING ADDRESS DEBUG: Address fields changed:', fields);
     setBillingAddressFields(fields);
-    console.log('🔧 BILLING ADDRESS DEBUG: ✅ billingAddressFields state updated');
   };
 
   const handleAddressComplete = () => {
-    console.log('🔧 BILLING ADDRESS DEBUG: === ADDRESS COLLECTION COMPLETE ===');
-    console.log('🔧 BILLING ADDRESS DEBUG: Current billingAddressFields state:', JSON.stringify(billingAddressFields, null, 2));
-    console.log('🔧 BILLING ADDRESS DEBUG: Current billingAddress state:', billingAddress);
-    console.log('🔧 BILLING ADDRESS DEBUG: Current billingAddressValidation state:', JSON.stringify(billingAddressValidation, null, 2));
-    console.log('🔧 BILLING ADDRESS DEBUG: Proceeding to payment with these address fields...');
-    
+    console.log('🔧 BILLING ADDRESS DEBUG: Address collection complete');
     setShowAddressCollection(false);
     setShowPaymentSetup(true);
-    
-    console.log('🔧 BILLING ADDRESS DEBUG: ✅ Payment setup modal should now open with prefilled address fields');
   };
 
   if (status === 'loading' || loading) {
@@ -385,7 +275,18 @@ export default function SubscriptionPage() {
     return null;
   }
 
-  const hasActiveSubscription = user.subscription?.status === 'ACTIVE';
+  // 🔧 CRITICAL FIX: Enhanced subscription detection using the improved user data
+  const hasActiveSubscription = user.subscription?.isActive === true || 
+                                user.subscription?.status === 'ACTIVE' || 
+                                user.subscription?.status === 'TRIALING';
+
+  console.log('🔍 SUBSCRIPTION PAGE: Subscription status debug:', {
+    hasSubscription: !!user.subscription,
+    subscriptionStatus: user.subscription?.status,
+    isActive: user.subscription?.isActive,
+    hasActiveSubscription,
+    planType: user.subscription?.planType
+  });
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -424,13 +325,13 @@ export default function SubscriptionPage() {
               )}
               
               {planChangeSuccess && (
-                <div className="bg-green-50 border-l-4 border-green-400 text-green-700 px-6 py-4 rounded-lg shadow-sm">
+                <div className="bg-green-50 border-l-4 border-green-400 text-green-700 px-6 py-4 rounded-lg shadow-lg animate-pulse">
                   <div className="flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-6 h-6 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    <div>
-                      <strong>Success:</strong> {planChangeSuccess}
+                    <div className="font-semibold text-lg">
+                      <strong className="text-green-800">Success:</strong> <span className="text-green-700">{planChangeSuccess}</span>
                     </div>
                   </div>
                 </div>
@@ -447,7 +348,7 @@ export default function SubscriptionPage() {
                     </div>
                     <button
                       onClick={() => {
-                        console.log('🔄 Close button clicked - switching to dashboard tab');
+                        console.log('🔄 SUBSCRIPTION PAGE: Close button clicked - switching to dashboard tab');
                         setActiveTab('dashboard');
                       }}
                       className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200 group"
@@ -493,83 +394,67 @@ export default function SubscriptionPage() {
           )}
           
           {planChangeSuccess && (
-            <div className="bg-green-50 border-l-4 border-green-400 text-green-700 px-6 py-4 rounded-lg shadow-sm">
+            <div className="bg-green-50 border-l-4 border-green-400 text-green-700 px-6 py-4 rounded-lg shadow-lg animate-pulse">
               <div className="flex items-center">
-                <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-6 h-6 mr-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                <div>
-                  <strong>Success:</strong> {planChangeSuccess}
+                <div className="font-semibold text-lg">
+                  <strong className="text-green-800">Success:</strong> <span className="text-green-700">{planChangeSuccess}</span>
                 </div>
               </div>
             </div>
           )}
 
-          <Card className="bg-white/95 backdrop-blur-sm shadow-lg border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-blue-900">Choose Your SafePlay Plan</CardTitle>
-              <CardDescription className="text-blue-700">
-                Select the perfect plan for your family's enjoyment, safety and peace of mind. All plans have a no-risk 7-day risk free trial. To cancel anytime just click on the 'Cancel Subscription' button under the Subscription or the Account menus.
+          <Card className="bg-white/95 backdrop-blur-sm shadow-lg">
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl text-gray-900">Choose Your SafePlay Plan</CardTitle>
+              <CardDescription className="text-gray-600 text-lg">
+                Select the perfect plan for your family's safety needs
               </CardDescription>
             </CardHeader>
+            <CardContent>
+              <SubscriptionPlans 
+                loading={planChangeLoading}
+                onSelectPlan={handlePlanChange}
+                hasActiveSubscription={hasActiveSubscription}
+              />
+            </CardContent>
           </Card>
-
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-6">
-            <SubscriptionPlans 
-              loading={planChangeLoading}
-              onSelectPlan={handlePlanChange}
-              hasActiveSubscription={hasActiveSubscription}
-            />
-          </div>
         </div>
       )}
 
-      {/* 🔧 BILLING ADDRESS FIX: Address Collection Modal */}
+      {/* Address Collection Modal */}
       <Dialog open={showAddressCollection} onOpenChange={setShowAddressCollection}>
-        <DialogContent className="max-w-lg p-0">
-          <DialogHeader className="px-6 py-4 border-b">
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-blue-600" />
-              Billing Address
+              <MapPin className="w-5 h-5" />
+              Billing Address Required
             </DialogTitle>
           </DialogHeader>
-          <div className="px-6 py-4 space-y-4">
-            <p className="text-gray-600">
-              Please enter your billing address for the subscription.
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Please provide your billing address to complete the subscription process.
             </p>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Street Address
-              </label>
-              <AddressAutocomplete
-                value={billingAddress}
-                onChange={handleAddressChange}
-                onValidationChange={handleAddressValidationChange}
-                onFieldsChange={handleAddressFieldsChange}
-                placeholder="Enter your billing address"
-                required={true}
-                className="w-full"
-              />
-            </div>
-            
-            {billingAddressFields.street && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm font-medium text-green-800">Address Selected:</p>
-                <p className="text-sm text-green-700">{billingAddressFields.fullAddress}</p>
-              </div>
-            )}
-            
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button 
-                variant="outline" 
+            <AddressAutocomplete
+              value={billingAddress}
+              onChange={handleAddressChange}
+              onValidationChange={handleAddressValidationChange}
+              onFieldsChange={handleAddressFieldsChange}
+              placeholder="Enter your billing address"
+              className="w-full"
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
                 onClick={() => setShowAddressCollection(false)}
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 onClick={handleAddressComplete}
-                disabled={!billingAddressFields.street}
+                disabled={!billingAddressValidation?.isValid}
               >
                 Continue to Payment
               </Button>
@@ -578,47 +463,29 @@ export default function SubscriptionPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Payment Setup Modal for New Users */}
+      {/* Payment Setup Modal */}
       <Dialog open={showPaymentSetup} onOpenChange={setShowPaymentSetup}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle>Complete Your Subscription</DialogTitle>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>
+              {hasActiveSubscription ? 'Complete Plan Change' : 'Complete Your Subscription'}
+            </DialogTitle>
           </DialogHeader>
-          <div className="px-6 py-4">
-            {selectedPlan && (
-              <>
-                {/* 🔧 BILLING ADDRESS DEBUG: Payment setup data inspection */}
-                {(() => {
-                  console.log('🔧 BILLING ADDRESS DEBUG: === PAYMENT SETUP RENDER DEBUG ===');
-                  console.log('🔧 BILLING ADDRESS DEBUG: About to render PaymentSetup with:');
-                  console.log('🔧 BILLING ADDRESS DEBUG:   - selectedPlan:', JSON.stringify(selectedPlan, null, 2));
-                  console.log('🔧 BILLING ADDRESS DEBUG:   - prefilledBillingFields:', JSON.stringify(billingAddressFields, null, 2));
-                  console.log('🔧 BILLING ADDRESS DEBUG:   - prefilledBillingAddress:', billingAddress);
-                  console.log('🔧 BILLING ADDRESS DEBUG:   - billingAddressValidation:', JSON.stringify(billingAddressValidation, null, 2));
-                  console.log('🔧 BILLING ADDRESS DEBUG:   - userEmail:', session?.user?.email);
-                  console.log('🔧 BILLING ADDRESS DEBUG:   - userName:', session?.user?.name);
-                  console.log('🔧 BILLING ADDRESS DEBUG: === END PAYMENT SETUP RENDER DEBUG ===');
-                  return null;
-                })()}
-                
-                <PaymentSetup
-                  planId={selectedPlan.planId}
-                  stripePriceId={selectedPlan.stripePriceId} // FIXED: Pass the actual Stripe price ID
-                  billingInterval={selectedPlan.interval}
-                  planName={selectedPlan.planName}
-                  amount={selectedPlan.amount}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
-                  // 🔧 BILLING ADDRESS FIX: Pass collected billing address data
-                  userEmail={session?.user?.email || ''}
-                  userName={session?.user?.name || ''}
-                  prefilledBillingAddress={billingAddress}
-                  billingAddressValidation={billingAddressValidation}
-                  prefilledBillingFields={billingAddressFields}
-                />
-              </>
-            )}
-          </div>
+          {selectedPlan && (
+            <PaymentSetup
+              planId={selectedPlan.planId}
+              stripePriceId={selectedPlan.stripePriceId}
+              billingInterval={selectedPlan.interval}
+              planName={selectedPlan.planName}
+              amount={selectedPlan.amount}
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+              prefilledBillingAddress={billingAddress}
+              billingAddressValidation={billingAddressValidation}
+              prefilledBillingFields={billingAddressFields}
+              isExistingUserUpgrade={hasActiveSubscription}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>

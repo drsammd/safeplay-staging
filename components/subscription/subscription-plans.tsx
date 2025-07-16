@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Check, Star, Crown, Infinity, Zap } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Check, Star, Crown, Infinity, Zap, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface SubscriptionPlan {
@@ -34,10 +35,19 @@ interface SubscriptionPlan {
   realTimeTracking: boolean;
   emergencyFeatures: boolean;
   familySharing: boolean;
+  // v1.5.0 - New Free Plan features
+  basicSafety?: boolean;
+  emailSupport?: boolean;
+  allSafetyFeatures?: boolean;
+  priorityEmailSupport?: boolean;
+  archiveAccess?: boolean;
+  customBranding?: boolean;
+  phoneSupport?: boolean;
+  premiumFeatures?: boolean;
 }
 
 interface SubscriptionPlansProps {
-  onSelectPlan?: (stripePriceId: string, billingInterval: 'monthly' | 'yearly' | 'lifetime', planId: string) => void;
+  onSelectPlan?: (stripePriceId: string | null, billingInterval: 'monthly' | 'yearly' | 'lifetime' | 'free', planId: string) => void;
   currentPlanId?: string;
   loading?: boolean;
   hasActiveSubscription?: boolean; // New prop to determine if user has any subscription
@@ -47,6 +57,8 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [isLoading, setIsLoading] = useState(true);
+  const [showDowngradeDialog, setShowDowngradeDialog] = useState(false);
+  const [downgradeLoading, setDowngradeLoading] = useState(false);
 
   useEffect(() => {
     fetchPlans();
@@ -54,15 +66,23 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch('/api/stripe/plans-demo');
+      console.log('📋 SubscriptionPlans: Fetching plans from real API...');
+      const response = await fetch('/api/stripe/plans');
       const data = await response.json();
+      console.log('📋 SubscriptionPlans: API response:', data);
+      
       if (data.plans) {
-        // Sort plans by price (ascending) - Basic, Premium, Family
+        // Sort plans: FREE first, then by price (ascending) - FREE, Basic, Premium, Family
         const sortedPlans = data.plans.sort((a: any, b: any) => {
+          // FREE plan should always be first
+          if (a.planType === 'FREE') return -1;
+          if (b.planType === 'FREE') return 1;
+          
+          // For other plans, sort by price
           return a.price - b.price;
         });
         
-        console.log('📋 Plans sorted by price:', sortedPlans.map((p: SubscriptionPlan) => `${p.name}: $${p.planType === 'LIFETIME' ? p.lifetimePrice : p.price}`));
+        console.log('📋 Plans sorted with FREE first, then by price:', sortedPlans.map((p: SubscriptionPlan) => `${p.name}: $${p.planType === 'LIFETIME' ? p.lifetimePrice : p.price} (${p.stripePriceId})`));
         setPlans(sortedPlans);
       }
     } catch (error) {
@@ -74,12 +94,14 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
 
   const getPlanIcon = (planType: string) => {
     switch (planType) {
+      case 'FREE':
+        return <Check className="w-6 h-6 text-green-500" />;
       case 'BASIC':
         return <Zap className="w-6 h-6 text-blue-500" />;
       case 'PREMIUM':
         return <Star className="w-6 h-6 text-purple-500" />;
       case 'FAMILY':
-        return <Crown className="w-6 h-6 text-gold-500" />;
+        return <Crown className="w-6 h-6 text-amber-500" />;
       case 'LIFETIME':
         return <Infinity className="w-6 h-6 text-green-500" />;
       default:
@@ -89,12 +111,14 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
 
   const getPlanColor = (planType: string) => {
     switch (planType) {
+      case 'FREE':
+        return 'border-green-200 hover:border-green-300 ring-2 ring-green-100 bg-green-50/30';
       case 'BASIC':
         return 'border-blue-200 hover:border-blue-300';
       case 'PREMIUM':
         return 'border-purple-200 hover:border-purple-300 ring-2 ring-purple-100';
       case 'FAMILY':
-        return 'border-yellow-200 hover:border-yellow-300';
+        return 'border-amber-200 hover:border-amber-300';
       case 'LIFETIME':
         return 'border-green-200 hover:border-green-300';
       default:
@@ -103,6 +127,9 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
   };
 
   const formatPrice = (plan: SubscriptionPlan, interval: 'monthly' | 'yearly' | 'lifetime') => {
+    if (plan.planType === 'FREE') {
+      return 'Free';
+    }
     if (interval === 'lifetime' && plan.lifetimePrice) {
       return `$${plan.lifetimePrice}`;
     }
@@ -114,22 +141,53 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
 
   const getFeatures = (plan: SubscriptionPlan) => {
     const features = [
-      `${plan.maxChildren === -1 ? 'Unlimited' : plan.maxChildren} children`,
-      `${plan.maxPhotoDownloads === -1 ? 'Unlimited' : plan.maxPhotoDownloads} photo downloads/month`,
-      `${plan.maxVideoDownloads === -1 ? 'Unlimited' : plan.maxVideoDownloads} video downloads/month`,
-      'Basic safety alerts',
-      plan.biometricFeatures && 'Biometric features',
+      `${plan.maxChildren === -1 ? 'Unlimited' : plan.maxChildren} ${plan.maxChildren === 1 ? 'child' : 'children'}`,
+      `${plan.maxPhotoDownloads === -1 ? 'Unlimited' : plan.maxPhotoDownloads} photo${plan.maxPhotoDownloads === 1 ? '' : 's'}/month`,
+      `${plan.maxVideoDownloads === -1 ? 'Unlimited' : plan.maxVideoDownloads} video${plan.maxVideoDownloads === 1 ? '' : 's'}/month`,
       plan.realTimeTracking && 'Real-time tracking',
+      plan.basicSafety && 'Basic safety features',
+      plan.allSafetyFeatures && 'All safety features',
+      plan.emailSupport && 'Email support',
+      plan.priorityEmailSupport && 'Priority email support',
+      plan.archiveAccess && 'Archive access',
+      plan.biometricFeatures && 'Biometric features',
       plan.emergencyFeatures && 'Emergency features',
       plan.premiumAlerts && 'Premium alerts',
       plan.aiInsights && 'AI insights',
       plan.advancedAnalytics && 'Advanced analytics',
+      plan.customBranding && 'Custom branding',
       plan.familySharing && 'Family sharing',
       plan.prioritySupport && 'Priority support',
+      plan.phoneSupport && 'Phone support',
+      plan.premiumFeatures && 'Premium features',
       plan.unlimitedDownloads && 'Unlimited downloads',
     ].filter(Boolean) as string[];
 
     return features;
+  };
+
+  // Handle downgrade to Free Plan with confirmation
+  const handleDowngradeToFree = () => {
+    setShowDowngradeDialog(true);
+  };
+
+  const confirmDowngradeToFree = async () => {
+    if (!onSelectPlan) return;
+    
+    setDowngradeLoading(true);
+    try {
+      // Find the free plan
+      const freePlan = plans.find(p => p.planType === 'FREE');
+      if (freePlan) {
+        console.log('🆓 SubscriptionPlans: Downgrading to FREE plan', freePlan);
+        await onSelectPlan(null, 'free', freePlan.id);
+      }
+    } catch (error) {
+      console.error('Error downgrading to free plan:', error);
+    } finally {
+      setDowngradeLoading(false);
+      setShowDowngradeDialog(false);
+    }
   };
 
   if (isLoading) {
@@ -191,9 +249,14 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
                   <Badge className="bg-blue-500 text-white">Current Plan</Badge>
                 </div>
               )}
-              {plan.planType === 'PREMIUM' && currentPlanId !== plan.id && (
+              {plan.planType === 'FREE' && currentPlanId !== plan.id && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-purple-500 text-white">Most Popular</Badge>
+                  <Badge className="bg-green-500 text-white text-center whitespace-nowrap">🎉 FREE PLAN</Badge>
+                </div>
+              )}
+              {plan.planType === 'FAMILY' && currentPlanId !== plan.id && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-purple-500 text-white text-center whitespace-nowrap">Most Popular</Badge>
                 </div>
               )}
 
@@ -208,7 +271,16 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
               <CardContent className="space-y-4">
                 {/* Pricing */}
                 <div className="text-center">
-                  {plan.planType === 'LIFETIME' ? (
+                  {plan.planType === 'FREE' ? (
+                    <div>
+                      <div className="text-3xl font-bold text-green-600">
+                        {formatPrice(plan, billingInterval)}
+                      </div>
+                      <div className="text-sm text-green-600 font-medium">
+                        No credit card required!
+                      </div>
+                    </div>
+                  ) : plan.planType === 'LIFETIME' ? (
                     <div>
                       <div className="text-3xl font-bold">
                         {formatPrice(plan, 'lifetime')}
@@ -233,10 +305,17 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
                 </div>
 
                 {/* Trial */}
-                {plan.trialDays > 0 && (
+                {plan.trialDays > 0 && plan.planType !== 'FREE' && (
                   <div className="text-center">
                     <Badge variant="outline" className="text-green-600 border-green-200">
                       {plan.trialDays} day free trial
+                    </Badge>
+                  </div>
+                )}
+                {plan.planType === 'FREE' && (
+                  <div className="text-center">
+                    <Badge variant="outline" className="text-green-600 border-green-200">
+                      ✨ Start immediately
                     </Badge>
                   </div>
                 )}
@@ -259,11 +338,38 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
 
               <CardFooter className="mt-auto">
                 <Button
-                  className={`w-full ${currentPlanId === plan.id ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  variant={currentPlanId === plan.id ? 'secondary' : plan.planType === 'PREMIUM' ? 'default' : 'outline'}
-                  disabled={loading || currentPlanId === plan.id}
+                  className={`w-full transition-all duration-200 ${
+                    currentPlanId === plan.id ? 'opacity-60 cursor-not-allowed' : ''
+                  } text-sm sm:text-base px-2 sm:px-4 py-2 leading-tight overflow-hidden`}
+                  style={{
+                    fontSize: 'clamp(0.75rem, 2.5vw, 1rem)',
+                    lineHeight: '1.2',
+                    whiteSpace: 'nowrap',
+                    textOverflow: 'ellipsis'
+                  }}
+                  variant={currentPlanId === plan.id ? 'secondary' : plan.planType === 'FAMILY' ? 'default' : 'outline'}
+                  disabled={loading || downgradeLoading || currentPlanId === plan.id}
                   onClick={() => {
                     if (onSelectPlan && currentPlanId !== plan.id) {
+                      // Handle FREE plan separately - check if it's a downgrade or new signup
+                      if (plan.planType === 'FREE') {
+                        if (hasActiveSubscription) {
+                          // User has active subscription, show downgrade confirmation
+                          handleDowngradeToFree();
+                          return;
+                        } else {
+                          // New user signup to free plan
+                          console.log('🆓 SubscriptionPlans: FREE plan selected for new user', { 
+                            planId: plan.id, 
+                            planName: plan.name,
+                            planType: plan.planType,
+                            currentPlanId: currentPlanId
+                          });
+                          onSelectPlan(null, 'free', plan.id);
+                          return;
+                        }
+                      }
+
                       const interval = plan.planType === 'LIFETIME' ? 'lifetime' : billingInterval;
                       
                       // Get the correct Stripe price ID based on billing interval
@@ -303,10 +409,14 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
                     }
                   }}
                 >
-                  {loading ? 'Processing...' : 
-                   currentPlanId === plan.id ? '✓ Current Plan' : 
-                   plan.planType === 'LIFETIME' ? 'Buy Once' : 
-                   hasActiveSubscription ? 'Change to This Plan' : 'Choose this Plan'}
+                  <span className="truncate">
+                    {loading || downgradeLoading ? 'Processing...' : 
+                     currentPlanId === plan.id ? 'Current Plan' : 
+                     plan.planType === 'FREE' && hasActiveSubscription ? 'Start Free Now!' :
+                     plan.planType === 'FREE' ? 'Start Free Now!' :
+                     plan.planType === 'LIFETIME' ? 'Buy Once' : 
+                     hasActiveSubscription ? 'Change to This Plan' : 'Choose this Plan'}
+                  </span>
                 </Button>
               </CardFooter>
             </Card>
@@ -361,6 +471,66 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
           </table>
         </div>
       </div>
+
+      {/* Downgrade Confirmation Dialog */}
+      <Dialog open={showDowngradeDialog} onOpenChange={setShowDowngradeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Confirm Downgrade to Free Plan
+            </DialogTitle>
+            <DialogDescription className="pt-2 text-gray-600">
+              Are you sure you want to downgrade to Free Plan? You will lose access to benefits of your current plan, including:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <ul className="space-y-2 text-sm text-gray-700">
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                Additional children (limited to 1 child)
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                Extra photo and video downloads
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                Premium features and analytics
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-400 rounded-full"></span>
+                Priority support access
+              </li>
+            </ul>
+            
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm text-green-700">
+                <strong>Good news:</strong> You can upgrade again anytime to restore all features!
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setShowDowngradeDialog(false)}
+              disabled={downgradeLoading}
+              className="flex-1 sm:flex-none"
+            >
+              No, Keep Current Plan
+            </Button>
+            <Button
+              onClick={confirmDowngradeToFree}
+              disabled={downgradeLoading}
+              className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700 text-white"
+            >
+              {downgradeLoading ? 'Processing...' : 'Yes, Downgrade to Free'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

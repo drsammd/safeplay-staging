@@ -59,6 +59,7 @@ interface PaymentSetupProps {
   prefilledBillingFields?: AddressFields;
   userEmail?: string;
   userName?: string;
+  isExistingUserUpgrade?: boolean;
 }
 
 // Payment Form Component (inside Elements provider)
@@ -76,7 +77,8 @@ function PaymentFormContent({
   billingAddressValidation,
   prefilledBillingFields,
   userEmail,
-  userName
+  userName,
+  isExistingUserUpgrade = false
 }: PaymentSetupProps) {
   const stripe = useStripe();
   const elements = useElements();
@@ -340,21 +342,39 @@ function PaymentFormContent({
 
       console.log(`✅ PAYMENT DEBUG [${debugId}]: Payment method created:`, paymentMethod.id);
 
-      // Create subscription with payment method
+      // 🔧 CRITICAL FIX: Determine API endpoint and request body based on user type
       const isSignupFlow = !session?.user?.id;
-      const endpoint = '/api/stripe/subscription-demo';
-      
-      const requestBody = {
-        planId: planId,
-        paymentMethodId: paymentMethod.id,
-        discountCodeId,
-        isSignupFlow: isSignupFlow,
-        debugId: debugId // Include debug ID for tracking
-      };
+      let endpoint: string;
+      let requestBody: any;
+
+      if (isExistingUserUpgrade) {
+        // Existing user upgrade - use modify-fixed endpoint
+        endpoint = '/api/stripe/subscription/modify-fixed';
+        requestBody = {
+          priceId: stripePriceId, // Use real Stripe price ID
+          paymentMethodId: paymentMethod.id,
+          debugId: debugId // Include debug ID for tracking
+        };
+        console.log(`🔄 PAYMENT DEBUG [${debugId}]: Existing user upgrade flow selected`);
+      } else {
+        // New user signup - use subscription endpoint
+        endpoint = '/api/stripe/subscription';
+        requestBody = {
+          priceId: stripePriceId, // Use real Stripe price ID instead of planId
+          paymentMethodId: paymentMethod.id,
+          discountCodeId,
+          isSignupFlow: isSignupFlow,
+          email: userEmail, // Include email for signup flow
+          name: userName,   // Include name for signup flow
+          debugId: debugId // Include debug ID for tracking
+        };
+        console.log(`🆕 PAYMENT DEBUG [${debugId}]: New user signup flow selected`);
+      }
 
       console.log(`🚀 PAYMENT DEBUG [${debugId}]: Making API call to:`, endpoint);
       console.log(`🚀 PAYMENT DEBUG [${debugId}]: Request body:`, requestBody);
       console.log(`🚀 PAYMENT DEBUG [${debugId}]: IsSignupFlow:`, isSignupFlow);
+      console.log(`🚀 PAYMENT DEBUG [${debugId}]: IsExistingUserUpgrade:`, isExistingUserUpgrade);
 
       // Log timestamp before API call
       const apiCallStart = Date.now();

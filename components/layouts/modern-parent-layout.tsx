@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useEffectiveSession } from "@/components/providers/demo-session-provider";
+import { useSecureSession } from "@/components/providers/fixed-session-provider";
 import ModernSidebar from "@/components/navigation/modern-sidebar";
 import ModernHeader from "@/components/navigation/modern-header";
 import { VerificationBadge } from "@/components/verification/verification-badge";
@@ -16,14 +16,11 @@ interface ModernParentLayoutProps {
 }
 
 export default function ModernParentLayout({ children }: ModernParentLayoutProps) {
-  const { data: session, isDemoMode } = useEffectiveSession();
+  const { data: session, status } = useSecureSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const getVerificationPrompt = () => {
     if (!session?.user) return null;
-
-    // Skip verification prompts in demo mode for stakeholder presentations
-    if (isDemoMode) return null;
 
     const { phoneVerified, identityVerified, twoFactorEnabled, verificationLevel } = session.user;
     

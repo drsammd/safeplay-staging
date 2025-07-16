@@ -42,7 +42,7 @@ const levelConfig = {
   },
   FULL_VERIFIED: {
     label: 'Fully Verified',
-    color: 'success' as const,
+    color: 'default' as const,
     icon: Star,
     description: 'Fully verified with 2FA enabled'
   }

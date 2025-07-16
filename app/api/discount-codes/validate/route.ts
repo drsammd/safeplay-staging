@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { discountService } from '@/lib/stripe/discount-service';
-import { SubscriptionPlanType } from '@prisma/client';
+import { SubscriptionPlan } from '@prisma/client';
 
 // POST - Validate discount code
 export async function POST(request: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     const validation = await discountService.validateDiscountCode(
       code,
       session.user.id,
-      planType as SubscriptionPlanType,
+      planType as SubscriptionPlan,
       purchaseAmount
     );
 
@@ -48,8 +48,8 @@ export async function POST(request: NextRequest) {
         code: validation.discountCode?.code,
         name: validation.discountCode?.name,
         description: validation.discountCode?.description,
-        discountType: validation.discountCode?.discountType,
-        discountValue: validation.discountCode?.discountValue,
+        discountType: validation.discountCode?.type,
+        discountValue: validation.discountCode?.value,
         discountAmount: validation.discountAmount
       }
     });

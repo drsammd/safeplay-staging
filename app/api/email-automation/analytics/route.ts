@@ -112,10 +112,10 @@ export async function GET(request: NextRequest) {
 
     const unsubscribeStats = await prisma.emailPreferences.aggregate({
       _count: {
-        globalUnsubscribedAt: true
+        unsubscribedAt: true
       },
       where: {
-        globalUnsubscribedAt: { not: null }
+        unsubscribedAt: { not: null }
       }
     });
 
@@ -148,7 +148,7 @@ export async function GET(request: NextRequest) {
         totalUsers: preferencesStats.reduce((sum, stat) => sum + stat._count.emailEnabled, 0),
         emailEnabled: preferencesStats.find(s => s.emailEnabled)?._count?.emailEnabled || 0,
         emailDisabled: preferencesStats.find(s => !s.emailEnabled)?._count?.emailEnabled || 0,
-        globalUnsubscribes: unsubscribeStats._count.globalUnsubscribedAt
+        globalUnsubscribes: unsubscribeStats._count.unsubscribedAt
       },
       topCampaigns: topCampaigns.map(campaign => ({
         id: campaign.id,

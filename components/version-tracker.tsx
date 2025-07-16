@@ -1,87 +1,50 @@
 
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react';
 
-// Fallback version configuration
-const FALLBACK_VERSION_CONFIG = {
-  version: "1.2.29-staging",
-  buildTimestamp: new Date().toISOString(),
-  environment: "staging",
-  commit: "stripe-price-id-configuration-fix",
-  branch: "main"
-};
-
-interface VersionDisplayProps {
-  placement: 'footer' | 'console' | 'meta';
-}
-
-export function VersionTracker({ placement }: VersionDisplayProps) {
-  const [versionConfig, setVersionConfig] = useState({
-    ...FALLBACK_VERSION_CONFIG,
-    version: '1.2.28-staging'
-  });
-  const [isLoading, setIsLoading] = useState(true);
+export default function VersionTracker() {
+  const [versionInfo, setVersionInfo] = useState<any>(null);
 
   useEffect(() => {
-    // Fetch version information from API
-    fetch('/api/version')
-      .then(response => response.json())
-      .then(data => {
-        setVersionConfig(data);
-        setIsLoading(false);
-      })
-      .catch(error => {
-        console.error('Failed to fetch version info:', error);
-        setIsLoading(false);
-      });
+    const fetchVersion = async () => {
+      try {
+        const response = await fetch('/api/version');
+        const data = await response.json();
+        setVersionInfo(data);
+      } catch (error) {
+        console.error('Failed to fetch version:', error);
+      }
+    };
+
+    fetchVersion();
   }, []);
 
-  useEffect(() => {
-    if (placement === 'console' && !isLoading) {
-      console.log(`
-🚀 mySafePlay Version Information:
-   Version: ${versionConfig.version}
-   Environment: ${versionConfig.environment}
-   Build Time: ${versionConfig.buildTimestamp}
-   Commit: ${versionConfig.commit}
-   Branch: ${versionConfig.branch}
-      `);
-    }
-  }, [placement, versionConfig, isLoading]);
+  if (!versionInfo) return null;
 
-  if (placement === 'footer') {
-    return (
-      <div className="text-xs text-gray-400 py-2 px-4 bg-gray-50 border-t">
-        <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
-          <div className="flex items-center space-x-4">
-            <span>v{versionConfig.version}</span>
-            <span>Build: {new Date(versionConfig.buildTimestamp).toLocaleDateString()}</span>
-            <span className="hidden sm:inline">Env: {versionConfig.environment}</span>
-          </div>
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="hidden md:inline">Commit: {versionConfig.commit}</span>
-            <span className="text-green-600">●</span>
-            <span>Deployed</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (placement === 'meta') {
-    return (
-      <>
-        <meta name="app-version" content={versionConfig.version} />
-        <meta name="app-build-time" content={versionConfig.buildTimestamp} />
-        <meta name="app-environment" content={versionConfig.environment} />
-        <meta name="app-commit" content={versionConfig.commit} />
-      </>
-    );
-  }
-
-  return null;
+  return (
+    <div className="fixed bottom-4 right-4 bg-black bg-opacity-75 text-white px-3 py-2 rounded-lg text-xs font-mono z-50">
+      <div>🚀 mySafePlay Version Information:</div>
+      <div>&nbsp;&nbsp;&nbsp;Version: {versionInfo.version}</div>
+      <div>&nbsp;&nbsp;&nbsp;Environment: {versionInfo.environment}</div>
+      <div>&nbsp;&nbsp;&nbsp;Build Time: {versionInfo.buildTime}</div>
+      <div>&nbsp;&nbsp;&nbsp;Commit: {versionInfo.commit}</div>
+      <div>&nbsp;&nbsp;&nbsp;Branch: {versionInfo.branch}</div>
+    </div>
+  );
 }
 
-// Export the version config for use in other components
-export const getVersionInfo = () => FALLBACK_VERSION_CONFIG;
+// Export for compatibility with existing imports
+export { VersionTracker };
+
+// Export helper function for version info
+export async function getVersionInfo() {
+  try {
+    const response = await fetch('/api/version');
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch version:', error);
+    return null;
+  }
+}

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
               usageStatus: true,
               discountAmount: true,
               finalAmount: true,
-              appliedAt: true
+              usedAt: true
             }
           },
           _count: {
@@ -211,8 +211,8 @@ export async function POST(request: NextRequest) {
         code: code.toUpperCase(),
         name,
         description,
-        discountType,
-        discountValue,
+        type: discountType,
+        value: discountValue,
         category,
         maxUses,
         maxUsesPerUser,

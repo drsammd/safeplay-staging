@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { decode } from 'next-auth/jwt';
 import { prisma } from '@/lib/db';
 
+// Define the expected structure of the auto-signin JWT token
+interface AutoSigninToken {
+  userId: string;
+  autoSignin: boolean;
+  exp?: number;
+  [key: string]: any;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { token } = await request.json();
@@ -15,10 +23,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Decode the auto-signin token
-    const decoded = await decode({
+    const decodedRaw = await decode({
       token,
       secret: process.env.NEXTAUTH_SECRET!,
     });
+
+    // Type assertion for the decoded token
+    const decoded = decodedRaw as unknown as AutoSigninToken | null;
 
     if (!decoded || !decoded.autoSignin || !decoded.userId) {
       console.log('❌ Invalid auto-signin token');

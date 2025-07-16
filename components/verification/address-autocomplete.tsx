@@ -75,12 +75,16 @@ export function AddressAutocomplete({
   
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const suggestionsDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const validationDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // FIXED: Smart suggestion fetching with enhanced logic to prevent unnecessary API calls
+  // FIXED: Autocomplete suggestions logic with separate timeout reference
   useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+    console.log(`🔍 AUTOCOMPLETE DEBUG: useEffect triggered with value: "${value}"`);
+    
+    if (suggestionsDebounceRef.current) {
+      clearTimeout(suggestionsDebounceRef.current);
+      console.log(`🔍 AUTOCOMPLETE DEBUG: Cleared previous suggestions timeout`);
     }
 
     // FIXED: Enhanced input validation before calling autocomplete
@@ -88,53 +92,71 @@ export function AddressAutocomplete({
     const hasLetters = /[a-zA-Z]/.test(trimmedValue);
     const hasNumbers = /[0-9]/.test(trimmedValue);
     
-    // FIXED: More restrictive filtering to prevent API calls for very short inputs
-    const shouldFetchSuggestions = trimmedValue.length >= 4 && 
-      hasLetters && 
-      (hasNumbers || trimmedValue.length >= 6) && 
-      !selectedSuggestion;
+    console.log(`🔍 AUTOCOMPLETE DEBUG: Analysis - trimmed: "${trimmedValue}", length: ${trimmedValue.length}, hasLetters: ${hasLetters}, hasNumbers: ${hasNumbers}, selectedSuggestion: ${!!selectedSuggestion}`);
+    
+    // FIXED: More permissive condition - allow addresses starting with numbers (house numbers)
+    // Most US addresses start with numbers like "123 Main St", so we should allow autocomplete for those
+    const shouldFetchSuggestions = trimmedValue.length >= 2 && (hasLetters || (hasNumbers && trimmedValue.length >= 3));
 
-    console.log(`🔍 ADDRESS AUTOCOMPLETE: Input "${trimmedValue}" - shouldFetch: ${shouldFetchSuggestions}, hasLetters: ${hasLetters}, hasNumbers: ${hasNumbers}, length: ${trimmedValue.length}`);
+    console.log(`🔍 AUTOCOMPLETE DEBUG: shouldFetchSuggestions: ${shouldFetchSuggestions}`);
 
     if (shouldFetchSuggestions) {
-      debounceRef.current = setTimeout(async () => {
-        console.log(`📞 ADDRESS AUTOCOMPLETE: Making API call for "${trimmedValue}"`);
-        await fetchSuggestions(trimmedValue);
-      }, 400); // Slightly slower to reduce API calls
-    } else if (trimmedValue.length < 3) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      console.log(`🚫 ADDRESS AUTOCOMPLETE: Input too short, clearing suggestions`);
+      console.log(`📞 AUTOCOMPLETE DEBUG: Setting suggestions timeout to fetch for "${trimmedValue}"`);
+      suggestionsDebounceRef.current = setTimeout(async () => {
+        try {
+          console.log(`📞 AUTOCOMPLETE DEBUG: Suggestions timeout fired - Making API call for "${trimmedValue}"`);
+          await fetchSuggestions(trimmedValue);
+          console.log(`✅ AUTOCOMPLETE DEBUG: Suggestions API call completed for "${trimmedValue}"`);
+        } catch (error) {
+          console.error(`❌ AUTOCOMPLETE DEBUG: Suggestions API call failed for "${trimmedValue}":`, error);
+        }
+      }, 300);
     } else {
-      console.log(`🚫 ADDRESS AUTOCOMPLETE: Input "${trimmedValue}" filtered out (shouldFetch: ${shouldFetchSuggestions})`);
+      console.log(`🚫 AUTOCOMPLETE DEBUG: Not fetching suggestions - condition not met`);
+      if (trimmedValue.length < 2) {
+        console.log(`🚫 AUTOCOMPLETE DEBUG: Input too short (${trimmedValue.length} < 2), clearing suggestions`);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } else if (!hasLetters && (!hasNumbers || trimmedValue.length < 3)) {
+        console.log(`🚫 AUTOCOMPLETE DEBUG: Input doesn't meet criteria (needs letters OR 3+ numbers), clearing suggestions`);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
     }
 
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+      if (suggestionsDebounceRef.current) {
+        clearTimeout(suggestionsDebounceRef.current);
+        console.log(`🔍 AUTOCOMPLETE DEBUG: Cleanup - cleared suggestions timeout`);
       }
     };
-  }, [value, selectedSuggestion]);
+  }, [value]);
 
-  // IMPROVED: More lenient validation timing
+  // FIXED: Address validation logic with separate timeout reference
   useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
+    if (validationDebounceRef.current) {
+      clearTimeout(validationDebounceRef.current);
+      console.log(`🔍 VALIDATION DEBUG: Cleared previous validation timeout`);
     }
 
-    // IMPROVED: Lower minimum character requirement for validation
-    if (value.length >= 4) {
-      debounceRef.current = setTimeout(async () => {
+    // 🔧 UX IMPROVEMENT: Even lower minimum character requirement for validation to match suggestions
+    if (value.length >= 3) {
+      console.log(`📞 VALIDATION DEBUG: Setting validation timeout for "${value}"`);
+      validationDebounceRef.current = setTimeout(async () => {
+        console.log(`📞 VALIDATION DEBUG: Validation timeout fired for "${value}"`);
         await validateAddress(value, selectedSuggestion?.place_id);
-      }, 500); // Faster validation - 500ms instead of 600ms
+        console.log(`✅ VALIDATION DEBUG: Validation completed for "${value}"`);
+      }, 400); // 🔧 UX IMPROVEMENT: Faster validation for better responsiveness
     } else if (value.length === 0) {
+      console.log(`🔍 VALIDATION DEBUG: Empty value, clearing validation result`);
       setValidationResult(null);
       onValidationChange(null);
     }
 
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
+      if (validationDebounceRef.current) {
+        clearTimeout(validationDebounceRef.current);
+        console.log(`🔍 VALIDATION DEBUG: Cleanup - cleared validation timeout`);
       }
     };
   }, [value, selectedSuggestion]);
@@ -163,39 +185,62 @@ export function AddressAutocomplete({
   }, []);
 
   const fetchSuggestions = async (input: string) => {
+    console.log(`🔍 FETCHSUGGESTIONS: Starting fetch for "${input}"`);
     setIsLoading(true);
+    
     try {
-      console.log(`🔍 Address autocomplete: Fetching suggestions for "${input}"`);
+      console.log(`📡 FETCHSUGGESTIONS: Making API request to /api/verification/address/autocomplete`);
+      console.log(`📡 FETCHSUGGESTIONS: Request body:`, { input, countryRestriction });
       
       const response = await fetch('/api/verification/address/autocomplete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          input,
-          countryRestriction
+          input: input.trim(),
+          countryRestriction: countryRestriction || ['us', 'ca']
         })
       });
 
+      console.log(`📡 FETCHSUGGESTIONS: API response status:`, response.status, response.ok);
+
       if (response.ok) {
         const data = await response.json();
+        console.log(`📡 FETCHSUGGESTIONS: Raw API response:`, JSON.stringify(data, null, 2));
+        
         const fetchedSuggestions = data.suggestions || [];
         
-        console.log(`✅ Address autocomplete: Received ${fetchedSuggestions.length} suggestions for "${input}"`);
-        console.log(`📍 Address suggestions:`, fetchedSuggestions.map(s => s.description));
+        console.log(`✅ FETCHSUGGESTIONS: Processed ${fetchedSuggestions.length} suggestions for "${input}"`);
+        console.log(`📍 FETCHSUGGESTIONS: Expected 4-5 suggestions, got:`, fetchedSuggestions.length);
+        console.log(`📍 FETCHSUGGESTIONS: Suggestion details:`, fetchedSuggestions.map((s, idx) => ({
+          index: idx + 1,
+          place_id: s.place_id,
+          main_text: s.main_text,
+          secondary_text: s.secondary_text,
+          description: s.description
+        })));
         
         setSuggestions(fetchedSuggestions);
-        // IMPROVED: Show suggestions even if only one or few are returned
         setShowSuggestions(fetchedSuggestions.length > 0);
+        
+        console.log(`✅ FETCHSUGGESTIONS: State updated - showing ${fetchedSuggestions.length} suggestions in dropdown`);
+        console.log(`✅ FETCHSUGGESTIONS: showSuggestions state set to:`, fetchedSuggestions.length > 0);
       } else {
-        console.error('Address autocomplete API error:', response.status);
+        const errorText = await response.text();
+        console.error(`❌ FETCHSUGGESTIONS: API error ${response.status}:`, errorText);
         setSuggestions([]);
         setShowSuggestions(false);
       }
     } catch (error) {
-      console.error('Error fetching address suggestions:', error);
+      console.error(`❌ FETCHSUGGESTIONS: Exception occurred:`, error);
+      console.error(`❌ FETCHSUGGESTIONS: Error details:`, {
+        message: error?.message,
+        stack: error?.stack,
+        name: error?.name
+      });
       setSuggestions([]);
       setShowSuggestions(false);
     } finally {
+      console.log(`🔍 FETCHSUGGESTIONS: Completed fetch for "${input}" - setting loading to false`);
       setIsLoading(false);
     }
   };
@@ -314,9 +359,18 @@ export function AddressAutocomplete({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    onChange(newValue);
+    console.log(`🔍 INPUT CHANGE: New value: "${newValue}"`);
+    
+    // Clear previous state
     setSelectedSuggestion(null);
     setValidationResult(null);
+    setSuggestions([]); // Clear any existing suggestions
+    setShowSuggestions(false);
+    
+    // Update parent component
+    onChange(newValue);
+    
+    console.log(`🔍 INPUT CHANGE: State cleared and parent notified`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -446,32 +500,34 @@ export function AddressAutocomplete({
         )}
       </div>
 
-      {/* FIXED: Enhanced suggestions dropdown with better visibility and interaction */}
+      {/* 🔧 UX IMPROVEMENT: Enhanced suggestions dropdown with better visibility and prominence */}
       {showSuggestions && suggestions.length > 0 && (
         <Card 
           ref={suggestionsRef}
-          className="absolute z-[9999] w-full mt-1 max-h-80 overflow-y-auto bg-white border-2 border-blue-200 shadow-xl"
+          className="absolute z-[9999] w-full mt-2 max-h-96 overflow-y-auto bg-white border-2 border-blue-300 shadow-2xl rounded-lg"
           style={{ pointerEvents: 'auto' }}
         >
-          <div className="p-2">
-            <div className="text-xs text-blue-600 font-medium mb-2 px-2 bg-blue-50 rounded py-1">
-              {suggestions.length} address suggestion{suggestions.length !== 1 ? 's' : ''} found - click to select
+          <div className="p-3">
+            <div className="text-sm text-blue-700 font-semibold mb-3 px-3 py-2 bg-blue-100 rounded-md border border-blue-200">
+              📍 {suggestions.length} address suggestion{suggestions.length !== 1 ? 's' : ''} found - click any to select
             </div>
             {suggestions.map((suggestion, index) => (
               <div
                 key={suggestion.place_id}
-                className="p-3 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-all duration-200 rounded-sm hover:shadow-md"
+                className="p-4 hover:bg-blue-50 cursor-pointer border-b last:border-b-0 transition-all duration-200 rounded-md hover:shadow-lg hover:scale-[1.02] border-l-4 border-l-transparent hover:border-l-blue-400"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log(`🎯 ADDRESS AUTOCOMPLETE: Dropdown item ${index + 1} clicked:`, suggestion);
+                  console.log(`🎯 ADDRESS AUTOCOMPLETE: Dropdown item ${index + 1} of ${suggestions.length} clicked:`, suggestion);
                   console.log(`🎯 ADDRESS AUTOCOMPLETE: Suggestion details:`, {
                     place_id: suggestion.place_id,
                     description: suggestion.description,
                     main_text: suggestion.main_text,
                     secondary_text: suggestion.secondary_text
                   });
+                  console.log(`🎯 ADDRESS AUTOCOMPLETE: About to call handleSuggestionClick...`);
                   handleSuggestionClick(suggestion);
+                  console.log(`🎯 ADDRESS AUTOCOMPLETE: handleSuggestionClick completed`);
                 }}
                 onMouseDown={(e) => {
                   // Prevent input blur while allowing click to process
@@ -481,18 +537,18 @@ export function AddressAutocomplete({
                   console.log(`🎯 ADDRESS AUTOCOMPLETE: Hovering over suggestion ${index + 1}: ${suggestion.main_text}`);
                 }}
               >
-                <div className="flex items-start gap-2">
-                  <MapPin className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate text-sm">
+                    <div className="font-semibold text-gray-900 text-sm leading-relaxed">
                       {suggestion.main_text}
                     </div>
-                    <div className="text-xs text-gray-600 truncate">
+                    <div className="text-sm text-gray-600 mt-1">
                       {suggestion.secondary_text}
                     </div>
                   </div>
-                  <div className="text-xs text-blue-500 font-medium">
-                    Click
+                  <div className="text-sm text-blue-600 font-semibold bg-blue-50 px-2 py-1 rounded">
+                    Select
                   </div>
                 </div>
               </div>

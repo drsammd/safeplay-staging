@@ -1,4 +1,5 @@
 
+
 import { stripe, stripeConfig } from './config';
 import { prisma } from '../db';
 import { SubscriptionStatus, SubscriptionPlan } from '@prisma/client';
@@ -65,8 +66,8 @@ const PLAN_DEFINITIONS = {
     price: 29.99,
     yearlyPrice: 299.99,
     lifetimePrice: null,
-    stripePriceId: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID || 'price_family_monthly',
-    stripeYearlyPriceId: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID || 'price_family_yearly',
+    stripePriceId: process.env.STRIPE_FAMILY_MONTHLY_PRICE_ID || 'price_family_monthly',
+    stripeYearlyPriceId: process.env.STRIPE_FAMILY_YEARLY_PRICE_ID || 'price_family_yearly',
     stripeLifetimePriceId: null,
     currency: 'usd',
     trialDays: 7,
@@ -238,6 +239,11 @@ export class FixedSubscriptionService {
 
       console.log('✅ SERVICE: Customer ID:', stripeCustomerId);
 
+      // 🔧 CRITICAL FIX: Ensure payment method is attached before creating subscription
+      if (!paymentMethodId) {
+        throw new Error('Payment method is required for paid subscriptions. Please add a payment method first.');
+      }
+
       // Build subscription parameters
       const subscriptionParams: any = {
         customer: stripeCustomerId,
@@ -249,8 +255,86 @@ export class FixedSubscriptionService {
         expand: ['latest_invoice.payment_intent'],
       };
 
+      // 🔧 CRITICAL FIX v1.5.14: Enhanced payment method attachment with comprehensive error handling
       if (paymentMethodId) {
-        subscriptionParams.default_payment_method = paymentMethodId;
+        console.log('💳 FIXED SERVICE v1.5.14: Starting payment method attachment process...');
+        console.log('💳 FIXED SERVICE v1.5.14: Payment method ID:', paymentMethodId);
+        console.log('💳 FIXED SERVICE v1.5.14: Customer ID:', stripeCustomerId);
+        
+        try {
+          // First, verify the payment method exists
+          const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+          console.log('✅ FIXED SERVICE v1.5.14: Payment method retrieved:', {
+            id: paymentMethod.id,
+            type: paymentMethod.type,
+            customer: paymentMethod.customer
+          });
+          
+          // Check if payment method is already attached to this customer
+          if (paymentMethod.customer === stripeCustomerId) {
+            console.log('✅ FIXED SERVICE v1.5.14: Payment method already attached to customer');
+          } else if (paymentMethod.customer && paymentMethod.customer !== stripeCustomerId) {
+            console.log('⚠️ FIXED SERVICE v1.5.14: Payment method attached to different customer, detaching first...');
+            // Detach from previous customer
+            await stripe.paymentMethods.detach(paymentMethodId);
+            console.log('✅ FIXED SERVICE v1.5.14: Payment method detached from previous customer');
+          }
+          
+          // Attach payment method to customer if not already attached
+          if (paymentMethod.customer !== stripeCustomerId) {
+            console.log('💳 FIXED SERVICE v1.5.14: Attaching payment method to customer...');
+            await stripe.paymentMethods.attach(paymentMethodId, {
+              customer: stripeCustomerId,
+            });
+            console.log('✅ FIXED SERVICE v1.5.14: Payment method attached to customer:', stripeCustomerId);
+          }
+          
+          // Set as default payment method for customer
+          console.log('🔧 FIXED SERVICE v1.5.14: Setting payment method as default for customer...');
+          await stripe.customers.update(stripeCustomerId, {
+            invoice_settings: {
+              default_payment_method: paymentMethodId,
+            },
+          });
+          console.log('✅ FIXED SERVICE v1.5.14: Payment method set as default for customer');
+          
+          // Verify the customer now has the payment method
+          const updatedCustomer = await stripe.customers.retrieve(stripeCustomerId);
+          console.log('🔍 FIXED SERVICE v1.5.14: Customer payment method verification:', {
+            customerId: updatedCustomer.id,
+            defaultPaymentMethod: updatedCustomer.invoice_settings?.default_payment_method,
+            expectedPaymentMethod: paymentMethodId,
+            matches: updatedCustomer.invoice_settings?.default_payment_method === paymentMethodId
+          });
+          
+          // Add to subscription params
+          subscriptionParams.default_payment_method = paymentMethodId;
+          console.log('✅ FIXED SERVICE v1.5.14: Payment method added to subscription params');
+          
+        } catch (attachError) {
+          console.error('❌ FIXED SERVICE v1.5.14: Error in payment method attachment process:', attachError);
+          console.error('❌ FIXED SERVICE v1.5.14: Error details:', {
+            message: attachError?.message,
+            type: attachError?.type,
+            code: attachError?.code,
+            decline_code: attachError?.decline_code,
+            request_log_url: attachError?.request_log_url
+          });
+          
+          // Enhanced error handling for specific Stripe errors
+          if (attachError?.message?.includes('already attached')) {
+            console.log('⚠️ FIXED SERVICE v1.5.14: Payment method already attached, continuing...');
+            subscriptionParams.default_payment_method = paymentMethodId;
+          } else if (attachError?.code === 'resource_missing') {
+            throw new Error(`Payment method not found: ${paymentMethodId}. Please try creating a new payment method.`);
+          } else if (attachError?.code === 'card_declined') {
+            throw new Error(`Payment method declined: ${attachError?.decline_code || 'Unknown reason'}`);
+          } else if (attachError?.code === 'invalid_request_error') {
+            throw new Error(`Invalid payment method: ${attachError?.message}`);
+          } else {
+            throw new Error(`Failed to attach payment method: ${attachError?.message || 'Unknown error'}`);
+          }
+        }
       }
 
       // Add 7-day trial
@@ -311,19 +395,109 @@ export class FixedSubscriptionService {
     }
   }
 
-  // Change subscription
-  async changeSubscription(userId: string, newPriceId: string) {
+  // Create FREE Plan Subscription - for users without existing subscriptions
+  async createFreePlanSubscription(userId: string, email: string, name: string) {
     try {
-      console.log('🔄 SERVICE: Starting changeSubscription for:', { userId, newPriceId });
+      console.log('🆓 FIXED SERVICE: Creating FREE plan subscription for:', { userId, email, name });
+      
+      // Check if user already has a subscription
+      const existingSubscription = await prisma.userSubscription.findUnique({
+        where: { userId }
+      });
+      
+      if (existingSubscription) {
+        console.log('✅ FIXED SERVICE: User already has subscription, returning existing');
+        return existingSubscription;
+      }
 
-      const userSub = await prisma.userSubscription.findUnique({
+      // Get or create Stripe customer
+      const customer = await this.createCustomer(userId, email, name);
+      console.log('✅ FIXED SERVICE: Customer created/retrieved:', customer.id);
+
+      // Create FREE plan subscription record in database
+      const freeSubscription = await prisma.userSubscription.create({
+        data: {
+          userId,
+          planType: 'FREE',
+          status: 'ACTIVE',
+          stripeCustomerId: customer.id,
+          stripeSubscriptionId: null, // FREE plan doesn't need Stripe subscription
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+          cancelAtPeriodEnd: false,
+          canceledAt: null,
+          trialStart: null,
+          trialEnd: null,
+        }
+      });
+
+      console.log('✅ FIXED SERVICE: FREE plan subscription created in database');
+      
+      // Log subscription creation
+      await this.logSubscriptionChange(userId, 'CREATED', { id: 'free-plan', status: 'active' });
+
+      return freeSubscription;
+    } catch (error) {
+      console.error('❌ FIXED SERVICE: Error creating FREE plan subscription:', error);
+      throw error;
+    }
+  }
+
+  // 🔧 CRITICAL FIX: Enhanced changeSubscription to properly handle FREE plan upgrades
+  async changeSubscription(userId: string, newPriceId: string, paymentMethodId?: string) {
+    try {
+      console.log('🔄 FIXED SERVICE: Starting changeSubscription for:', { userId, newPriceId, hasPaymentMethod: !!paymentMethodId });
+
+      let userSub = await prisma.userSubscription.findUnique({
         where: { userId }
       });
 
-      if (!userSub?.stripeSubscriptionId) {
-        throw new Error('No active subscription found');
+      // If user doesn't have a subscription record, create a FREE plan first
+      if (!userSub) {
+        console.log('🆓 FIXED SERVICE: User has no subscription record, creating FREE plan first');
+        
+        // Get user details
+        const user = await prisma.user.findUnique({
+          where: { id: userId }
+        });
+        
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        // Create FREE plan subscription
+        userSub = await this.createFreePlanSubscription(userId, user.email, user.name);
+        console.log('✅ FIXED SERVICE: FREE plan subscription created for upgrade');
       }
 
+      // 🔧 CRITICAL FIX: Handle FREE plan upgrades with payment method requirement
+      if (!userSub.stripeSubscriptionId) {
+        console.log('🆓 FIXED SERVICE: User has FREE plan, creating new paid subscription');
+        
+        // For FREE plan upgrades, payment method is required
+        if (!paymentMethodId) {
+          throw new Error('Payment method is required to upgrade from FREE plan. Please add a payment method first.');
+        }
+        
+        // Get user details
+        const user = await prisma.user.findUnique({
+          where: { id: userId }
+        });
+        
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        // Create new subscription with payment method (this will upgrade from FREE to paid)
+        const newSubscription = await this.createSubscription(userId, newPriceId, paymentMethodId);
+        console.log('✅ FIXED SERVICE: New subscription created for FREE plan upgrade');
+        
+        return newSubscription;
+      }
+
+      // User has existing paid subscription, modify it
+      console.log('🔄 FIXED SERVICE: User has existing paid subscription, modifying it');
+      
       const subscription = await stripe.subscriptions.retrieve(userSub.stripeSubscriptionId);
       
       const updatedSubscription = await stripe.subscriptions.update(userSub.stripeSubscriptionId, {
@@ -350,7 +524,66 @@ export class FixedSubscriptionService {
 
       return updatedSubscription;
     } catch (error) {
-      console.error('❌ SERVICE: Error changing subscription:', error);
+      console.error('❌ FIXED SERVICE: Error changing subscription:', error);
+      throw error;
+    }
+  }
+
+  // 🔧 CRITICAL FIX: Enhanced downgrade to FREE plan functionality
+  async downgradeToFreePlan(userId: string) {
+    try {
+      console.log('🔄 FIXED SERVICE: Starting downgrade to FREE plan for:', { userId });
+
+      let userSub = await prisma.userSubscription.findUnique({
+        where: { userId }
+      });
+
+      if (!userSub) {
+        throw new Error('No active subscription found');
+      }
+
+      // If user already has FREE plan, return early
+      if (userSub.planType === 'FREE') {
+        console.log('✅ FIXED SERVICE: User already has FREE plan');
+        return userSub;
+      }
+
+      // If user has paid subscription, cancel it and switch to FREE
+      if (userSub.stripeSubscriptionId) {
+        console.log('🔄 FIXED SERVICE: Canceling paid subscription and switching to FREE');
+        
+        // Cancel the Stripe subscription
+        await stripe.subscriptions.cancel(userSub.stripeSubscriptionId);
+        
+        // Update database to FREE plan
+        const updatedSubscription = await prisma.userSubscription.update({
+          where: { userId },
+          data: {
+            planType: 'FREE',
+            status: 'ACTIVE',
+            stripeSubscriptionId: null, // FREE plan doesn't need Stripe subscription
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+            cancelAtPeriodEnd: false,
+            canceledAt: null,
+            trialStart: null,
+            trialEnd: null,
+          }
+        });
+
+        console.log('✅ FIXED SERVICE: Successfully downgraded to FREE plan');
+        
+        // Log subscription change
+        await this.logSubscriptionChange(userId, 'DOWNGRADED', { id: 'free-plan', status: 'active' });
+        
+        return updatedSubscription;
+      }
+
+      // User already has FREE plan
+      console.log('✅ FIXED SERVICE: User already has FREE plan');
+      return userSub;
+    } catch (error) {
+      console.error('❌ FIXED SERVICE: Error downgrading to FREE plan:', error);
       throw error;
     }
   }

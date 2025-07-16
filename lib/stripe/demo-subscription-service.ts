@@ -5,19 +5,19 @@ import { SubscriptionStatus, SubscriptionPlan } from '@prisma/client';
 // Demo subscription service for development/demo environments
 export class DemoSubscriptionService {
   
-  // Get all available plans
+  // Get all available plans with real Stripe price IDs
   getAvailablePlans() {
     return [
       {
         id: 'basic',
-        name: 'Basic Plan',
+        name: 'Starter Plan',
         description: 'Perfect for families with 1-2 children',
         planType: 'BASIC' as SubscriptionPlan,
         price: 9.99,
         yearlyPrice: 99.99,
         lifetimePrice: null,
-        stripePriceId: 'demo_price_basic_monthly',
-        stripeYearlyPriceId: 'demo_price_basic_yearly',
+        stripePriceId: process.env.STRIPE_STARTER_MONTHLY_PRICE_ID,
+        stripeYearlyPriceId: process.env.STRIPE_STARTER_YEARLY_PRICE_ID,
         stripeLifetimePriceId: null,
         currency: 'usd',
         trialDays: 7,
@@ -37,14 +37,14 @@ export class DemoSubscriptionService {
       },
       {
         id: 'premium',
-        name: 'Premium Plan',
+        name: 'Professional Plan',
         description: 'Enhanced features for active families',
         planType: 'PREMIUM' as SubscriptionPlan,
         price: 19.99,
         yearlyPrice: 199.99,
         lifetimePrice: null,
-        stripePriceId: 'demo_price_premium_monthly',
-        stripeYearlyPriceId: 'demo_price_premium_yearly',
+        stripePriceId: process.env.STRIPE_PROFESSIONAL_MONTHLY_PRICE_ID,
+        stripeYearlyPriceId: process.env.STRIPE_PROFESSIONAL_YEARLY_PRICE_ID,
         stripeLifetimePriceId: null,
         currency: 'usd',
         trialDays: 7,
@@ -63,15 +63,15 @@ export class DemoSubscriptionService {
         features: ['Premium alerts', 'AI insights', 'Advanced analytics', 'Biometric features', 'Family sharing']
       },
       {
-        id: 'family',
-        name: 'Family Plan',
+        id: 'enterprise',
+        name: 'Enterprise Plan',
         description: 'Unlimited access for large families',
-        planType: 'FAMILY' as SubscriptionPlan,
+        planType: 'ENTERPRISE' as SubscriptionPlan,
         price: 29.99,
         yearlyPrice: 299.99,
         lifetimePrice: null,
-        stripePriceId: 'demo_price_family_monthly',
-        stripeYearlyPriceId: 'demo_price_family_yearly',
+        stripePriceId: process.env.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID,
+        stripeYearlyPriceId: process.env.STRIPE_ENTERPRISE_YEARLY_PRICE_ID,
         stripeLifetimePriceId: null,
         currency: 'usd',
         trialDays: 7,
