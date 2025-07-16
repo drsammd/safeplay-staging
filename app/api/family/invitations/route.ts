@@ -228,8 +228,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // TODO: Send invitation email notification
-    // This would integrate with the existing email automation system
+    // Send invitation email notification
+    try {
+      await sendFamilyInvitationEmail(invitation);
+    } catch (emailError) {
+      console.warn(`⚠️ Email notification failed for invitation ${invitation.id}:`, emailError);
+      // Don't fail the API call if email fails
+    }
 
     return NextResponse.json({ 
       invitation,
@@ -242,5 +247,87 @@ export async function POST(request: NextRequest) {
     }
     console.error('Error creating family invitation:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+// Helper function to send family invitation email
+async function sendFamilyInvitationEmail(invitation: any) {
+  try {
+    const invitationLink = `${process.env.NEXTAUTH_URL}/family/invitation/${invitation.invitationToken}`;
+    
+    const emailContent = {
+      to: invitation.inviteeEmail,
+      subject: `Family Invitation from ${invitation.inviter.name} - SafePlay`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Family Invitation - SafePlay</h2>
+          
+          <p>Hi ${invitation.inviteeName || 'there'},</p>
+          
+          <p><strong>${invitation.inviter.name}</strong> has invited you to join their family on SafePlay as a <strong>${invitation.familyRole.toLowerCase()}</strong>.</p>
+          
+          ${invitation.invitationMessage ? `
+            <div style="background: #f8fafc; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="margin: 0 0 8px 0; color: #334155;">Personal Message:</h4>
+              <p style="margin: 0; color: #64748b;">${invitation.invitationMessage}</p>
+            </div>
+          ` : ''}
+          
+          <p>This invitation will allow you to:</p>
+          <ul>
+            <li>View photos and videos of the children</li>
+            <li>Receive safety alerts and notifications</li>
+            <li>Access location information</li>
+            <li>And more based on your specific permissions</li>
+          </ul>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${invitationLink}" 
+               style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
+              Accept Invitation
+            </a>
+          </div>
+          
+          <p style="color: #64748b; font-size: 14px;">
+            This invitation expires on ${invitation.expiresAt?.toLocaleDateString()}. 
+            If you don't want to accept this invitation, you can safely ignore this email.
+          </p>
+          
+          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+          
+          <p style="color: #64748b; font-size: 12px;">
+            This invitation was sent from SafePlay™ - Child Safety Platform<br>
+            If you have any questions, please contact support.
+          </p>
+        </div>
+      `
+    };
+
+    // In a real implementation, you would send this email through your email service
+    // For now, we'll log it and store it in the database for later processing
+    console.log('📧 Family invitation email prepared:', {
+      to: emailContent.to,
+      subject: emailContent.subject,
+      invitationId: invitation.id
+    });
+
+    // Store email in database for processing by email service
+    await prisma.emailNotification.create({
+      data: {
+        recipientEmail: emailContent.to,
+        subject: emailContent.subject,
+        htmlContent: emailContent.html,
+        emailType: 'FAMILY_INVITATION',
+        relatedEntityId: invitation.id,
+        relatedEntityType: 'FAMILY_INVITATION',
+        scheduledAt: new Date(),
+        priority: 'HIGH'
+      }
+    });
+
+    console.log('✅ Family invitation email queued for sending');
+  } catch (error) {
+    console.error('❌ Error preparing family invitation email:', error);
+    throw error;
   }
 }

@@ -255,7 +255,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // TODO: Trigger notifications and WebSocket events
+    // Trigger notifications and WebSocket events
+    try {
+      await triggerAlertNotifications(alert);
+      await broadcastAlertWebSocketEvent(alert);
+    } catch (notificationError) {
+      console.warn(`⚠️ Notification/WebSocket trigger failed for alert ${alert.id}:`, notificationError);
+      // Don't fail the API call if notifications fail
+    }
     
     return NextResponse.json(alert, { status: 201 });
   } catch (error) {
@@ -264,5 +271,153 @@ export async function POST(request: NextRequest) {
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+// Helper function to trigger alert notifications
+async function triggerAlertNotifications(alert: any) {
+  try {
+    // Determine who should be notified based on alert type and severity
+    const notificationTargets = [];
+
+    // Always notify venue admin
+    if (alert.venue?.adminId) {
+      notificationTargets.push({
+        userId: alert.venue.adminId,
+        notificationType: 'VENUE_ALERT',
+        priority: alert.severity === 'HIGH' ? 'HIGH' : 'MEDIUM'
+      });
+    }
+
+    // Notify parent if child is involved
+    if (alert.child?.parentId) {
+      notificationTargets.push({
+        userId: alert.child.parentId,
+        notificationType: 'CHILD_ALERT',
+        priority: alert.severity === 'HIGH' ? 'HIGH' : 'MEDIUM'
+      });
+    }
+
+    // Notify emergency contacts for high-severity alerts
+    if (alert.severity === 'HIGH' && alert.child?.id) {
+      const emergencyContacts = await prisma.emergencyContact.findMany({
+        where: { childId: alert.child.id },
+        select: { userId: true }
+      });
+
+      for (const contact of emergencyContacts) {
+        if (contact.userId) {
+          notificationTargets.push({
+            userId: contact.userId,
+            notificationType: 'EMERGENCY_ALERT',
+            priority: 'HIGH'
+          });
+        }
+      }
+    }
+
+    // Create notifications for all targets
+    for (const target of notificationTargets) {
+      await prisma.mobileNotification.create({
+        data: {
+          userId: target.userId,
+          title: `${alert.severity} Alert: ${alert.title}`,
+          message: alert.description,
+          type: target.notificationType,
+          priority: target.priority,
+          relatedEntityId: alert.id,
+          relatedEntityType: 'ENHANCED_ALERT',
+          scheduledAt: new Date(),
+          childId: alert.child?.id,
+          metadata: {
+            alertType: alert.type,
+            alertSeverity: alert.severity,
+            venueId: alert.venueId,
+            cameraId: alert.cameraId
+          }
+        }
+      });
+    }
+
+    console.log(`✅ Triggered ${notificationTargets.length} notifications for alert ${alert.id}`);
+  } catch (error) {
+    console.error('❌ Error triggering alert notifications:', error);
+    throw error;
+  }
+}
+
+// Helper function to broadcast alert WebSocket events
+async function broadcastAlertWebSocketEvent(alert: any) {
+  try {
+    // Prepare WebSocket event data
+    const eventData = {
+      type: 'ENHANCED_ALERT',
+      action: 'CREATED',
+      alertId: alert.id,
+      severity: alert.severity,
+      priority: alert.priority,
+      title: alert.title,
+      description: alert.description,
+      venueId: alert.venueId,
+      childId: alert.child?.id,
+      timestamp: new Date().toISOString(),
+      data: {
+        alert: {
+          id: alert.id,
+          type: alert.type,
+          severity: alert.severity,
+          priority: alert.priority,
+          title: alert.title,
+          description: alert.description,
+          status: alert.status,
+          child: alert.child ? {
+            id: alert.child.id,
+            firstName: alert.child.firstName,
+            lastName: alert.child.lastName,
+            profilePhoto: alert.child.profilePhoto
+          } : null,
+          venue: alert.venue ? {
+            id: alert.venue.id,
+            name: alert.venue.name
+          } : null,
+          camera: alert.camera ? {
+            id: alert.camera.id,
+            name: alert.camera.name,
+            position: alert.camera.position
+          } : null,
+          location: alert.location,
+          imageUrls: alert.imageUrls || [],
+          videoUrls: alert.videoUrls || []
+        }
+      }
+    };
+
+    // In a real implementation, you would broadcast this through your WebSocket service
+    // For now, we'll log it and store it for later processing
+    console.log('🔗 WebSocket event prepared for alert:', {
+      alertId: alert.id,
+      severity: alert.severity,
+      type: alert.type,
+      eventType: eventData.type
+    });
+
+    // Store WebSocket event in database for processing by WebSocket service
+    await prisma.webSocketEvent.create({
+      data: {
+        eventType: eventData.type,
+        eventAction: eventData.action,
+        targetUserId: alert.child?.parentId || alert.venue?.adminId,
+        payload: eventData,
+        relatedEntityId: alert.id,
+        relatedEntityType: 'ENHANCED_ALERT',
+        priority: alert.severity === 'HIGH' ? 'HIGH' : 'MEDIUM',
+        scheduledAt: new Date()
+      }
+    });
+
+    console.log('✅ WebSocket event queued for broadcasting');
+  } catch (error) {
+    console.error('❌ Error broadcasting WebSocket event:', error);
+    throw error;
   }
 }

@@ -275,8 +275,8 @@ async function generateReportData(
       },
       performance: {
         cameraUptime: avgCameraUptime,
-        averageResponseTime: 0, // TODO: Calculate from incident data
-        operationalEfficiency: 0 // TODO: Calculate based on metrics
+        averageResponseTime: await calculateAverageResponseTime(whereClause, dateFilter),
+        operationalEfficiency: calculateOperationalEfficiency(avgCameraUptime, incidentCount, totalEvents)
       },
       engagement: {
         parentEngagement: avgParentEngagement,
@@ -411,4 +411,62 @@ function createReportSections(reportType: string, data: any) {
   }
   
   return sections;
+}
+
+// Helper function to calculate average response time
+async function calculateAverageResponseTime(whereClause: any, dateFilter: any): Promise<number> {
+  try {
+    const incidents = await prisma.incidentReport.findMany({
+      where: {
+        ...whereClause,
+        incidentOccurredAt: dateFilter.timestamp,
+        resolvedAt: { not: null }
+      },
+      select: {
+        incidentOccurredAt: true,
+        resolvedAt: true
+      }
+    });
+
+    if (incidents.length === 0) return 0;
+
+    const totalResponseTime = incidents.reduce((sum, incident) => {
+      if (incident.resolvedAt) {
+        const responseTime = incident.resolvedAt.getTime() - incident.incidentOccurredAt.getTime();
+        return sum + responseTime;
+      }
+      return sum;
+    }, 0);
+
+    // Return average response time in minutes
+    return Math.round(totalResponseTime / incidents.length / (1000 * 60));
+  } catch (error) {
+    console.error('Error calculating average response time:', error);
+    return 0;
+  }
+}
+
+// Helper function to calculate operational efficiency
+function calculateOperationalEfficiency(
+  cameraUptime: number,
+  incidentCount: number,
+  totalEvents: number
+): number {
+  try {
+    // Base efficiency on camera uptime (40%), incident rate (30%), and event processing (30%)
+    const cameraEfficiency = cameraUptime; // Already a percentage
+    const incidentEfficiency = totalEvents > 0 ? Math.max(0, 100 - (incidentCount / totalEvents) * 100) : 100;
+    const eventProcessingEfficiency = totalEvents > 0 ? Math.min(100, (totalEvents / 1000) * 100) : 50; // Normalize to expected volume
+
+    const operationalEfficiency = (
+      cameraEfficiency * 0.4 +
+      incidentEfficiency * 0.3 +
+      eventProcessingEfficiency * 0.3
+    );
+
+    return Math.round(operationalEfficiency);
+  } catch (error) {
+    console.error('Error calculating operational efficiency:', error);
+    return 0;
+  }
 }
