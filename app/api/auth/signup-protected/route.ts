@@ -1,12 +1,13 @@
 
 /**
- * SafePlay Fixed Signup API Route
- * Addresses critical authentication persistence issues
+ * SafePlay Protected Signup API Route
+ * Enhanced signup with demo data contamination prevention
  * 
- * FIXES:
- * - Ensures proper user creation and database transactions
- * - Prevents session contamination during signup
- * - Adds comprehensive error handling and logging
+ * FEATURES:
+ * - Comprehensive demo data contamination prevention
+ * - Clean account initialization for all new users
+ * - Strict validation and monitoring
+ * - Detailed logging and error handling
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -20,7 +21,7 @@ import { cleanAccountInitializer } from "@/lib/clean-account-initializer";
 
 export const dynamic = "force-dynamic";
 
-// Enhanced validation schema with better error handling
+// Enhanced validation schema
 const signupSchema = z.object({
   email: z.preprocess((val) => {
     if (typeof val === "string") return val.trim().toLowerCase();
@@ -58,7 +59,6 @@ const signupSchema = z.object({
   }, z.string().min(5, "Home address must be at least 5 characters")),
   
   homeAddressValidation: z.any().optional(),
-  
   useDifferentBillingAddress: z.preprocess((val) => {
     if (val === true || val === "true" || val === 1 || val === "1") return true;
     if (val === false || val === "false" || val === 0 || val === "0") return false;
@@ -71,7 +71,6 @@ const signupSchema = z.object({
   }, z.string().optional()),
   
   billingAddressValidation: z.any().optional(),
-  
   selectedPlan: z.object({
     id: z.string(),
     name: z.string(),
@@ -82,26 +81,24 @@ const signupSchema = z.object({
   }).nullable().optional(),
   
   subscriptionData: z.any().optional(),
-  
-  // Additional fields
   homeAddressFields: z.any().optional(),
   billingAddressFields: z.any().optional(),
   debugMetadata: z.any().optional(),
 });
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  const debugId = `signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const debugId = `protected_signup_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
-  console.log(`🔍 FIXED SIGNUP API [${debugId}]: Starting signup process`);
-  console.log(`🔍 FIXED SIGNUP API [${debugId}]: Timestamp: ${new Date().toISOString()}`);
+  console.log(`🔒 PROTECTED SIGNUP [${debugId}]: Starting protected signup process`);
+  console.log(`🔒 PROTECTED SIGNUP [${debugId}]: Timestamp: ${new Date().toISOString()}`);
 
   // Parse request body
   let body;
   try {
     body = await request.json();
-    console.log(`🔍 FIXED SIGNUP API [${debugId}]: Request body parsed successfully`);
+    console.log(`🔒 PROTECTED SIGNUP [${debugId}]: Request body parsed successfully`);
   } catch (parseError) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: Request body parsing failed:`, parseError);
+    console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Request body parsing failed:`, parseError);
     return new NextResponse(JSON.stringify({
       error: 'Invalid JSON in request body',
       debugId,
@@ -116,7 +113,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const validation = signupSchema.safeParse(body);
   
   if (!validation.success) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: Validation failed:`, validation.error.issues);
+    console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Validation failed:`, validation.error.issues);
     return apiErrorHandler.createErrorResponse(
       ErrorType.VALIDATION,
       'SIGNUP_VALIDATION_FAILED',
@@ -147,13 +144,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Normalize email
   const email = rawEmail.toLowerCase().trim();
-  console.log(`✅ FIXED SIGNUP API [${debugId}]: Validation passed for email: ${email}`);
+  console.log(`✅ PROTECTED SIGNUP [${debugId}]: Validation passed for email: ${email}`);
 
   // CRITICAL: Check if this is a demo account
   const isDemoAccount = demoAccountProtection.isDemoAccount(email);
   
   if (isDemoAccount) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: Attempted signup for demo account: ${email}`);
+    console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Attempted signup for demo account: ${email}`);
     return apiErrorHandler.createErrorResponse(
       ErrorType.FORBIDDEN,
       'DEMO_ACCOUNT_SIGNUP_BLOCKED',
@@ -164,7 +161,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Check if user already exists
-  console.log(`🔍 FIXED SIGNUP API [${debugId}]: Checking if user exists`);
+  console.log(`🔍 PROTECTED SIGNUP [${debugId}]: Checking if user exists`);
   
   let existingUser;
   try {
@@ -172,7 +169,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       where: { email },
     });
   } catch (dbError) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: Database query failed:`, dbError);
+    console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Database query failed:`, dbError);
     return new NextResponse(JSON.stringify({
       error: 'Database connection error during user lookup',
       debugId,
@@ -184,7 +181,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   if (existingUser) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: User already exists: ${email}`);
+    console.error(`🚨 PROTECTED SIGNUP [${debugId}]: User already exists: ${email}`);
     return apiErrorHandler.createErrorResponse(
       ErrorType.CONFLICT,
       'USER_ALREADY_EXISTS',
@@ -195,12 +192,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   // Hash password
-  console.log(`🔐 FIXED SIGNUP API [${debugId}]: Hashing password`);
+  console.log(`🔐 PROTECTED SIGNUP [${debugId}]: Hashing password`);
   let hashedPassword;
   try {
     hashedPassword = await bcrypt.hash(password, 12);
   } catch (hashError) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: Password hashing failed:`, hashError);
+    console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Password hashing failed:`, hashError);
     return new NextResponse(JSON.stringify({
       error: 'Password processing error',
       debugId,
@@ -218,8 +215,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const userAgent = request.headers.get("user-agent") || "unknown";
   const currentTime = new Date();
 
-  // Create user in database transaction
-  console.log(`🔄 FIXED SIGNUP API [${debugId}]: Starting database transaction`);
+  // Create user in database transaction with protection
+  console.log(`🔄 PROTECTED SIGNUP [${debugId}]: Starting protected database transaction`);
   
   let user;
   try {
@@ -236,9 +233,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         },
       });
 
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: User created: ${newUser.id}`);
+      console.log(`✅ PROTECTED SIGNUP [${debugId}]: User created: ${newUser.id}`);
 
-      // CRITICAL: Initialize clean account structure using protection system
+      // CRITICAL: Initialize clean account structure
       const cleanInitResult = await cleanAccountInitializer.initializeCleanAccount({
         userId: newUser.id,
         email: newUser.email,
@@ -249,17 +246,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       });
 
       if (!cleanInitResult.success) {
-        console.error(`🚨 FIXED SIGNUP API [${debugId}]: Clean account initialization failed:`, cleanInitResult.errors);
+        console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Clean account initialization failed:`, cleanInitResult.errors);
         throw new Error(`Clean account initialization failed: ${cleanInitResult.errors.join(', ')}`);
       }
 
       if (!cleanInitResult.isClean) {
-        console.error(`🚨 FIXED SIGNUP API [${debugId}]: Account is not clean after initialization`);
+        console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Account is not clean after initialization`);
         throw new Error('Account failed cleanliness validation');
       }
 
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: Clean account initialization successful`);
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: User setup completed: ${newUser.email}`);
+      console.log(`✅ PROTECTED SIGNUP [${debugId}]: Clean account initialization successful`);
       return newUser;
     });
 
@@ -267,7 +263,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     const finalValidation = await demoAccountProtection.validateNoContamination(user.id, user.email);
     
     if (!finalValidation) {
-      console.error(`🚨 FIXED SIGNUP API [${debugId}]: CRITICAL - Account failed final contamination check`);
+      console.error(`🚨 PROTECTED SIGNUP [${debugId}]: CRITICAL - Account failed final contamination check`);
       
       // Clean up the created user
       await prisma.userSubscription.deleteMany({ where: { userId: user.id } });
@@ -288,7 +284,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     // Create secure session isolation
     await authSessionManager.createSecureSessionIsolation(user.id);
 
-    console.log(`✅ FIXED SIGNUP API [${debugId}]: Signup process completed successfully`);
+    console.log(`✅ PROTECTED SIGNUP [${debugId}]: Protected signup process completed successfully`);
 
     return new NextResponse(JSON.stringify({
       success: true,
@@ -313,10 +309,10 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: Transaction failed:`, error);
+    console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Protected transaction failed:`, error);
     
     return new NextResponse(JSON.stringify({
-      error: 'Failed to create account',
+      error: 'Failed to create protected account',
       debugId,
       details: error instanceof Error ? error.message : 'Unknown error'
     }), {
