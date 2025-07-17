@@ -349,64 +349,97 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
                   }}
                   variant={currentPlanId === plan.id ? 'secondary' : plan.planType === 'FAMILY' ? 'default' : 'outline'}
                   disabled={loading || downgradeLoading || currentPlanId === plan.id}
-                  onClick={() => {
-                    if (onSelectPlan && currentPlanId !== plan.id) {
-                      // Handle FREE plan separately - check if it's a downgrade or new signup
-                      if (plan.planType === 'FREE') {
-                        if (hasActiveSubscription) {
-                          // User has active subscription, show downgrade confirmation
-                          handleDowngradeToFree();
-                          return;
-                        } else {
-                          // New user signup to free plan
-                          console.log('🆓 SubscriptionPlans: FREE plan selected for new user', { 
-                            planId: plan.id, 
-                            planName: plan.name,
-                            planType: plan.planType,
-                            currentPlanId: currentPlanId
-                          });
-                          onSelectPlan(null, 'free', plan.id);
-                          return;
-                        }
-                      }
-
-                      const interval = plan.planType === 'LIFETIME' ? 'lifetime' : billingInterval;
-                      
-                      // Get the correct Stripe price ID based on billing interval
-                      let stripePriceId: string | null = null;
-                      if (interval === 'monthly') {
-                        stripePriceId = plan.stripePriceId;
-                      } else if (interval === 'yearly') {
-                        stripePriceId = plan.stripeYearlyPriceId;
-                      } else if (interval === 'lifetime') {
-                        stripePriceId = plan.stripeLifetimePriceId;
-                      }
-                      
-                      console.log('🔍 SubscriptionPlans: Plan selected', { 
-                        planId: plan.id, 
-                        planName: plan.name,
-                        planType: plan.planType,
-                        interval: interval,
-                        stripePriceId: stripePriceId,
-                        currentPlanId: currentPlanId,
-                        hasActiveSubscription: hasActiveSubscription
-                      });
-                      
-                      if (!stripePriceId) {
-                        console.error('❌ SubscriptionPlans: No Stripe price ID found for plan:', {
-                          planId: plan.id,
-                          interval: interval,
-                          availablePriceIds: {
-                            monthly: plan.stripePriceId,
-                            yearly: plan.stripeYearlyPriceId,
-                            lifetime: plan.stripeLifetimePriceId
-                          }
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    console.log('🖱️ BUTTON CLICK: Plan button clicked', { 
+                      planId: plan.id, 
+                      planName: plan.name,
+                      planType: plan.planType,
+                      currentPlanId: currentPlanId,
+                      hasOnSelectPlan: !!onSelectPlan,
+                      loading: loading,
+                      downgradeLoading: downgradeLoading
+                    });
+                    
+                    if (!onSelectPlan) {
+                      console.error('❌ BUTTON CLICK: onSelectPlan callback not provided');
+                      return;
+                    }
+                    
+                    if (currentPlanId === plan.id) {
+                      console.log('ℹ️ BUTTON CLICK: Already on this plan');
+                      return;
+                    }
+                    
+                    if (loading || downgradeLoading) {
+                      console.log('ℹ️ BUTTON CLICK: Currently loading, ignoring click');
+                      return;
+                    }
+                    
+                    // Handle FREE plan separately - check if it's a downgrade or new signup
+                    if (plan.planType === 'FREE') {
+                      if (hasActiveSubscription) {
+                        // User has active subscription, show downgrade confirmation
+                        console.log('🆓 BUTTON CLICK: FREE plan - showing downgrade confirmation');
+                        handleDowngradeToFree();
+                        return;
+                      } else {
+                        // New user signup to free plan
+                        console.log('🆓 BUTTON CLICK: FREE plan selected for new user', { 
+                          planId: plan.id, 
+                          planName: plan.name,
+                          planType: plan.planType,
+                          currentPlanId: currentPlanId
                         });
+                        onSelectPlan(null, 'free', plan.id);
                         return;
                       }
-                      
-                      onSelectPlan(stripePriceId, interval, plan.id);
                     }
+
+                    const interval = plan.planType === 'LIFETIME' ? 'lifetime' : billingInterval;
+                    
+                    // Get the correct Stripe price ID based on billing interval
+                    let stripePriceId: string | null = null;
+                    if (interval === 'monthly') {
+                      stripePriceId = plan.stripePriceId;
+                    } else if (interval === 'yearly') {
+                      stripePriceId = plan.stripeYearlyPriceId;
+                    } else if (interval === 'lifetime') {
+                      stripePriceId = plan.stripeLifetimePriceId;
+                    }
+                    
+                    console.log('🔍 BUTTON CLICK: Plan selected', { 
+                      planId: plan.id, 
+                      planName: plan.name,
+                      planType: plan.planType,
+                      interval: interval,
+                      stripePriceId: stripePriceId,
+                      currentPlanId: currentPlanId,
+                      hasActiveSubscription: hasActiveSubscription
+                    });
+                    
+                    if (!stripePriceId && plan.planType !== 'FREE') {
+                      console.error('❌ BUTTON CLICK: No Stripe price ID found for plan:', {
+                        planId: plan.id,
+                        interval: interval,
+                        availablePriceIds: {
+                          monthly: plan.stripePriceId,
+                          yearly: plan.stripeYearlyPriceId,
+                          lifetime: plan.stripeLifetimePriceId
+                        }
+                      });
+                      return;
+                    }
+                    
+                    console.log('✅ BUTTON CLICK: Calling onSelectPlan with:', {
+                      stripePriceId,
+                      interval,
+                      planId: plan.id
+                    });
+                    
+                    onSelectPlan(stripePriceId, interval, plan.id);
                   }}
                 >
                   <span className="truncate">
