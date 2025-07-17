@@ -79,13 +79,7 @@ export async function GET(request: NextRequest) {
             name: true,
           }
         },
-        camera: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-          }
-        },
+        // camera relation removed as it doesn't exist on EnhancedAlert model
         zone: {
           select: {
             id: true,
@@ -194,11 +188,11 @@ export async function POST(request: NextRequest) {
         title: data.title,
         description: data.description,
         severity: data.severity || AlertSeverity.MEDIUM,
-        priority: data.priority || AlertPriority.NORMAL,
+        priority: data.priority || AlertPriority.MEDIUM,
         status: EnhancedAlertStatus.ACTIVE,
         venueId: data.venueId,
         childId: data.childId,
-        cameraId: data.cameraId,
+        sourceId: data.cameraId,
         floorPlanZoneId: data.floorPlanZoneId,
         triggerData: data.triggerData,
         location: data.location,
@@ -224,13 +218,7 @@ export async function POST(request: NextRequest) {
             name: true,
           }
         },
-        camera: {
-          select: {
-            id: true,
-            name: true,
-            position: true,
-          }
-        },
+        // camera relation removed as it doesn't exist on EnhancedAlert model
         zone: {
           select: {
             id: true,
@@ -333,7 +321,7 @@ async function triggerAlertNotifications(alert: any) {
             alertType: alert.type,
             alertSeverity: alert.severity,
             venueId: alert.venueId,
-            cameraId: alert.cameraId
+            sourceId: alert.sourceId
           }
         }
       });
@@ -380,11 +368,8 @@ async function broadcastAlertWebSocketEvent(alert: any) {
             id: alert.venue.id,
             name: alert.venue.name
           } : null,
-          camera: alert.camera ? {
-            id: alert.camera.id,
-            name: alert.camera.name,
-            position: alert.camera.position
-          } : null,
+          // camera relation removed as it doesn't exist on EnhancedAlert model
+          sourceId: alert.sourceId, // Camera reference by ID only
           location: alert.location,
           imageUrls: alert.imageUrls || [],
           videoUrls: alert.videoUrls || []

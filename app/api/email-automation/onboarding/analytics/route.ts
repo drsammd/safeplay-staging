@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { apiErrorHandler, withErrorHandling, ErrorType } from '@/lib/error-handler';
-import { EmailExecutionStatus } from '@prisma/client';
+import { ExecutionStatus } from '@prisma/client';
 
 export const dynamic = "force-dynamic";
 
@@ -75,10 +75,10 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
     const usersWithOnboarding = new Set(executions.map(e => e.userId)).size;
     const totalScheduledEmails = executions.length;
-    const sentEmails = executions.filter(e => e.status === EmailExecutionStatus.COMPLETED && e.emailLog).length;
+    const sentEmails = executions.filter(e => e.status === ExecutionStatus.COMPLETED && e.emailLog).length;
     const openedEmails = executions.filter(e => e.emailLog?.openedAt).length;
     const clickedEmails = executions.filter(e => e.emailLog?.clickedAt).length;
-    const cancelledEmails = executions.filter(e => e.status === EmailExecutionStatus.CANCELLED).length;
+    const cancelledEmails = executions.filter(e => e.status === ExecutionStatus.CANCELLED).length;
 
     // Calculate completion rates by day
     const completionByDay: Record<string, any> = {};
@@ -88,7 +88,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
       );
       const dayScheduled = dayExecutions.length;
       const daySent = dayExecutions.filter(e => 
-        e.status === EmailExecutionStatus.COMPLETED && e.emailLog
+        e.status === ExecutionStatus.COMPLETED && e.emailLog
       ).length;
       const dayOpened = dayExecutions.filter(e => e.emailLog?.openedAt).length;
       const dayClicked = dayExecutions.filter(e => e.emailLog?.clickedAt).length;
@@ -121,7 +121,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
     Object.values(userGroups).forEach((userExecutions: any[]) => {
       const sentCount = userExecutions.filter(e => 
-        e.status === EmailExecutionStatus.COMPLETED && e.emailLog
+        e.status === ExecutionStatus.COMPLETED && e.emailLog
       ).length;
       
       const completionStatus = sentCount === 0 ? 'not_started' :

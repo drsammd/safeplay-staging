@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { EmergencyContactType } from "@prisma/client";
+// EmergencyContactType enum removed as it doesn't exist in schema
 
 export const dynamic = "force-dynamic";
 
@@ -104,7 +104,6 @@ export async function GET(request: NextRequest) {
       },
       orderBy: [
         { isPrimary: 'desc' },
-        { priority: 'asc' },
         { name: 'asc' }
       ]
     });
@@ -192,15 +191,14 @@ export async function POST(request: NextRequest) {
       data: {
         name: data.name,
         relationship: data.relationship,
-        phoneNumber: data.phoneNumber,
+        phone: data.phoneNumber,
         email: data.email,
         isPrimary: data.isPrimary || false,
-        priority: data.priority || 1,
-        availableHours: data.availableHours,
+        availability: data.availableHours,
         childId: data.childId,
         venueId: data.venueId,
         userId: data.userId,
-        contactType: data.contactType || EmergencyContactType.PERSONAL,
+        // contactType field removed as it doesn't exist in schema
         
       },
       include: {

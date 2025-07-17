@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailAutomationEngine } from '@/lib/services/email-automation-engine';
 import { prisma } from '@/lib/db';
-import { EmailTrigger, EmailPriority, UserSegmentType } from '@prisma/client';
+import { EmailTrigger } from '@prisma/client';
 
 export const dynamic = "force-dynamic";
 

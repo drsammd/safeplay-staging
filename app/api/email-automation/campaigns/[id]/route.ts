@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { EmailCampaignStatus } from '@prisma/client';
+import { CampaignStatus } from '@prisma/client';
 
 export const dynamic = "force-dynamic";
 
@@ -91,7 +91,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
-    if (existingCampaign.status === EmailCampaignStatus.RUNNING) {
+    if (existingCampaign.status === CampaignStatus.SENDING) {
       return NextResponse.json(
         { error: 'Cannot modify running campaign' }, 
         { status: 400 }
@@ -160,7 +160,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 });
     }
 
-    if (campaign.status === EmailCampaignStatus.RUNNING) {
+    if (campaign.status === CampaignStatus.SENDING) {
       return NextResponse.json(
         { error: 'Cannot delete running campaign' }, 
         { status: 400 }
@@ -172,7 +172,7 @@ export async function DELETE(
       await prisma.emailCampaign.update({
         where: { id: params.id },
         data: { 
-          status: EmailCampaignStatus.CANCELLED,
+          status: CampaignStatus.CANCELLED,
           cancelledAt: new Date()
         }
       });

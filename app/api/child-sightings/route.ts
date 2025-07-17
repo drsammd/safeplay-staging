@@ -183,18 +183,16 @@ export async function POST(request: NextRequest) {
     // Create the sighting
     const sighting = await prisma.childSighting.create({
       data: {
-        childId: data.childId,
-        venueId: data.venueId,
-
-        floorPlanZoneId: data.floorPlanZoneId,
-        position: data.position,
-        confidence: data.confidence,
-        boundingBox: data.boundingBox,
-        imageUrl: data.imageUrl,
-        imageKey: data.imageKey,
-        recognitionEventId: data.recognitionEventId,
-        sightingType: data.sightingType || 'DETECTED',
-        
+        childId: data.childId as string,
+        venueId: data.venueId as string,
+        floorPlanZoneId: data.floorPlanZoneId as string || null,
+        position: data.position || null,
+        confidence: data.confidence as number,
+        boundingBox: data.boundingBox || null,
+        imageUrl: data.imageUrl as string || null,
+        imageKey: data.imageKey as string || null,
+        recognitionEventId: data.recognitionEventId as string || null,
+        sightingType: data.sightingType as string || 'DETECTED',
         timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
       },
       include: {

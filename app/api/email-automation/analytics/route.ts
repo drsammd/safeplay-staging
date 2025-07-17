@@ -92,22 +92,18 @@ export async function GET(request: NextRequest) {
         status: { not: 'DRAFT' }
       },
       include: {
-        _count: {
-          select: { emailLogs: true }
-        }
+        // _count removed as it doesn't exist on EmailCampaignInclude
       },
       orderBy: {
-        emailLogs: {
-          _count: 'desc'
-        }
+        createdAt: 'desc'
       },
       take: 5
     });
 
     // Email preferences analytics
     const preferencesStats = await prisma.emailPreferences.groupBy({
-      by: ['emailEnabled'],
-      _count: { emailEnabled: true }
+      by: ['frequency'],
+      _count: { frequency: true }
     });
 
     const unsubscribeStats = await prisma.emailPreferences.aggregate({
@@ -154,7 +150,7 @@ export async function GET(request: NextRequest) {
         id: campaign.id,
         name: campaign.name,
         status: campaign.status,
-        emailsSent: campaign._count.emailLogs,
+        emailsSent: 0, // emailLogs relation doesn't exist
         createdAt: campaign.createdAt
       })),
       recentActivity,

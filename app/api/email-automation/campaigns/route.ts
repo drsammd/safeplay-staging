@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailAutomationService } from '@/lib/services/email-automation-service';
 import { prisma } from '@/lib/db';
-import { EmailCampaignType, EmailCampaignStatus, EmailPriority, UserSegmentType } from '@prisma/client';
+import { CampaignStatus } from '@prisma/client';
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const status = searchParams.get('status') as EmailCampaignStatus;
-    const campaignType = searchParams.get('campaignType') as EmailCampaignType;
+    const status = searchParams.get('status') as CampaignStatus;
+    const campaignType = searchParams.get('campaignType'); // EmailCampaignType enum doesn't exist
     const search = searchParams.get('search') || undefined;
 
     const skip = (page - 1) * limit;
@@ -135,14 +135,14 @@ export async function POST(request: NextRequest) {
         templateId,
         customContent,
         campaignType,
-        status: EmailCampaignStatus.DRAFT,
+        status: CampaignStatus.DRAFT,
         targetSegment,
         emailSegmentId,
         segmentFilters,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
         isRecurring: isRecurring || false,
         recurrencePattern,
-        priority: priority || EmailPriority.NORMAL,
+        // priority field removed as EmailPriority enum doesn't exist
         trackOpens: trackOpens !== false,
         trackClicks: trackClicks !== false,
         sendImmediately: sendImmediately || false,
