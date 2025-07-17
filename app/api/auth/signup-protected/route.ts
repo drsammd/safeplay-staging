@@ -58,7 +58,12 @@ const signupSchema = z.object({
     return String(val || "").trim();
   }, z.string().min(5, "Home address must be at least 5 characters")),
   
-  homeAddressValidation: z.any().optional(),
+  homeAddressValidation: z.preprocess((val) => {
+    // CRITICAL v1.5.21 FIX: Handle null/undefined homeAddressValidation safely
+    if (val === null || val === undefined) return {};
+    if (typeof val === 'object' && val !== null) return val;
+    return {};
+  }, z.any().optional()),
   useDifferentBillingAddress: z.preprocess((val) => {
     if (val === true || val === "true" || val === 1 || val === "1") return true;
     if (val === false || val === "false" || val === 0 || val === "0") return false;
@@ -70,7 +75,12 @@ const signupSchema = z.object({
     return String(val || "").trim();
   }, z.string().optional()),
   
-  billingAddressValidation: z.any().optional(),
+  billingAddressValidation: z.preprocess((val) => {
+    // CRITICAL v1.5.21 FIX: Handle null/undefined billingAddressValidation safely
+    if (val === null || val === undefined) return {};
+    if (typeof val === 'object' && val !== null) return val;
+    return {};
+  }, z.any().optional()),
   selectedPlan: z.object({
     id: z.string(),
     name: z.string(),

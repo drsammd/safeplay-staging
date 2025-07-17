@@ -22,6 +22,18 @@ export interface CleanAccountConfig {
   ipAddress: string;
   userAgent: string;
   prismaInstance?: any; // Transaction context or prisma instance
+  // CRITICAL v1.5.19 FIX: Add payment and plan information for proper account creation
+  selectedPlan?: {
+    id?: string;
+    name?: string;
+    stripePriceId?: string | null;
+    billingInterval?: "monthly" | "yearly" | "lifetime" | "free";
+    amount?: number;
+    planType?: string;
+  };
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  subscriptionMetadata?: any;
 }
 
 export interface AccountInitializationResult {
@@ -195,21 +207,84 @@ export class CleanAccountInitializer {
 
   /**
    * Create clean subscription for new account
+   * CRITICAL v1.5.19 FIX: Now handles both FREE and PAID plans properly
    */
   private async createCleanSubscription(config: CleanAccountConfig, currentTime: Date): Promise<void> {
     const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
     
+    // Determine plan type and subscription settings based on selected plan
+    let planType = "FREE";
+    let autoRenew = false;
+    let cancelAtPeriodEnd = false;
+    let subscriptionStatus = "ACTIVE";
+    let currentPeriodEnd = new Date(currentTime.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year for free
+    
+    // CRITICAL FIX: Use selected plan information if provided
+    if (config.selectedPlan) {
+      console.log(`💳 CLEAN SUBSCRIPTION: Processing selected plan:`, {
+        planName: config.selectedPlan.name || 'Unknown',
+        planType: config.selectedPlan.planType || 'FREE',
+        billingInterval: config.selectedPlan.billingInterval || 'free',
+        amount: config.selectedPlan.amount || 0,
+        stripePriceId: config.selectedPlan.stripePriceId || null
+      });
+      
+      // Map plan type from selected plan (with safe access)
+      const selectedPlanType = config.selectedPlan.planType?.toUpperCase() || "FREE";
+      if (selectedPlanType === "BASIC") {
+        planType = "BASIC";
+      } else if (selectedPlanType === "PREMIUM") {
+        planType = "PREMIUM";
+      } else if (selectedPlanType === "FAMILY") {
+        planType = "FAMILY";
+      } else {
+        planType = "FREE";
+      }
+      
+      // Set subscription settings for paid plans (with safe access)
+      const planAmount = config.selectedPlan.amount || 0;
+      if (planAmount > 0) {
+        autoRenew = true;
+        subscriptionStatus = "TRIALING"; // Start with trial for paid plans
+        
+        // Calculate trial end date (7 days)
+        currentPeriodEnd = new Date(currentTime.getTime() + 7 * 24 * 60 * 60 * 1000);
+        
+        console.log(`✅ CLEAN SUBSCRIPTION: Setting up PAID plan:`, {
+          planType,
+          autoRenew,
+          subscriptionStatus,
+          trialEndDate: currentPeriodEnd
+        });
+      } else {
+        console.log(`✅ CLEAN SUBSCRIPTION: Setting up FREE plan:`, {
+          planType,
+          autoRenew,
+          subscriptionStatus
+        });
+      }
+    }
+    
+    const subscriptionData = {
+      userId: config.userId,
+      status: subscriptionStatus,
+      planType: planType as any,
+      autoRenew: autoRenew,
+      cancelAtPeriodEnd: cancelAtPeriodEnd,
+      currentPeriodStart: currentTime,
+      currentPeriodEnd: currentPeriodEnd,
+      // Add Stripe information if available
+      ...(config.stripeCustomerId && { stripeCustomerId: config.stripeCustomerId }),
+      ...(config.stripeSubscriptionId && { stripeSubscriptionId: config.stripeSubscriptionId }),
+    };
+    
+    console.log(`💾 CLEAN SUBSCRIPTION: Creating subscription with data:`, subscriptionData);
+    
     await dbInstance.userSubscription.create({
-      data: {
-        userId: config.userId,
-        status: "ACTIVE",
-        planType: "FREE",
-        autoRenew: false,
-        cancelAtPeriodEnd: false,
-        currentPeriodStart: currentTime,
-        currentPeriodEnd: new Date(currentTime.getTime() + 365 * 24 * 60 * 60 * 1000), // 1 year
-      },
+      data: subscriptionData,
     });
+    
+    console.log(`✅ CLEAN SUBSCRIPTION: Subscription created successfully for plan: ${planType}`);
   }
 
   /**
