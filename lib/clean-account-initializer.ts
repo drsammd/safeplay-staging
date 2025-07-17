@@ -301,10 +301,10 @@ export class CleanAccountInitializer {
     await dbInstance.emailPreferences.create({
       data: {
         userId: config.userId,
-        receivePromotional: true,
-        receiveAlerts: true,
-        receiveUpdates: true,
-        emailFrequency: "DAILY"
+        marketingEmails: true,
+        securityAlerts: true,
+        productUpdates: true,
+        frequency: "DAILY"
       }
     });
     
@@ -325,10 +325,10 @@ export class CleanAccountInitializer {
     await dbInstance.emailPreferences.create({
       data: {
         userId: config.userId,
-        receivePromotional: true,
-        receiveAlerts: true,
-        receiveUpdates: true,
-        emailFrequency: "DAILY"
+        marketingEmails: true,
+        securityAlerts: true,
+        productUpdates: true,
+        frequency: "DAILY"
       }
     });
     
@@ -348,10 +348,10 @@ export class CleanAccountInitializer {
     await dbInstance.emailPreferences.create({
       data: {
         userId: config.userId,
-        receivePromotional: false,
-        receiveAlerts: true,
-        receiveUpdates: true,
-        emailFrequency: "IMMEDIATE"
+        marketingEmails: false,
+        securityAlerts: true,
+        productUpdates: true,
+        frequency: "IMMEDIATE"
       }
     });
     
