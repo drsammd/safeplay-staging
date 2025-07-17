@@ -21,6 +21,7 @@ export interface CleanAccountConfig {
   role: string;
   ipAddress: string;
   userAgent: string;
+  prismaInstance?: any; // Transaction context or prisma instance
 }
 
 export interface AccountInitializationResult {
@@ -156,6 +157,7 @@ export class CleanAccountInitializer {
    */
   private async createLegalAgreements(config: CleanAccountConfig, currentTime: Date): Promise<void> {
     const agreementVersion = "1.0";
+    const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
     
     const agreements = [
       {
@@ -177,7 +179,7 @@ export class CleanAccountInitializer {
     }
 
     for (const agreement of agreements) {
-      await prisma.legalAgreement.create({
+      await dbInstance.legalAgreement.create({
         data: {
           userId: config.userId,
           agreementType: agreement.agreementType as any,
@@ -195,7 +197,9 @@ export class CleanAccountInitializer {
    * Create clean subscription for new account
    */
   private async createCleanSubscription(config: CleanAccountConfig, currentTime: Date): Promise<void> {
-    await prisma.userSubscription.create({
+    const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
+    
+    await dbInstance.userSubscription.create({
       data: {
         userId: config.userId,
         status: "ACTIVE",
@@ -213,12 +217,13 @@ export class CleanAccountInitializer {
    */
   private async createCleanParentStructure(config: CleanAccountConfig): Promise<void> {
     console.log(`👨‍👩‍👧‍👦 PARENT STRUCTURE: Creating clean parent structure for: ${config.email}`);
+    const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
     
     // For parent accounts, we create NO children and NO family members
     // This ensures a completely clean start
     
     // Create email preferences
-    await prisma.emailPreferences.create({
+    await dbInstance.emailPreferences.create({
       data: {
         userId: config.userId,
         receivePromotional: true,
@@ -236,12 +241,13 @@ export class CleanAccountInitializer {
    */
   private async createCleanVenueAdminStructure(config: CleanAccountConfig): Promise<void> {
     console.log(`🏢 VENUE STRUCTURE: Creating clean venue admin structure for: ${config.email}`);
+    const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
     
     // For venue admin accounts, we create NO venues
     // This ensures a completely clean start
     
     // Create email preferences
-    await prisma.emailPreferences.create({
+    await dbInstance.emailPreferences.create({
       data: {
         userId: config.userId,
         receivePromotional: true,
@@ -259,11 +265,12 @@ export class CleanAccountInitializer {
    */
   private async createCleanSuperAdminStructure(config: CleanAccountConfig): Promise<void> {
     console.log(`👑 ADMIN STRUCTURE: Creating clean super admin structure for: ${config.email}`);
+    const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
     
     // For super admin accounts, we create minimal structure
     
     // Create email preferences
-    await prisma.emailPreferences.create({
+    await dbInstance.emailPreferences.create({
       data: {
         userId: config.userId,
         receivePromotional: false,

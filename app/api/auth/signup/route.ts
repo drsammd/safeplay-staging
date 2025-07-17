@@ -1,12 +1,13 @@
 
 /**
- * SafePlay Fixed Signup API Route
+ * SafePlay Fixed Signup API Route v1.5.19
  * Addresses critical authentication persistence issues
  * 
  * FIXES:
  * - Ensures proper user creation and database transactions
  * - Prevents session contamination during signup
  * - Adds comprehensive error handling and logging
+ * - CRITICAL v1.5.19: Fixed foreign key constraint violation in cleanAccountInitializer
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -155,7 +156,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   if (isDemoAccount) {
     console.error(`🚨 FIXED SIGNUP API [${debugId}]: Attempted signup for demo account: ${email}`);
     return apiErrorHandler.createErrorResponse(
-      ErrorType.FORBIDDEN,
+      ErrorType.AUTHORIZATION,
       'DEMO_ACCOUNT_SIGNUP_BLOCKED',
       'Demo accounts cannot be created through signup',
       403,
@@ -245,7 +246,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         name: newUser.name,
         role: newUser.role,
         ipAddress,
-        userAgent
+        userAgent,
+        prismaInstance: tx // Pass transaction context to prevent foreign key constraint issues
       });
 
       if (!cleanInitResult.success) {

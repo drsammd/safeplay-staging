@@ -152,7 +152,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   if (isDemoAccount) {
     console.error(`🚨 PROTECTED SIGNUP [${debugId}]: Attempted signup for demo account: ${email}`);
     return apiErrorHandler.createErrorResponse(
-      ErrorType.FORBIDDEN,
+      ErrorType.AUTHORIZATION,
       'DEMO_ACCOUNT_SIGNUP_BLOCKED',
       'Demo accounts cannot be created through signup',
       403,
