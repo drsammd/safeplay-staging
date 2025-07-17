@@ -5,7 +5,7 @@ import path from 'path';
 
 export async function GET() {
   let version = '1.5.19';
-  let commit = 'v1.5.19-signup-fixes';
+  let commit = 'v1.5.19-signup-fixes-deployment';
   
   try {
     // Read version from VERSION file
