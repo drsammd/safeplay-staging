@@ -77,7 +77,7 @@ const signupSchema = z.object({
   billingAddress: z.preprocess((val) => {
     if (typeof val === "string") return val.trim();
     return String(val || "").trim();
-  }, z.string().optional()),
+  }, z.string().nullable().optional()),
   
   billingAddressValidation: z.preprocess((val) => {
     // CRITICAL v1.5.21 FIX: Handle null/undefined billingAddressValidation safely
@@ -98,7 +98,7 @@ const signupSchema = z.object({
   subscriptionData: z.any().optional(),
   
   // CRITICAL v1.5.19 FIX: Add payment method for integrated signup
-  paymentMethodId: z.string().optional(),
+  paymentMethodId: z.string().nullable().optional(),
   
   // Additional fields
   homeAddressFields: z.any().optional(),

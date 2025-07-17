@@ -73,7 +73,7 @@ const signupSchema = z.object({
   billingAddress: z.preprocess((val) => {
     if (typeof val === "string") return val.trim();
     return String(val || "").trim();
-  }, z.string().optional()),
+  }, z.string().nullable().optional()),
   
   billingAddressValidation: z.preprocess((val) => {
     // CRITICAL v1.5.21 FIX: Handle null/undefined billingAddressValidation safely
