@@ -29,7 +29,7 @@ export async function GET(
         floorPlan: {
           include: { venue: true }
         },
-        zoneConfig: {
+        configuration: {
           select: {
             maxCapacity: true,
             minStaffRequired: true
@@ -79,7 +79,7 @@ export async function GET(
     });
 
     // Calculate real-time metrics
-    const maxCapacity = zone.zoneConfig?.maxCapacity || 0;
+    const maxCapacity = zone.configuration?.maxCapacity || 0;
     const currentOccupancy = currentCapacity?.currentOccupancy || 0;
     const utilizationRate = maxCapacity > 0 ? (currentOccupancy / maxCapacity) * 100 : 0;
 
@@ -107,7 +107,7 @@ export async function GET(
       },
       configuration: {
         maxCapacity,
-        minStaffRequired: zone.zoneConfig?.minStaffRequired || 0
+        minStaffRequired: zone.configuration?.minStaffRequired || 0
       },
       analytics: {
         hourlyStats,
@@ -154,7 +154,7 @@ export async function POST(
         floorPlan: {
           include: { venue: true }
         },
-        zoneConfig: true
+        configuration: true
       }
     });
 
@@ -174,7 +174,7 @@ export async function POST(
       }, { status: 400 });
     }
 
-    const maxCapacity = zone.zoneConfig?.maxCapacity || 0;
+    const maxCapacity = zone.configuration?.maxCapacity || 0;
     
     // Update capacity in transaction
     const result = await prisma.$transaction(async (tx) => {

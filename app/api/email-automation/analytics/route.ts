@@ -141,9 +141,11 @@ export async function GET(request: NextRequest) {
         inactiveRules: automationStats.find(s => !s.isActive)?._count?.isActive || 0
       },
       preferences: {
-        totalUsers: preferencesStats.reduce((sum, stat) => sum + stat._count.emailEnabled, 0),
-        emailEnabled: preferencesStats.find(s => s.emailEnabled)?._count?.emailEnabled || 0,
-        emailDisabled: preferencesStats.find(s => !s.emailEnabled)?._count?.emailEnabled || 0,
+        totalUsers: preferencesStats.reduce((sum, stat) => sum + stat._count.frequency, 0),
+        byFrequency: preferencesStats.reduce((acc, stat) => {
+          acc[stat.frequency] = stat._count.frequency;
+          return acc;
+        }, {} as Record<string, number>),
         globalUnsubscribes: unsubscribeStats._count.unsubscribedAt
       },
       topCampaigns: topCampaigns.map(campaign => ({

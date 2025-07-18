@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
     const zones = await prisma.floorPlanZone.findMany({
       where: zoneFilter,
       include: {
-        zoneConfig: {
+        configuration: {
           select: {
             maxCapacity: true,
             safetyLevel: true,
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
           id: zone.id,
           name: zone.name,
           type: zone.type,
-          maxCapacity: zone.zoneConfig?.maxCapacity || 0,
+          maxCapacity: zone.configuration?.maxCapacity || 0,
           analytics: summarizeZoneAnalytics(zone.zoneAnalytics),
           currentMetrics: {
             violations: zone._count.zoneViolations,
@@ -375,7 +375,7 @@ function generateZoneRecommendations(zones: any[], aggregatedAnalytics: any) {
 
   // Capacity recommendations
   const overcrowdedZones = zones.filter(zone => {
-    const maxCapacity = zone.zoneConfig?.maxCapacity || 0;
+    const maxCapacity = zone.configuration?.maxCapacity || 0;
     const avgOccupancy = zone.capacityRecords.length > 0 
       ? zone.capacityRecords.reduce((sum: number, r: any) => sum + r.currentOccupancy, 0) / zone.capacityRecords.length 
       : 0;

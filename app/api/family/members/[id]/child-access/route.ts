@@ -69,7 +69,7 @@ export async function GET(
 
     // Check permissions
     const hasAccess = familyMember.familyOwnerId === session.user.id || 
-                      familyMember.memberUserId === session.user.id
+                      familyMember.memberId === session.user.id
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
@@ -119,7 +119,7 @@ export async function POST(
     const familyMember = await prisma.familyMember.findUnique({
       where: { id: params.id },
       include: {
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -175,7 +175,7 @@ export async function POST(
         childId: data.childId,
         familyMemberId: params.id,
         grantedBy: session.user.id,
-        accessedBy: familyMember.memberUserId,
+        accessedBy: familyMember.memberId,
         accessLevel: data.accessLevel,
         canViewProfile: data.canViewProfile,
         canEditProfile: data.canEditProfile,
@@ -219,24 +219,24 @@ export async function POST(
       }
     })
 
-    // Log the activity
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: familyMember.familyOwnerId,
-        actorId: session.user.id,
-        targetId: familyMember.memberUserId,
-        actionType: 'GRANT_CHILD_ACCESS',
-        resourceType: 'CHILD_ACCESS',
-        resourceId: childAccess.id,
-        actionDescription: `Granted ${familyMember.memberUser.name} access to ${child.firstName} ${child.lastName}`,
-        actionData: {
-          childId: data.childId,
-          accessLevel: data.accessLevel,
-          isTemporary: data.isTemporary,
-          grantReason: data.grantReason
-        }
-      }
-    })
+    // Log the activity - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyOwnerId: familyMember.familyOwnerId,
+    //     actorId: session.user.id,
+    //     targetId: familyMember.memberId,
+    //     actionType: 'GRANT_CHILD_ACCESS',
+    //     resourceType: 'CHILD_ACCESS',
+    //     resourceId: childAccess.id,
+    //     actionDescription: `Granted ${familyMember.member.name} access to ${child.firstName} ${child.lastName}`,
+    //     actionData: {
+    //       childId: data.childId,
+    //       accessLevel: data.accessLevel,
+    //       isTemporary: data.isTemporary,
+    //       grantReason: data.grantReason
+    //     }
+    //   }
+    // })
 
     return NextResponse.json({
       childAccess,

@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         floorPlan: { venueId }
       },
       include: {
-        zoneConfig: {
+        configuration: {
           select: {
             maxCapacity: true,
             minStaffRequired: true,
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
     const capacityData = zones.map(zone => {
       const latestCapacity = zone.capacityRecords?.[0];
       const currentOccupancy = latestCapacity?.currentOccupancy ?? 0;
-      const maxCapacity = zone.zoneConfig?.maxCapacity ?? 0;
+      const maxCapacity = zone.configuration?.maxCapacity ?? 0;
       const utilizationRate = maxCapacity > 0 ? (currentOccupancy / maxCapacity) * 100 : 0;
       
       // Calculate queue metrics
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
           reason: alertReason,
           timestamp: latestCapacity?.lastUpdated ?? zone.updatedAt
         },
-        thresholds: zone.zoneConfig?.alertThresholds ?? {},
+        thresholds: zone.configuration?.alertThresholds ?? {},
         lastUpdated: latestCapacity?.lastUpdated ?? zone.updatedAt
       };
     });
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
         floorPlan: {
           include: { venue: true }
         },
-        zoneConfig: true
+        configuration: true
       }
     });
 
@@ -403,7 +403,7 @@ function generateCapacityRecommendations(capacityData: any[], venueMetrics: any)
 }
 
 async function updateCapacityThresholds(zoneId: string, thresholds: any, userId: string) {
-  return await prisma.zoneConfiguration.upsert({
+  return await prisma.configurationuration.upsert({
     where: { zoneId },
     update: {
       alertThresholds: thresholds,
@@ -448,7 +448,7 @@ async function createManualCapacityAlert(zone: any, alertData: any, userId: stri
 }
 
 async function setQueueLimit(zoneId: string, queueLimit: number, userId: string) {
-  return await prisma.zoneConfiguration.upsert({
+  return await prisma.configurationuration.upsert({
     where: { zoneId },
     update: {
       alertThresholds: {

@@ -71,7 +71,7 @@ export async function GET(
             email: true
           }
         },
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -105,7 +105,7 @@ export async function GET(
 
     // Check if user has access to view this family member
     const hasAccess = familyMember.familyOwnerId === session.user.id || 
-                      familyMember.memberUserId === session.user.id
+                      familyMember.memberId === session.user.id
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
@@ -136,7 +136,7 @@ export async function PATCH(
     const familyMember = await prisma.familyMember.findUnique({
       where: { id: params.id },
       include: {
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -152,7 +152,7 @@ export async function PATCH(
 
     // Check permissions - only family owner can update, or member can update their own settings
     const isOwner = familyMember.familyOwnerId === session.user.id
-    const isMember = familyMember.memberUserId === session.user.id
+    const isMember = familyMember.memberId === session.user.id
 
     if (!isOwner && !isMember) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
@@ -208,7 +208,7 @@ export async function PATCH(
       where: { id: params.id },
       data: updateData,
       include: {
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -223,22 +223,23 @@ export async function PATCH(
                       data.isBlocked === false ? 'UNBLOCK_MEMBER' : 
                       'UPDATE_PERMISSIONS'
 
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: familyMember.familyOwnerId,
-        actorId: session.user.id,
-        targetId: familyMember.memberUserId,
-        actionType,
-        resourceType: 'FAMILY_MEMBER',
-        resourceId: familyMember.id,
-        actionDescription: `Updated ${familyMember.memberUser.name}'s permissions`,
-        actionData: {
-          changes: updateData,
-          previousState,
-          isOwnerUpdate: isOwner
-        }
-      }
-    })
+    // Log the activity - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyOwnerId: familyMember.familyOwnerId,
+    //     actorId: session.user.id,
+    //     targetId: familyMember.memberId,
+    //     actionType,
+    //     resourceType: 'FAMILY_MEMBER',
+    //     resourceId: familyMember.id,
+    //     actionDescription: `Updated ${familyMember.member.name}'s permissions`,
+    //     actionData: {
+    //       changes: updateData,
+    //       previousState,
+    //       isOwnerUpdate: isOwner
+    //     }
+    //   }
+    // })
 
     return NextResponse.json({
       familyMember: updatedFamilyMember,
@@ -271,7 +272,7 @@ export async function DELETE(
     const familyMember = await prisma.familyMember.findUnique({
       where: { id: params.id },
       include: {
-        memberUser: {
+        member: {
           select: {
             id: true,
             name: true,
@@ -287,7 +288,7 @@ export async function DELETE(
 
     // Only family owner can remove members, or member can remove themselves
     const isOwner = familyMember.familyOwnerId === session.user.id
-    const isMember = familyMember.memberUserId === session.user.id
+    const isMember = familyMember.memberId === session.user.id
 
     if (!isOwner && !isMember) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
@@ -310,25 +311,25 @@ export async function DELETE(
         where: { id: params.id }
       })
 
-      // Log the activity
-      await tx.familyActivityLog.create({
-        data: {
-          familyOwnerId: familyMember.familyOwnerId,
-          actorId: session.user.id,
-          targetId: familyMember.memberUserId,
-          actionType: 'REMOVE_MEMBER',
-          resourceType: 'FAMILY_MEMBER',
-          resourceId: familyMember.id,
-          actionDescription: isMember ? 
-            `${familyMember.memberUser.name} left the family` :
-            `Removed ${familyMember.memberUser.name} from family`,
-          actionData: {
-            reason,
-            removedByMember: isMember,
-            familyRole: familyMember.familyRole
-          }
-        }
-      })
+      // Log the activity - familyActivityLog model doesn't exist
+      // await tx.familyActivityLog.create({
+      //   data: {
+      //     familyOwnerId: familyMember.familyOwnerId,
+      //     actorId: session.user.id,
+      //     targetId: familyMember.memberId,
+      //     actionType: 'REMOVE_MEMBER',
+      //     resourceType: 'FAMILY_MEMBER',
+      //     resourceId: familyMember.id,
+      //     actionDescription: isMember ? 
+      //       `${familyMember.member.name} left the family` :
+      //       `Removed ${familyMember.member.name} from family`,
+      //     actionData: {
+      //       reason,
+      //       removedByMember: isMember,
+      //       familyRole: familyMember.familyRole
+      //     }
+      //   }
+      // })
     })
 
     return NextResponse.json({

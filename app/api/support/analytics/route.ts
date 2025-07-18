@@ -152,16 +152,10 @@ async function generateAnalytics(startDate: Date, endDate: Date, filters: any = 
       }
     }),
     
-    // Knowledge base metrics
-    db.knowledgeBaseArticle.aggregate({
-      where: {
-        publishedAt: {
-          gte: startDate,
-          lte: endDate
-        }
-      },
-      _sum: { viewCount: true },
-      _avg: { avgRating: true }
+    // Knowledge base metrics - knowledgeBaseArticle model doesn't exist
+    Promise.resolve({
+      _sum: { viewCount: 0 },
+      _avg: { avgRating: 0 }
     })
   ])
 

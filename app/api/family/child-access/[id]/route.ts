@@ -74,7 +74,7 @@ export async function GET(
         },
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -147,7 +147,7 @@ export async function PATCH(
         },
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -231,7 +231,7 @@ export async function PATCH(
         },
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -246,25 +246,26 @@ export async function PATCH(
     // Log the activity
     const actionType = data.isBlocked ? 'REVOKE_CHILD_ACCESS' : 'UPDATE_PERMISSIONS'
     
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: childAccess.familyMember.familyOwnerId,
-        actorId: session.user.id,
-        targetId: childAccess.accessedBy,
-        actionType,
-        resourceType: 'CHILD_ACCESS',
-        resourceId: childAccess.id,
-        actionDescription: data.isBlocked ? 
-          `Blocked ${childAccess.familyMember.memberUser.name} from accessing ${childAccess.child.firstName} ${childAccess.child.lastName}` :
-          `Updated ${childAccess.familyMember.memberUser.name}'s access to ${childAccess.child.firstName} ${childAccess.child.lastName}`,
-        actionData: {
-          childId: childAccess.childId,
-          changes: updateData,
-          previousState,
-          reason: data.blockReason || data.revokeReason
-        }
-      }
-    })
+    // Log the activity - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyOwnerId: childAccess.familyMember.familyOwnerId,
+    //     actorId: session.user.id,
+    //     targetId: childAccess.accessedBy,
+    //     actionType,
+    //     resourceType: 'CHILD_ACCESS',
+    //     resourceId: childAccess.id,
+    //     actionDescription: data.isBlocked ? 
+    //       `Blocked ${childAccess.familyMember.member.name} from accessing ${childAccess.child.firstName} ${childAccess.child.lastName}` :
+    //       `Updated ${childAccess.familyMember.member.name}'s access to ${childAccess.child.firstName} ${childAccess.child.lastName}`,
+    //     actionData: {
+    //       childId: childAccess.childId,
+    //       changes: updateData,
+    //       previousState,
+    //       reason: data.blockReason || data.revokeReason
+    //     }
+    //   }
+    // })
 
     return NextResponse.json({
       childAccess: updatedChildAccess,
@@ -306,7 +307,7 @@ export async function DELETE(
         },
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -327,23 +328,23 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only the grantor can remove child access' }, { status: 403 })
     }
 
-    // Log the activity before deletion
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: childAccess.familyMember.familyOwnerId,
-        actorId: session.user.id,
-        targetId: childAccess.accessedBy,
-        actionType: 'REVOKE_CHILD_ACCESS',
-        resourceType: 'CHILD_ACCESS',
-        resourceId: childAccess.id,
-        actionDescription: `Revoked ${childAccess.familyMember.memberUser.name}'s access to ${childAccess.child.firstName} ${childAccess.child.lastName}`,
-        actionData: {
-          childId: childAccess.childId,
-          reason,
-          accessLevel: childAccess.accessLevel
-        }
-      }
-    })
+    // Log the activity before deletion - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyOwnerId: childAccess.familyMember.familyOwnerId,
+    //     actorId: session.user.id,
+    //     targetId: childAccess.accessedBy,
+    //     actionType: 'REVOKE_CHILD_ACCESS',
+    //     resourceType: 'CHILD_ACCESS',
+    //     resourceId: childAccess.id,
+    //     actionDescription: `Revoked ${childAccess.familyMember.member.name}'s access to ${childAccess.child.firstName} ${childAccess.child.lastName}`,
+    //     actionData: {
+    //       childId: childAccess.childId,
+    //       reason,
+    //       accessLevel: childAccess.accessLevel
+    //     }
+    //   }
+    // })
 
     // Delete child access
     await prisma.childAccess.delete({

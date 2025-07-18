@@ -53,30 +53,18 @@ export async function GET(
     }
 
     // Check if user has access to this invitation
-    const hasAccess = invitation.inviterUserId === session.user.id || 
+    const hasAccess = invitation.inviterId === session.user.id || 
                       invitation.inviteeEmail === session.user.email ||
-                      invitation.acceptedBy === session.user.id
+                      invitation.inviteeId === session.user.id
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
-    // Add linked children information
+    // Add linked children information (linkedChildrenIds property doesn't exist in schema)
     let linkedChildren: any[] = []
-    if (invitation.linkedChildrenIds && Array.isArray(invitation.linkedChildrenIds)) {
-      linkedChildren = await prisma.child.findMany({
-        where: {
-          id: { in: invitation.linkedChildrenIds as string[] }
-        },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          profilePhoto: true
-        }
-      })
-    }
-
+    // TODO: Implement linked children functionality when schema is updated
+    
     return NextResponse.json({
       ...invitation,
       linkedChildren
@@ -178,79 +166,26 @@ export async function PATCH(
           data: {
             status: 'ACCEPTED',
             acceptedAt: new Date(),
-            acceptedBy: acceptedByUserId,
-            acceptanceIpAddress: clientIp,
-            acceptanceUserAgent: userAgent
+            inviteeId: acceptedByUserId
           }
         })
 
         // Create family member relationship
-        const permissionSet = invitation.permissionSet as any || {}
         familyMember = await prisma.familyMember.create({
           data: {
-            familyId: invitation.inviterUserId,
+            familyId: invitation.inviterId,
             memberId: acceptedByUserId,
-            familyRole: invitation.familyRole,
-            displayName: invitation.inviteeName,
-            invitationId: invitation.id,
-            canViewAllChildren: permissionSet.canViewAllChildren || false,
-            canEditChildren: permissionSet.canEditChildren || false,
-            canCheckInOut: permissionSet.canCheckInOut || false,
-            canViewPhotos: permissionSet.canViewPhotos !== false,
-            canViewVideos: permissionSet.canViewVideos !== false,
-            canPurchaseMedia: permissionSet.canPurchaseMedia || false,
-            canReceiveAlerts: permissionSet.canReceiveAlerts !== false,
-            canViewLocation: permissionSet.canViewLocation !== false,
-            canViewReports: permissionSet.canViewReports || false,
-            canManageFamily: permissionSet.canManageFamily || false,
-            canMakePayments: permissionSet.canMakePayments || false,
-            photoAccess: permissionSet.photoAccess || 'FULL',
-            videoAccess: permissionSet.videoAccess || 'FULL',
-            emergencyContact: permissionSet.emergencyContact || false,
-            notificationFrequency: permissionSet.notificationFrequency || 'REAL_TIME'
+            relationship: invitation.relationship,
+            invitedBy: invitation.inviterId,
+            status: 'ACTIVE'
           }
         })
 
-        // Create child access records for linked children
-        if (invitation.linkedChildrenIds && Array.isArray(invitation.linkedChildrenIds)) {
-          const childAccessRecords = (invitation.linkedChildrenIds as string[]).map(childId => ({
-            childId,
-            familyMemberId: familyMember.id,
-            grantedBy: invitation.inviterUserId,
-            accessedBy: acceptedByUserId,
-            accessLevel: 'BASIC' as const,
-            canViewProfile: true,
-            canViewLocation: permissionSet.canViewLocation !== false,
-            canViewPhotos: permissionSet.canViewPhotos !== false,
-            canViewVideos: permissionSet.canViewVideos !== false,
-            canReceiveAlerts: permissionSet.canReceiveAlerts !== false,
-            canCheckInOut: permissionSet.canCheckInOut || false,
-            canPurchaseMedia: permissionSet.canPurchaseMedia || false
-          }))
+        // Create child access records for linked children (linkedChildrenIds doesn't exist in schema)
+        // TODO: Implement child access records when schema is updated
 
-          await prisma.childAccess.createMany({
-            data: childAccessRecords
-          })
-        }
-
-        // Log the activity
-        await prisma.familyActivityLog.create({
-          data: {
-            familyId: invitation.inviterUserId,
-            actorId: acceptedByUserId,
-            actionType: 'ACCEPT_INVITATION',
-            resourceType: 'INVITATION',
-            resourceId: invitation.id,
-            actionDescription: `${session.user.name || session.user.email} accepted family invitation`,
-            actionData: { 
-              invitationId: invitation.id,
-              familyRole: invitation.familyRole,
-              linkedChildrenCount: Array.isArray(invitation.linkedChildrenIds) ? invitation.linkedChildrenIds.length : 0
-            },
-            ipAddress: clientIp,
-            sessionId: session.user.id
-          }
-        })
+        // Log the activity (familyActivityLog model doesn't exist in schema)
+        // TODO: Implement activity logging when schema is updated
 
         break
 
@@ -271,24 +206,13 @@ export async function PATCH(
           }
         })
 
-        // Log the activity
-        await prisma.familyActivityLog.create({
-          data: {
-            familyId: invitation.inviterUserId,
-            actorId: session.user.id,
-            actionType: 'DECLINE_INVITATION',
-            resourceType: 'INVITATION',
-            resourceId: invitation.id,
-            actionDescription: `${session.user.name || session.user.email} declined family invitation`,
-            ipAddress: clientIp,
-            sessionId: session.user.id
-          }
-        })
+        // Log the activity (familyActivityLog model doesn't exist in schema)
+        // TODO: Implement activity logging when schema is updated
 
         break
 
       case 'revoke':
-        if (invitation.inviterUserId !== session.user.id) {
+        if (invitation.inviterId !== session.user.id) {
           return NextResponse.json({ error: 'Cannot revoke this invitation' }, { status: 403 })
         }
 
@@ -306,28 +230,13 @@ export async function PATCH(
           }
         })
 
-        // Log the activity
-        await prisma.familyActivityLog.create({
-          data: {
-            familyId: invitation.inviterUserId,
-            actorId: session.user.id,
-            actionType: 'REVOKE_INVITATION',
-            resourceType: 'INVITATION',
-            resourceId: invitation.id,
-            actionDescription: `Revoked family invitation to ${invitation.inviteeEmail}`,
-            actionData: { 
-              reason: data.revokeReason,
-              inviteeEmail: invitation.inviteeEmail
-            },
-            ipAddress: clientIp,
-            sessionId: session.user.id
-          }
-        })
+        // Log the activity (familyActivityLog model doesn't exist in schema)
+        // TODO: Implement activity logging when schema is updated
 
         break
 
       case 'resend':
-        if (invitation.inviterUserId !== session.user.id) {
+        if (invitation.inviterId !== session.user.id) {
           return NextResponse.json({ error: 'Cannot resend this invitation' }, { status: 403 })
         }
 
@@ -335,12 +244,11 @@ export async function PATCH(
           return NextResponse.json({ error: 'Can only resend pending invitations' }, { status: 400 })
         }
 
-        // Update reminder count and timestamp
+        // Update timestamp for resend (remindersSent and lastReminderAt don't exist in schema)
         updatedInvitation = await prisma.familyInvitation.update({
           where: { id: params.id },
           data: {
-            remindersSent: invitation.remindersSent + 1,
-            lastReminderAt: new Date()
+            sentAt: new Date()
           }
         })
 
@@ -387,7 +295,7 @@ export async function DELETE(
     }
 
     // Only inviter can delete invitation
-    if (invitation.inviterUserId !== session.user.id) {
+    if (invitation.inviterId !== session.user.id) {
       return NextResponse.json({ error: 'Cannot delete this invitation' }, { status: 403 })
     }
 

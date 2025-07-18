@@ -212,25 +212,25 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Log the activity
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: familyMember.familyOwnerId,
-        actorId: session.user.id,
-        targetId: familyMember.memberId,
-        actionType: 'UPDATE_PERMISSIONS',
-        resourceType: 'PERMISSION',
-        resourceId: permission.id,
-        actionDescription: `Granted ${data.permissionType} permission to ${familyMember.memberUser.name}`,
-        actionData: {
-          permissionType: data.permissionType,
-          resourceType: data.resourceType,
-          resourceId: data.resourceId,
-          permissionLevel: data.permissionLevel,
-          reason: data.grantReason
-        }
-      }
-    })
+    // Log the activity - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyOwnerId: familyMember.familyOwnerId,
+    //     actorId: session.user.id,
+    //     targetId: familyMember.memberId,
+    //     actionType: 'UPDATE_PERMISSIONS',
+    //     resourceType: 'PERMISSION',
+    //     resourceId: permission.id,
+    //     actionDescription: `Granted ${data.permissionType} permission to ${familyMember.member.name}`,
+    //     actionData: {
+    //       permissionType: data.permissionType,
+    //       resourceType: data.resourceType,
+    //       resourceId: data.resourceId,
+    //       permissionLevel: data.permissionLevel,
+    //       reason: data.grantReason
+    //     }
+    //   }
+    // })
 
     return NextResponse.json({
       permission,

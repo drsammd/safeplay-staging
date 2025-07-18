@@ -393,7 +393,7 @@ function generateEvacuationRecommendations(routes: any[], zone: any) {
   }
   
   const totalCapacity = routes.reduce((sum, r) => sum + r.maxCapacity, 0);
-  const zoneCapacity = zone.zoneConfig?.maxCapacity || 0;
+  const zoneCapacity = zone.configuration?.maxCapacity || 0;
   
   if (totalCapacity < zoneCapacity) {
     recommendations.push({

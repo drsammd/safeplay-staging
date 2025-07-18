@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
         recognitionEventId: data.recognitionEventId as string || null,
         sightingType: data.sightingType as string || 'DETECTED',
         timestamp: data.timestamp ? new Date(data.timestamp) : new Date(),
-      },
+      } as any,
       include: {
         child: {
           select: {

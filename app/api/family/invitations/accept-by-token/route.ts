@@ -159,24 +159,24 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Log the activity
-    await prisma.familyActivityLog.create({
-      data: {
-        familyId: invitation.inviterUserId,
-        actorId: acceptedByUserId,
-        actionType: 'ACCEPT_INVITATION',
-        resourceType: 'INVITATION',
-        resourceId: invitation.id,
-        actionDescription: `${invitation.inviteeEmail} accepted family invitation via token`,
-        actionData: { 
-          invitationId: invitation.id,
-          familyRole: invitation.familyRole,
-          linkedChildrenCount: Array.isArray(invitation.linkedChildrenIds) ? invitation.linkedChildrenIds.length : 0,
-          createdAccount: data.createAccount
-        },
-        ipAddress: clientIp
-      }
-    })
+    // Log the activity - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyId: invitation.inviterUserId,
+    //     actorId: acceptedByUserId,
+    //     actionType: 'ACCEPT_INVITATION',
+    //     resourceType: 'INVITATION',
+    //     resourceId: invitation.id,
+    //     actionDescription: `${invitation.inviteeEmail} accepted family invitation via token`,
+    //     actionData: { 
+    //       invitationId: invitation.id,
+    //       familyRole: invitation.familyRole,
+    //       linkedChildrenCount: Array.isArray(invitation.linkedChildrenIds) ? invitation.linkedChildrenIds.length : 0,
+    //       createdAccount: data.createAccount
+    //     },
+    //     ipAddress: clientIp
+    //   }
+    // })
 
     return NextResponse.json({
       message: 'Invitation accepted successfully',

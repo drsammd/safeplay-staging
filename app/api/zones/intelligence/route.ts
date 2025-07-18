@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
         floorPlan: { venueId }
       },
       include: {
-        zoneConfig: true,
+        configuration: true,
         zoneAnalytics: {
           where: {
             date: { gte: startDate }
@@ -345,7 +345,7 @@ async function analyzeEfficiency(zones: any[], daysBack: number) {
 
   for (const zone of zones) {
     const analytics = zone.zoneAnalytics;
-    const capacity = zone.zoneConfig?.maxCapacity || 0;
+    const capacity = zone.configuration?.maxCapacity || 0;
     
     if (analytics.length === 0 || capacity === 0) continue;
 
@@ -353,7 +353,7 @@ async function analyzeEfficiency(zones: any[], daysBack: number) {
       spaceUtilization: calculateSpaceUtilization(analytics, capacity),
       timeUtilization: calculateTimeUtilization(analytics),
       revenueEfficiency: calculateRevenueEfficiency(analytics, capacity),
-      staffEfficiency: calculateStaffEfficiency(analytics, zone.zoneConfig?.minStaffRequired || 1),
+      staffEfficiency: calculateStaffEfficiency(analytics, zone.configuration?.minStaffRequired || 1),
       energyEfficiency: calculateEnergyEfficiency(analytics),
       overallScore: 0
     };

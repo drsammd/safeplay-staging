@@ -21,19 +21,12 @@ export async function GET(
     const campaign = await prisma.emailCampaign.findUnique({
       where: { id: params.id },
       include: {
-        template: true,
-        emailSegment: true,
+        segment: true,
         creator: {
           select: { id: true, name: true, email: true }
         },
         approver: {
           select: { id: true, name: true, email: true }
-        },
-        _count: {
-          select: { 
-            emailLogs: true,
-            analytics: true
-          }
         }
       }
     });
@@ -67,11 +60,8 @@ export async function PUT(
     const body = await request.json();
     const {
       name,
-      description,
       subject,
-      templateId,
-      customContent,
-      targetSegment,
+      content,
       emailSegmentId,
       segmentFilters,
       scheduledAt,
@@ -102,11 +92,8 @@ export async function PUT(
       where: { id: params.id },
       data: {
         name,
-        description,
         subject,
-        templateId,
-        customContent,
-        targetSegment,
+        content,
         emailSegmentId,
         segmentFilters,
         scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
@@ -117,7 +104,6 @@ export async function PUT(
         rateLimitPerHour
       },
       include: {
-        template: true,
         creator: {
           select: { id: true, name: true, email: true }
         }
@@ -149,11 +135,7 @@ export async function DELETE(
     // Check if campaign can be deleted
     const campaign = await prisma.emailCampaign.findUnique({
       where: { id: params.id },
-      include: {
-        _count: {
-          select: { emailLogs: true }
-        }
-      }
+      include: {}
     });
 
     if (!campaign) {
@@ -167,21 +149,13 @@ export async function DELETE(
       );
     }
 
-    if (campaign._count.emailLogs > 0) {
-      // Mark as cancelled instead of deleting
-      await prisma.emailCampaign.update({
-        where: { id: params.id },
-        data: { 
-          status: CampaignStatus.CANCELLED,
-          cancelledAt: new Date()
-        }
-      });
-    } else {
-      // Safe to delete
-      await prisma.emailCampaign.delete({
-        where: { id: params.id }
-      });
-    }
+    // Mark as cancelled instead of deleting (safer approach)
+    await prisma.emailCampaign.update({
+      where: { id: params.id },
+      data: { 
+        status: CampaignStatus.CANCELLED
+      }
+    });
 
     return NextResponse.json({ message: 'Campaign deleted successfully' });
 

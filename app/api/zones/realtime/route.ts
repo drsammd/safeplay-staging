@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     const zones = await prisma.floorPlanZone.findMany({
       where: zoneFilter,
       include: {
-        zoneConfig: {
+        configuration: {
           select: {
             maxCapacity: true,
             minStaffRequired: true,
@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
     const realTimeData = zones.map(zone => {
       const latestCapacity = zone.capacityRecords?.[0];
       const currentOccupancy = latestCapacity?.currentOccupancy ?? 0;
-      const maxCapacity = zone.zoneConfig?.maxCapacity ?? 0;
+      const maxCapacity = zone.configuration?.maxCapacity ?? 0;
       const utilizationRate = maxCapacity > 0 ? (currentOccupancy / maxCapacity) * 100 : 0;
 
       // Calculate recent activity metrics
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
 
       // Determine zone status
       let status = 'NORMAL';
-      if (zone.zoneConfig?.isMaintenanceMode) {
+      if (zone.configuration?.isMaintenanceMode) {
         status = 'MAINTENANCE';
       } else if (activeAlerts > 0 || unresolvedViolations > 0) {
         status = 'ALERT';
@@ -182,8 +182,8 @@ export async function GET(request: NextRequest) {
           occupancyTrend
         },
         safety: {
-          hazardLevel: zone.zoneConfig?.hazardLevel ?? 'NONE',
-          safetyLevel: zone.zoneConfig?.safetyLevel ?? 'STANDARD',
+          hazardLevel: zone.configuration?.hazardLevel ?? 'NONE',
+          safetyLevel: zone.configuration?.safetyLevel ?? 'STANDARD',
           activeCameras: zone.cameras?.filter(c => c.status === 'ONLINE').length ?? 0,
           totalCameras: zone.cameras?.length ?? 0
         },
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
         floorPlan: {
           include: { venue: true }
         },
-        zoneConfig: true
+        configuration: true
       }
     });
 
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Calculate new metrics
-      const maxCapacity = zone.zoneConfig?.maxCapacity || 0;
+      const maxCapacity = zone.configuration?.maxCapacity || 0;
       const utilizationRate = maxCapacity > 0 ? (occupancyUpdate / maxCapacity) * 100 : 0;
       
       let capacityStatus: any = 'NORMAL';
@@ -391,7 +391,7 @@ function calculateOccupancyTrend(occupancyHistory: any[]): 'increasing' | 'decre
 }
 
 async function checkCapacityAlerts(tx: any, zone: any, currentOccupancy: number, utilizationRate: number) {
-  const alertThresholds = zone.zoneConfig?.alertThresholds || {};
+  const alertThresholds = zone.configuration?.alertThresholds || {};
   const capacityThreshold = alertThresholds.capacityWarning || 85;
   
   // Check if we need to create capacity alert
@@ -412,14 +412,14 @@ async function checkCapacityAlerts(tx: any, zone: any, currentOccupancy: number,
           type: 'SAFETY',
           subType: 'CAPACITY_WARNING',
           title: `Zone Near Capacity: ${zone.name}`,
-          description: `Zone utilization is at ${Math.round(utilizationRate)}% (${currentOccupancy}/${zone.zoneConfig?.maxCapacity})`,
+          description: `Zone utilization is at ${Math.round(utilizationRate)}% (${currentOccupancy}/${zone.configuration?.maxCapacity})`,
           severity: utilizationRate >= 100 ? 'HIGH' : 'MEDIUM',
           priority: 'HIGH',
           venueId: zone.floorPlan.venueId,
           floorPlanZoneId: zone.id,
           triggerData: {
             currentOccupancy,
-            maxCapacity: zone.zoneConfig?.maxCapacity,
+            maxCapacity: zone.configuration?.maxCapacity,
             utilizationRate
           }
         }

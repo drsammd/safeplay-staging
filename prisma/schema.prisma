@@ -53,8 +53,10 @@ model User {
   alertAcknowledgments    AlertAcknowledgment[]    @relation("UserAlertAcknowledgments")
   alertTimelineEntries    AlertTimelineEntry[]     @relation("UserAlertTimelineEntries")
   alertNotifications      AlertNotification[]      @relation("UserAlertNotifications")
+  alertNotificationRecipients AlertNotification[]  @relation("UserAlertNotificationRecipients")
   emergencyContacts       EmergencyContact[]       @relation("UserEmergencyContacts")
   notificationPreferences NotificationPreference[] @relation("UserNotificationPreferences")
+  webSocketEvents         WebSocketEvent[]         @relation("UserWebSocketEvents")
   
   // Mobile Dashboard Relations
   mobileDevices           MobileDevice[]           @relation("UserMobileDevices")
@@ -129,17 +131,24 @@ model User {
   // Email Automation Relations
   emailPreferences        EmailPreferences?         @relation("UserEmailPreferences")
   emailLogs               EmailLog[]                @relation("UserEmailLogs")
+  emailNotifications      EmailNotification[]       @relation("UserEmailNotifications")
   segmentMemberships      EmailSegmentMember[]      @relation("UserSegmentMemberships")
   createdEmailSegments    EmailSegment[]            @relation("UserEmailSegments")
   createdEmailCampaigns   EmailCampaign[]           @relation("UserCreatedCampaigns")
   approvedEmailCampaigns  EmailCampaign[]           @relation("UserApprovedCampaigns")
   automationRules         EmailAutomationRule[]     @relation("UserAutomationRules")
   automationExecutions    EmailAutomationExecution[] @relation("UserAutomationExecutions")
+  emailTemplates          EmailTemplate[]           @relation("UserEmailTemplates")
 
   // Support Center Relations
   supportTickets          SupportTicket[]           @relation("UserSupportTickets")
   supportAgent            SupportAgent?             @relation("UserSupportAgent")
   chatSessions            SupportChatSession[]      @relation("UserChatSessions")
+  knowledgeBaseArticles   KnowledgeBaseArticle[]    @relation("UserKnowledgeBaseArticles")
+  articleFeedback         ArticleFeedback[]         @relation("UserArticleFeedback")
+  chatMessages            ChatMessage[]             @relation("UserChatMessages")
+  ticketMessages          SupportTicketMessage[]    @relation("UserTicketMessages")
+  ticketTimeline          SupportTicketTimeline[]   @relation("UserTicketTimeline")
 
   // Family Member Management Relations
   sentFamilyInvitations     FamilyInvitation[]        @relation("UserSentInvitations")
@@ -150,6 +159,7 @@ model User {
   receivedPermissions       FamilyPermission[]        @relation("UserReceivedPermissions")
   childAccessGrants         ChildAccess[]             @relation("UserChildAccessGrants")
   childAccessReceived       ChildAccess[]             @relation("UserChildAccessReceived")
+  familyOwnerships          FamilyMember[]            @relation("UserFamilyOwnerships")
 
   // Individual Purchase Relations (v1.5.0)
   individualPurchases       IndividualPurchase[]      @relation("UserIndividualPurchases")
@@ -249,6 +259,9 @@ model Venue {
 
   // Support Center Relations
   supportTickets          SupportTicket[]          @relation("VenueSupportTickets")
+  
+  // WebSocket Events Relations
+  webSocketEvents         WebSocketEvent[]         @relation("VenueWebSocketEvents")
 
   @@map("venues")
 }
@@ -311,6 +324,7 @@ model Child {
 
   // Family Member Management Relations
   familyMemberAccess     ChildAccess[]            @relation("ChildFamilyMemberAccess")
+  familyInvitations      FamilyInvitation[]       // Missing opposite relation
 
   @@map("children")
 }
@@ -782,6 +796,7 @@ model FloorPlanZone {
   evacuationToRoutes   EvacuationRoute[]   @relation("EvacuationToZone")
   cameras           Camera[]               @relation("ZoneCameras")
   childSightings    ChildSighting[]        @relation("ChildSightingZone")
+  enhancedAlerts    EnhancedAlert[]        // Missing relation
   
   @@index([floorPlanId, isActive])
   @@index([type, isActive])
@@ -821,6 +836,8 @@ model Camera {
   coordinates       Json?                  // {x, y} position on floor plan
   orientation       Float?                 // Rotation angle in degrees
   coverageArea      Json?                  // Polygon defining camera coverage
+  position          Json?                  // Camera position information
+  coverageAreas     Json?                  // Multiple coverage areas
   venueId           String
   floorPlanId       String?
   zoneId            String?
@@ -833,6 +850,7 @@ model Camera {
   events            CameraEvent[]
   performance       CameraPerformance[]    @relation("CameraPerformance")
   recommendations   CameraRecommendation[] @relation("CameraRecommendations")
+  enhancedAlerts    EnhancedAlert[]        // Missing relation
   
   @@index([venueId, status])
   @@index([status, isActive])
@@ -932,12 +950,14 @@ model EnhancedAlert {
   status            EnhancedAlertStatus    @default(ACTIVE)
   source            AlertSource            @default(SYSTEM)
   sourceId          String?                // ID of the source (camera, sensor, etc.)
+  floorPlanZoneId   String?                // Missing field
   location          Json?                  // Specific location information
   affectedArea      Json?                  // Area affected by the alert
   estimatedImpact   ImpactLevel            @default(LOW)
   confidence        Float?                 // Confidence level of the alert (0-1)
   falsePositiveRisk Float?                 // Risk of being a false positive (0-1)
   autoResolvable    Boolean                @default(false)
+  autoResolveAt     DateTime?              // Auto-resolve timestamp
   requiresHumanAction Boolean              @default(true)
   escalationLevel   Int                    @default(0)
   maxEscalationLevel Int                   @default(3)
@@ -955,6 +975,10 @@ model EnhancedAlert {
   preventiveMeasures Json?                 // Suggested preventive measures
   lessonsLearned    String?                // Lessons learned after resolution
   costImpact        Float?                 // Estimated cost impact
+  imageUrls         Json?                  // Array of image URLs
+  videoUrls         Json?                  // Array of video URLs
+  lastSeenLocation  Json?                  // Last seen location information
+  lastSeenTime      DateTime?              // Last seen timestamp
   ruleId            String?
   childId           String?
   venueId           String
@@ -977,14 +1001,32 @@ model EnhancedAlert {
   rule              AlertRule?             @relation("AlertRuleEnhancedAlerts", fields: [ruleId], references: [id])
   child             Child?                 @relation(fields: [childId], references: [id])
   venue             Venue                  @relation("VenueEnhancedAlerts", fields: [venueId], references: [id])
+  camera            Camera?                @relation(fields: [sourceId], references: [id]) // Missing relation
+  zone              FloorPlanZone?         @relation(fields: [floorPlanZoneId], references: [id]) // Missing relation
   acknowledgments   AlertAcknowledgment[]
-  timelineEntries   AlertTimelineEntry[]
+  timeline          AlertTimelineEntry[]   // Timeline entries for this alert
   notifications     AlertNotification[]
   
   @@index([venueId, status])
   @@index([type, severity])
   @@index([triggeredAt, status])
   @@map("enhanced_alerts")
+}
+
+model WebSocketEvent {
+  id                String                 @id @default(cuid())
+  eventType         String
+  eventData         Json
+  eventAction       String?                // Action associated with the event
+  userId            String?
+  targetUserId      String?                // Target user for the event
+  venueId           String?
+  createdAt         DateTime               @default(now())
+  user              User?                  @relation("UserWebSocketEvents", fields: [userId], references: [id])
+  venue             Venue?                 @relation("VenueWebSocketEvents", fields: [venueId], references: [id])
+  
+  @@index([eventType, createdAt])
+  @@map("websocket_events")
 }
 
 model AlertAcknowledgment {
@@ -996,10 +1038,13 @@ model AlertAcknowledgment {
   location          Json?                  // Where the acknowledgment was made
   deviceInfo        Json?                  // Device used for acknowledgment
   notes             String?
+  response          String?                // Missing field
   estimatedResolutionTime Int?             // Estimated time to resolve (minutes)
+  metadata          Json?                  // Additional metadata
   alert             EnhancedAlert          @relation(fields: [alertId], references: [id], onDelete: Cascade)
   user              User                   @relation("UserAlertAcknowledgments", fields: [userId], references: [id])
   
+  @@unique([alertId, userId], map: "alertId_userId")
   @@index([alertId, acknowledgedAt])
   @@map("alert_acknowledgments")
 }
@@ -1008,12 +1053,15 @@ model AlertTimelineEntry {
   id                String                 @id @default(cuid())
   alertId           String
   entryType         TimelineEntryType
+  eventType         String?                // Missing field
   title             String
   description       String?
   timestamp         DateTime               @default(now())
   userId            String?
+  performedBy       String?                // User who performed the action
   automated         Boolean                @default(false)
   data              Json?                  // Additional data for the entry
+  metadata          Json?                  // Additional metadata for the entry
   mediaUrls         Json?                  // Associated media
   location          Json?                  // Location where entry was made
   alert             EnhancedAlert          @relation(fields: [alertId], references: [id], onDelete: Cascade)
@@ -1027,8 +1075,10 @@ model AlertNotification {
   id                String                 @id @default(cuid())
   alertId           String
   userId            String
+  recipientId       String?                // Missing field
   channel           NotificationChannel
   status            NotificationStatus     @default(PENDING)
+  scheduledAt       DateTime?              // Missing field
   sentAt            DateTime?
   deliveredAt       DateTime?
   readAt            DateTime?
@@ -1041,6 +1091,7 @@ model AlertNotification {
   metadata          Json?
   alert             EnhancedAlert          @relation(fields: [alertId], references: [id], onDelete: Cascade)
   user              User                   @relation("UserAlertNotifications", fields: [userId], references: [id])
+  recipient         User?                  @relation("UserAlertNotificationRecipients", fields: [recipientId], references: [id]) // Missing relation
   
   @@index([alertId, status])
   @@index([userId, status])
@@ -1251,6 +1302,8 @@ model MobileNotification {
   userId            String
   childId           String?
   deviceId          String?
+  relatedEntityId   String?                // Missing field
+  relatedEntityType String?                // Type of related entity
   type              MobileNotificationType
   title             String
   message           String
@@ -1258,6 +1311,7 @@ model MobileNotification {
   priority          NotificationPriority   @default(NORMAL)
   scheduled         Boolean                @default(false)
   scheduledFor      DateTime?
+  scheduledAt       DateTime?              // Scheduled time for notification
   sent              Boolean                @default(false)
   sentAt            DateTime?
   delivered         Boolean                @default(false)
@@ -1266,6 +1320,7 @@ model MobileNotification {
   openedAt          DateTime?
   actionTaken       String?                // Action taken by user
   expiresAt         DateTime?
+  metadata          Json?                  // Additional metadata for notification
   createdAt         DateTime               @default(now())
   user              User                   @relation("UserMobileNotifications", fields: [userId], references: [id])
   child             Child?                 @relation(fields: [childId], references: [id])
@@ -1568,6 +1623,7 @@ model MembershipPackage {
   id                String                 @id @default(cuid())
   name              String
   description       String?
+  packageType       String?                // Type of membership package
   price             Float
   duration          Int                    // Duration in days
   benefits          Json                   // List of benefits
@@ -2752,8 +2808,20 @@ model DiscountCode {
   clickCount        Int                    @default(0) // Added missing field
   stripePromotionCodeId String?            // Added missing field
   isActive          Boolean                @default(true)
+  venueSpecific     Boolean                @default(false)   // Missing field
+  applicableVenues  Json?                  // Which venues this applies to
   applicableProducts Json?                 // Which products/plans this applies to
   restrictedUsers   Json?                  // Users who cannot use this code
+  userRestrictions  Json?                  // User restrictions for this code
+  allowedUserRoles  Json?                  // Allowed user roles for this code
+  allowedCountries  Json?                  // Allowed countries for this code
+  allowedStates     Json?                  // Allowed states for this code
+  allowedZipCodes   Json?                  // Allowed ZIP codes for this code
+  campaignName      String?                // Associated campaign name
+  affiliateId       String?                // Associated affiliate ID
+  autoApplyConditions Json?                // Auto-apply conditions
+  restrictToNewUsers Boolean               @default(false)
+  restrictToFirstTime Boolean              @default(false) // Restrict to first-time users only
   createdBy         String?
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
@@ -2868,7 +2936,19 @@ model EmailPreferences {
   frequency         EmailFrequency         @default(IMMEDIATE)
   unsubscribedAt    DateTime?
   unsubscribeReason String?
+  language          String?                @default("en")
+  preferredTime     String?                // Preferred time for emails
+  lastUpdated       DateTime?              // Last updated timestamp
   updatedAt         DateTime               @updatedAt
+  emailEnabled      Boolean                @default(true)    // Missing field
+  alertEmails       Boolean                @default(true)    // Missing field
+  featureUpdates    Boolean                @default(true)    // Missing field
+  eventReminders    Boolean                @default(true)    // Missing field
+  monthlyReport     Boolean                @default(true)    // Missing field
+  securityEmails    Boolean                @default(true)    // Missing field
+  welcomeSequence   Boolean                @default(true)    // Missing field
+  timeZone          String?                @default("UTC")   // Missing field
+  unsubscribeToken  String?                @unique          // Missing field
   user              User                   @relation("UserEmailPreferences", fields: [userId], references: [id])
   
   @@map("email_preferences")
@@ -2892,10 +2972,49 @@ model EmailLog {
   unsubscribedAt    DateTime?
   metadata          Json?
   user              User?                  @relation("UserEmailLogs", fields: [userId], references: [id])
+  automationExecution EmailAutomationExecution? // Missing opposite relation
   
   @@index([userId, sentAt])
   @@index([email, sentAt])
   @@map("email_logs")
+}
+
+model EmailNotification {
+  id                String                 @id @default(cuid())
+  userId            String
+  email             String
+  recipientEmail    String                 // Recipient email address
+  subject           String
+  content           String
+  status            EmailStatus            @default(SENT)
+  sentAt            DateTime               @default(now())
+  deliveredAt       DateTime?
+  openedAt          DateTime?
+  clickedAt         DateTime?
+  metadata          Json?
+  user              User                   @relation("UserEmailNotifications", fields: [userId], references: [id])
+  
+  @@index([userId, sentAt])
+  @@index([email, status])
+  @@map("email_notifications")
+}
+
+model EmailTemplate {
+  id                String                 @id @default(cuid())
+  name              String
+  templateType      EmailTemplateType      @default(CUSTOM)
+  category          EmailCategory          @default(GENERAL)
+  subject           String
+  content           String                 // HTML content
+  isActive          Boolean                @default(true)
+  createdBy         String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  creator           User                   @relation("UserEmailTemplates", fields: [createdBy], references: [id])
+  automationRules   EmailAutomationRule[]
+  
+  @@index([templateType, category])
+  @@map("email_templates")
 }
 
 model EmailSegment {
@@ -2911,6 +3030,7 @@ model EmailSegment {
   creator           User                   @relation("UserEmailSegments", fields: [createdBy], references: [id])
   members           EmailSegmentMember[]
   campaigns         EmailCampaign[]
+  automationRules   EmailAutomationRule[]  // Missing relation
   
   @@index([isActive, lastUpdated])
   @@map("email_segments")
@@ -2935,6 +3055,9 @@ model EmailCampaign {
   subject           String
   content           String                 // HTML content
   segmentId         String?
+  emailSegmentId    String?                // Missing field
+  targetSegment     String?                // Missing field
+  segmentFilters    Json?                  // Missing field
   status            CampaignStatus         @default(DRAFT)
   scheduledAt       DateTime?
   sentAt            DateTime?
@@ -2944,6 +3067,14 @@ model EmailCampaign {
   clickedCount      Int                    @default(0)
   bouncedCount      Int                    @default(0)
   unsubscribedCount Int                    @default(0)
+  isRecurring       Boolean                @default(false)
+  recurrencePattern Json?                  // Recurrence pattern for campaigns
+  priority          Int                    @default(1)
+  trackOpens        Boolean                @default(true)
+  trackClicks       Boolean                @default(true) // Track click events
+  maxRecipients     Int?                   // Maximum number of recipients
+  rateLimitPerHour  Int?                   // Rate limit per hour for sending
+  sendImmediately   Boolean                @default(false) // Send immediately flag
   createdBy         String
   approvedBy        String?
   approvedAt        DateTime?
@@ -2964,14 +3095,28 @@ model EmailAutomationRule {
   description       String?
   trigger           EmailTrigger
   conditions        Json                   // Conditions for the rule
+  triggerConditions Json?                  // Missing field
+  stopConditions    Json?                  // Stop conditions for the rule
   actions           Json                   // Actions to perform
+  delay             Int?                   // Missing field (in minutes)
+  maxSends          Int?                   // Missing field
   isActive          Boolean                @default(true)
   priority          Int                    @default(1)
+  sendOnWeekends    Boolean                @default(true)
+  sendTimeStart     String?                // Start time for sending emails
+  sendTimeEnd       String?                // End time for sending emails
+  timezone          String?                @default("UTC") // Timezone for scheduling
+  userSegment       Json?                  // User segment targeting
+  segmentFilters    Json?                  // Segment filter criteria
   createdBy         String
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
   creator           User                   @relation("UserAutomationRules", fields: [createdBy], references: [id])
   executions        EmailAutomationExecution[]
+  templateId        String?                // Template ID
+  template          EmailTemplate?         @relation(fields: [templateId], references: [id]) // Missing relation
+  emailSegmentId    String?                // Email segment ID
+  emailSegment      EmailSegment?          @relation(fields: [emailSegmentId], references: [id]) // Missing relation
   
   @@index([isActive, priority])
   @@map("email_automation_rules")
@@ -2987,13 +3132,95 @@ model EmailAutomationExecution {
   completedAt       DateTime?
   errorMessage      String?
   metadata          Json?
+  scheduledAt       DateTime?              // Missing field
   createdAt         DateTime               @default(now())
   rule              EmailAutomationRule    @relation(fields: [ruleId], references: [id])
   user              User                   @relation("UserAutomationExecutions", fields: [userId], references: [id])
+  emailLogId        String?                @unique // Email log ID
+  emailLog          EmailLog?              @relation(fields: [emailLogId], references: [id]) // Missing relation
   
   @@index([ruleId, createdAt])
   @@index([userId, status])
   @@map("email_automation_executions")
+}
+
+
+
+// Missing Models Referenced in Code
+
+model KnowledgeBaseArticle {
+  id                String                 @id @default(cuid())
+  title             String
+  content           String
+  slug              String                 @unique
+  category          String
+  isPublished       Boolean                @default(false)
+  authorId          String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  author            User                   @relation("UserKnowledgeBaseArticles", fields: [authorId], references: [id])
+  feedback          ArticleFeedback[]
+  
+  @@index([category, isPublished])
+  @@map("knowledge_base_articles")
+}
+
+model ArticleFeedback {
+  id                String                 @id @default(cuid())
+  articleId         String
+  userId            String?
+  rating            Int                    // 1-5 rating
+  comment           String?
+  isHelpful         Boolean
+  createdAt         DateTime               @default(now())
+  article           KnowledgeBaseArticle   @relation(fields: [articleId], references: [id])
+  user              User?                  @relation("UserArticleFeedback", fields: [userId], references: [id])
+  
+  @@index([articleId, rating])
+  @@map("article_feedback")
+}
+
+model ChatMessage {
+  id                String                 @id @default(cuid())
+  sessionId         String
+  senderId          String
+  content           String
+  messageType       String                 @default("text")
+  isFromAgent       Boolean                @default(false)
+  createdAt         DateTime               @default(now())
+  session           SupportChatSession     @relation(fields: [sessionId], references: [id])
+  sender            User                   @relation("UserChatMessages", fields: [senderId], references: [id])
+  
+  @@index([sessionId, createdAt])
+  @@map("chat_messages")
+}
+
+model SupportTicketMessage {
+  id                String                 @id @default(cuid())
+  ticketId          String
+  senderId          String
+  content           String
+  isFromAgent       Boolean                @default(false)
+  createdAt         DateTime               @default(now())
+  ticket            SupportTicket          @relation(fields: [ticketId], references: [id])
+  sender            User                   @relation("UserTicketMessages", fields: [senderId], references: [id])
+  
+  @@index([ticketId, createdAt])
+  @@map("support_ticket_messages")
+}
+
+model SupportTicketTimeline {
+  id                String                 @id @default(cuid())
+  ticketId          String
+  actionType        String
+  description       String
+  performedBy       String
+  createdAt         DateTime               @default(now())
+  ticket            SupportTicket          @relation(fields: [ticketId], references: [id])
+  performer         User                   @relation("UserTicketTimeline", fields: [performedBy], references: [id])
+  
+  @@index([ticketId, createdAt])
+  @@map("support_ticket_timeline")
 }
 
 // Support Center Models
@@ -3022,6 +3249,8 @@ model SupportTicket {
   venue             Venue?                 @relation("VenueSupportTickets", fields: [venueId], references: [id])
   agent             SupportAgent?          @relation("AgentSupportTickets", fields: [assignedTo], references: [id])
   chatSessions      SupportChatSession[]
+  messages          SupportTicketMessage[] // Missing relation
+  timeline          SupportTicketTimeline[] // Missing relation
   
   @@index([status, priority])
   @@index([userId, createdAt])
@@ -3063,6 +3292,7 @@ model SupportChatSession {
   ticket            SupportTicket?         @relation(fields: [ticketId], references: [id])
   user              User                   @relation("UserChatSessions", fields: [userId], references: [id])
   agent             SupportAgent?          @relation(fields: [agentId], references: [id])
+  messages          ChatMessage[]          // Missing relation
   
   @@index([userId, startedAt])
   @@index([agentId, status])
@@ -3074,19 +3304,35 @@ model SupportChatSession {
 model FamilyInvitation {
   id                String                 @id @default(cuid())
   inviterId         String
+  inviterUserId     String?                // Missing field (alias for inviterId)
   inviteeEmail      String
   inviteeId         String?                // If user already exists
+  inviteeName       String?                // Missing field
   relationship      FamilyRelationship
   permissions       Json?                  // Permissions to grant
+  permissionSet     Json?                  // Missing field (alias for permissions)
+  familyRole        String?                // Missing field
   message           String?
   token             String                 @unique
+  invitationToken   String?                @unique // Missing field (alias for token)
+  linkedChildrenIds String[]               // Missing field
   status            InvitationStatus       @default(PENDING)
   expiresAt         DateTime
   sentAt            DateTime               @default(now())
   acceptedAt        DateTime?
+  acceptedBy        String?                // Missing field
+  acceptanceIpAddress String?              // IP address of acceptance
+  acceptanceUserAgent String?              // User agent of acceptance
+  invitationMessage String?                // Custom invitation message
+  ipAddress         String?                // IP address of inviter
+  revokedAt         DateTime?              // Time when invitation was revoked
+  revokedBy         String?                // User who revoked the invitation
+  revokeReason      String?                // Reason for revoking invitation
+  userAgent         String?                // User agent string
   declinedAt        DateTime?
   inviter           User                   @relation("UserSentInvitations", fields: [inviterId], references: [id])
   invitee           User?                  @relation("UserReceivedInvitations", fields: [inviteeId], references: [id])
+  linkedChildren    Child[]                // Missing relation
   
   @@index([inviterId, status])
   @@index([inviteeEmail, status])
@@ -3102,8 +3348,19 @@ model FamilyMember {
   joinedAt          DateTime               @default(now())
   leftAt            DateTime?
   invitedBy         String?
+  invitationId      String?                // ID of the invitation used to join
   notes             String?
+  displayName       String?                // Display name for the family member
+  familyOwnerId     String?                // Owner of the family
+  familyRole        String?                // Role in the family
+  canViewAllChildren Boolean               @default(false)
+  canEditChildren   Boolean                @default(false)
+  canCheckInOut     Boolean                @default(false)
+  canPurchaseMedia  Boolean                @default(false)
+  canViewPhotos     Boolean                @default(false) // Can view photos
+  isBlocked         Boolean                @default(false)
   family            User                   @relation("UserFamilyMemberships", fields: [familyId], references: [id])
+  familyOwner       User?                  @relation("UserFamilyOwnerships", fields: [familyOwnerId], references: [id])
   member            User                   @relation("UserFamilyMembers", fields: [memberId], references: [id])
   permissions       FamilyPermission[]     @relation("FamilyMemberPermissions")
   childAccess       ChildAccess[]          @relation("FamilyMemberChildAccess")
@@ -3127,7 +3384,14 @@ model FamilyPermission {
   revokedAt         DateTime?
   revokedBy         String?
   conditions        Json?                  // Conditions for the permission
-  granter           User                   @relation("UserGrantedPermissions", fields: [granterId], references: [id])
+  grantedBy         String?                // User who granted the permission
+  receivedBy        String?                // User who received the permission
+  permissionLevel   String?                // Permission level
+  canRead           Boolean                @default(true)
+  canWrite          Boolean                @default(false)
+  canDelete         Boolean                @default(false)
+  canShare          Boolean                @default(false) // Can share permissions
+  grantor           User                   @relation("UserGrantedPermissions", fields: [granterId], references: [id])
   grantee           User                   @relation("UserReceivedPermissions", fields: [granteeId], references: [id])
   familyMember      FamilyMember?          @relation("FamilyMemberPermissions", fields: [familyMemberId], references: [id])
   
@@ -3149,8 +3413,20 @@ model ChildAccess {
   expiresAt         DateTime?
   revokedAt         DateTime?
   conditions        Json?                  // Access conditions
+  grantedBy         String?                // Missing field
+  accessedBy        String?                // Missing field
+  canViewPhotos     Boolean                @default(true)  // Missing field
+  canViewVideos     Boolean                @default(true)  // Missing field
+  canCheckInOut     Boolean                @default(true)  // Missing field
+  canViewProfile    Boolean                @default(true)  // Missing field
+  canEditProfile    Boolean                @default(false) // Can edit profile information
+  canViewLocation   Boolean                @default(true)  // Missing field
+  canReceiveAlerts  Boolean                @default(true)  // Missing field
+  canPurchaseMedia  Boolean                @default(true)  // Missing field
+  isBlocked         Boolean                @default(false) // Missing field
+  status            String?                // Missing field
   child             Child                  @relation("ChildFamilyMemberAccess", fields: [childId], references: [id])
-  granter           User                   @relation("UserChildAccessGrants", fields: [granterId], references: [id])
+  grantor           User                   @relation("UserChildAccessGrants", fields: [granterId], references: [id])
   grantee           User                   @relation("UserChildAccessReceived", fields: [granteeId], references: [id])
   familyMember      FamilyMember?          @relation("FamilyMemberChildAccess", fields: [familyMemberId], references: [id])
   
@@ -3297,6 +3573,7 @@ enum FaceRecognitionStatus {
   COMPLETED
   FAILED
   EXPIRED
+  ACTIVE
 }
 
 enum RecognitionEventType {
@@ -4520,6 +4797,13 @@ enum FamilyRelationship {
   GUARDIAN
   CAREGIVER
   OTHER
+  CUSTOM
+  FRIEND
+  NANNY
+  BABYSITTER
+  TEACHER
+  EMERGENCY_CONTACT
+  RELATIVE
 }
 
 enum InvitationStatus {
@@ -4528,6 +4812,9 @@ enum InvitationStatus {
   DECLINED
   EXPIRED
   CANCELLED
+  REVOKED
+  WAITING
+  UNDER_REVIEW
 }
 
 enum FamilyMemberStatus {
@@ -4545,6 +4832,19 @@ enum FamilyPermissionType {
   PHOTO_ACCESS
   LOCATION_TRACKING
   FULL_ACCESS
+  CHECK_IN_OUT
+  PURCHASE_MEDIA
+  VIEW_REPORTS
+  MANAGE_FAMILY
+  MAKE_PAYMENTS
+  VIEW_CHILD
+  EDIT_CHILD
+  TRACK_LOCATION
+  VIEW_MEDIA
+  DOWNLOAD_MEDIA
+  AUTHORIZE_PICKUP
+  EMERGENCY_ACCESS
+  CUSTOM_PERMISSION
 }
 
 enum PermissionResourceType {
@@ -4554,6 +4854,11 @@ enum PermissionResourceType {
   ALERT
   LOCATION
   ALL
+  VIDEO
+  FAMILY
+  EMERGENCY_CONTACT
+  REPORT
+  PAYMENT
 }
 
 enum ChildAccessLevel {
@@ -4561,4 +4866,39 @@ enum ChildAccessLevel {
   LIMITED_ACCESS
   FULL_ACCESS
   EMERGENCY_ONLY
+  BASIC
+  CUSTOM
+  BLOCKED
+  RESTRICTED
+  FULL
+}
+
+enum EmailTemplateType {
+  CUSTOM
+  SYSTEM
+  ONBOARDING
+  NOTIFICATION
+  MARKETING
+  TRANSACTIONAL
+  NEWSLETTER
+}
+
+enum EmailCategory {
+  GENERAL
+  WELCOME
+  VERIFICATION
+  ALERTS
+  REPORTS
+  PROMOTIONS
+  SUPPORT
+}
+
+enum EmergencyContactType {
+  PRIMARY
+  SECONDARY
+  MEDICAL
+  GUARDIAN
+  FAMILY
+  FRIEND
+  OTHER
 }

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
             verifiedBy: session.user.id,
             notes: notes || groupNotes,
             location: {
-              area: location || 'Main Entrance',
+              area: typeof location === 'string' ? location : 'Main Entrance',
               coordinates: { x: 0, y: 0 },
               metadata: {
                 ...metadata,

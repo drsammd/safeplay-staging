@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
         floorPlan: { venueId }
       },
       include: {
-        zoneConfig: true,
+        configuration: true,
         zoneAnalytics: {
           orderBy: { date: 'desc' },
           take: 30 // Last 30 days
@@ -255,7 +255,7 @@ async function generateOptimizationRecommendations(zones: any[], optimizationTyp
 async function generateCapacityOptimizations(zone: any) {
   const optimizations = [];
   const analytics = zone.zoneAnalytics || [];
-  const capacity = zone.zoneConfig?.maxCapacity || 0;
+  const capacity = zone.configuration?.maxCapacity || 0;
 
   if (analytics.length > 0) {
     const avgUtilization = analytics.reduce((sum: number, a: any) => sum + a.utilizationRate, 0) / analytics.length;
@@ -392,7 +392,7 @@ async function generateFlowOptimizations(zone: any) {
 
     // Bottleneck detection
     const peakOccupancyEvents = occupancyHistory.filter((h: any) => 
-      h.occupancyCount > (zone.zoneConfig?.maxCapacity || 0) * 0.8
+      h.occupancyCount > (zone.configuration?.maxCapacity || 0) * 0.8
     );
 
     if (peakOccupancyEvents.length > occupancyHistory.length * 0.3) {
@@ -577,7 +577,7 @@ async function generateTechnologyOptimizations(zone: any) {
   const optimizations = [];
 
   // Smart monitoring system
-  if (!zone.zoneConfig?.alertThresholds || Object.keys(zone.zoneConfig.alertThresholds).length === 0) {
+  if (!zone.configuration?.alertThresholds || Object.keys(zone.configuration.alertThresholds).length === 0) {
     optimizations.push({
       id: `smart_monitoring_${zone.id}`,
       type: 'technology',
@@ -606,7 +606,7 @@ async function generateTechnologyOptimizations(zone: any) {
   }
 
   // Access control optimization
-  if (zone.zoneConfig?.isRestrictedAccess && (!zone.accessRules || zone.accessRules.length === 0)) {
+  if (zone.configuration?.isRestrictedAccess && (!zone.accessRules || zone.accessRules.length === 0)) {
     optimizations.push({
       id: `access_control_${zone.id}`,
       type: 'technology',
@@ -784,7 +784,7 @@ async function calculateOptimizationScores(zones: any[]) {
 // Implementation helper functions
 async function applyCapacityOptimization(zoneId: string, parameters: any, userId: string) {
   // Update zone configuration with new capacity settings
-  return await prisma.zoneConfiguration.upsert({
+  return await prisma.configurationuration.upsert({
     where: { zoneId },
     update: {
       maxCapacity: parameters.newCapacity,

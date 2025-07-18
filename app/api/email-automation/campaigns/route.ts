@@ -20,18 +20,16 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const status = searchParams.get('status') as CampaignStatus;
-    const campaignType = searchParams.get('campaignType'); // EmailCampaignType enum doesn't exist
     const search = searchParams.get('search') || undefined;
 
     const skip = (page - 1) * limit;
     const where: any = {};
 
     if (status) where.status = status;
-    if (campaignType) where.campaignType = campaignType;
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } }
+        { subject: { contains: search, mode: 'insensitive' } }
       ];
     }
 
@@ -41,17 +39,11 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
         include: {
-          template: {
-            select: { id: true, name: true }
-          },
           creator: {
             select: { id: true, name: true, email: true }
           },
           approver: {
             select: { id: true, name: true, email: true }
-          },
-          _count: {
-            select: { emailLogs: true }
           }
         },
         orderBy: { createdAt: 'desc' }
@@ -87,11 +79,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name,
-      description,
       subject,
-      templateId,
-      customContent,
-      campaignType,
+      content,
       targetSegment,
       emailSegmentId,
       segmentFilters,
@@ -107,34 +96,20 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!name || !campaignType || (!templateId && !customContent)) {
+    if (!name || !content) {
       return NextResponse.json(
         { error: 'Missing required fields' }, 
         { status: 400 }
       );
     }
 
-    // Validate template exists if templateId provided
-    if (templateId) {
-      const template = await prisma.emailTemplate.findUnique({
-        where: { id: templateId }
-      });
-      if (!template) {
-        return NextResponse.json(
-          { error: 'Template not found' }, 
-          { status: 400 }
-        );
-      }
-    }
+    // Template validation removed - no emailTemplate model exists
 
     const campaign = await prisma.emailCampaign.create({
       data: {
         name,
-        description,
         subject,
-        templateId,
-        customContent,
-        campaignType,
+        content,
         status: CampaignStatus.DRAFT,
         targetSegment,
         emailSegmentId,
@@ -151,7 +126,6 @@ export async function POST(request: NextRequest) {
         createdBy: session.user.id
       },
       include: {
-        template: true,
         creator: {
           select: { id: true, name: true, email: true }
         }

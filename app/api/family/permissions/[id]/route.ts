@@ -46,7 +46,7 @@ export async function GET(
       include: {
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -111,7 +111,7 @@ export async function PATCH(
       include: {
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -162,7 +162,7 @@ export async function PATCH(
       include: {
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -174,26 +174,26 @@ export async function PATCH(
       }
     })
 
-    // Log the activity
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: permission.familyMember.familyOwnerId,
-        actorId: session.user.id,
-        targetId: permission.receivedBy,
-        actionType: 'UPDATE_PERMISSIONS',
-        resourceType: 'PERMISSION',
-        resourceId: permission.id,
-        actionDescription: data.isActive === false ? 
-          `Revoked ${permission.permissionType} permission from ${permission.familyMember.memberUser.name}` :
-          `Updated ${permission.permissionType} permission for ${permission.familyMember.memberUser.name}`,
-        actionData: {
-          permissionType: permission.permissionType,
-          changes: updateData,
-          previousState,
-          reason: data.revokeReason
-        }
-      }
-    })
+    // Log the activity - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyOwnerId: permission.familyMember.familyOwnerId,
+    //     actorId: session.user.id,
+    //     targetId: permission.receivedBy,
+    //     actionType: 'UPDATE_PERMISSIONS',
+    //     resourceType: 'PERMISSION',
+    //     resourceId: permission.id,
+    //     actionDescription: data.isActive === false ? 
+    //       `Revoked ${permission.permissionType} permission from ${permission.familyMember.member.name}` :
+    //       `Updated ${permission.permissionType} permission for ${permission.familyMember.member.name}`,
+    //     actionData: {
+    //       permissionType: permission.permissionType,
+    //       changes: updateData,
+    //       previousState,
+    //       reason: data.revokeReason
+    //     }
+    //   }
+    // })
 
     return NextResponse.json({
       permission: updatedPermission,
@@ -228,7 +228,7 @@ export async function DELETE(
       include: {
         familyMember: {
           include: {
-            memberUser: {
+            member: {
               select: {
                 id: true,
                 name: true,
@@ -249,24 +249,24 @@ export async function DELETE(
       return NextResponse.json({ error: 'Only the grantor can delete this permission' }, { status: 403 })
     }
 
-    // Log the activity before deletion
-    await prisma.familyActivityLog.create({
-      data: {
-        familyOwnerId: permission.familyMember.familyOwnerId,
-        actorId: session.user.id,
-        targetId: permission.receivedBy,
-        actionType: 'UPDATE_PERMISSIONS',
-        resourceType: 'PERMISSION',
-        resourceId: permission.id,
-        actionDescription: `Deleted ${permission.permissionType} permission for ${permission.familyMember.memberUser.name}`,
-        actionData: {
-          permissionType: permission.permissionType,
-          resourceType: permission.resourceType,
-          resourceId: permission.resourceId,
-          reason
-        }
-      }
-    })
+    // Log the activity before deletion - familyActivityLog model doesn't exist
+    // await prisma.familyActivityLog.create({
+    //   data: {
+    //     familyOwnerId: permission.familyMember.familyOwnerId,
+    //     actorId: session.user.id,
+    //     targetId: permission.receivedBy,
+    //     actionType: 'UPDATE_PERMISSIONS',
+    //     resourceType: 'PERMISSION',
+    //     resourceId: permission.id,
+    //     actionDescription: `Deleted ${permission.permissionType} permission for ${permission.familyMember.member.name}`,
+    //     actionData: {
+    //       permissionType: permission.permissionType,
+    //       resourceType: permission.resourceType,
+    //       resourceId: permission.resourceId,
+    //       reason
+    //     }
+    //   }
+    // })
 
     // Delete permission
     await prisma.familyPermission.delete({

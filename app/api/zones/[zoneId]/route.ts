@@ -40,7 +40,7 @@ export async function GET(
             }
           }
         },
-        zoneConfig: true,
+        configuration: true,
         accessRules: {
           where: { isActive: true },
           orderBy: { priority: 'asc' }
@@ -67,7 +67,7 @@ export async function GET(
             id: true,
             name: true,
             type: true,
-            zoneConfig: {
+            configuration: {
               select: {
                 maxCapacity: true,
                 isRestrictedAccess: true
@@ -166,7 +166,7 @@ export async function GET(
     // Calculate current status
     const latestCapacity = zone.capacityRecords?.[0];
     const currentOccupancy = latestCapacity?.currentOccupancy ?? 0;
-    const maxCapacity = zone.zoneConfig?.maxCapacity ?? 0;
+    const maxCapacity = zone.configuration?.maxCapacity ?? 0;
     const utilizationRate = maxCapacity > 0 ? (currentOccupancy / maxCapacity) * 100 : 0;
 
     // Get recent activity summary
@@ -292,7 +292,7 @@ export async function PUT(
 
       // Update configuration if provided
       if (configuration) {
-        await tx.zoneConfiguration.upsert({
+        await tx.configurationuration.upsert({
           where: { zoneId },
           update: {
             ...(configuration.maxCapacity !== undefined && { maxCapacity: configuration.maxCapacity }),
@@ -360,7 +360,7 @@ export async function PUT(
             venueId: true
           }
         },
-        zoneConfig: true,
+        configuration: true,
         accessRules: {
           where: { isActive: true }
         },

@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
     let whereClause: any = {
       OR: [
-        { familyId: session.user.id },
+        { familyOwnerId: session.user.id },
         { memberId: session.user.id }
       ]
     }
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     const familyMembers = await prisma.familyMember.findMany({
       where: whereClause,
       include: {
-        family: {
+        familyOwner: {
           select: {
             id: true,
             name: true,
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
     const transformedMembers = familyMembers.map(transformMember)
 
     // Separate into families I own vs families I'm a member of
-    const ownedFamilies = transformedMembers.filter(member => member.familyId === session.user.id)
+    const ownedFamilies = transformedMembers.filter(member => member.familyOwnerId === session.user.id)
     const memberOfFamilies = transformedMembers.filter(member => member.memberId === session.user.id)
 
     return NextResponse.json({
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const data = updateMemberSchema.extend({
-      memberUserId: z.string(),
+      memberId: z.string(),
       familyRole: z.enum([
         'SPOUSE', 'GRANDPARENT', 'SIBLING', 'RELATIVE', 'FRIEND', 
         'NANNY', 'BABYSITTER', 'TEACHER', 'GUARDIAN', 'EMERGENCY_CONTACT', 'CUSTOM'
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
 
     // Check if member user exists
     const memberUser = await prisma.user.findUnique({
-      where: { id: data.memberUserId }
+      where: { id: data.memberId }
     })
 
     if (!memberUser) {
@@ -220,9 +220,9 @@ export async function POST(request: NextRequest) {
     // Check if family relationship already exists
     const existingMember = await prisma.familyMember.findUnique({
       where: {
-        familyId_memberId: {
-          familyId: session.user.id,
-          memberId: data.memberUserId
+        familyOwnerId_memberId: {
+          familyOwnerId: session.user.id,
+          memberId: data.memberId
         }
       }
     })
@@ -234,8 +234,8 @@ export async function POST(request: NextRequest) {
     // Create family member - using only fields that exist in schema
     const familyMember = await prisma.familyMember.create({
       data: {
-        familyId: session.user.id,
-        memberId: data.memberUserId,
+        familyOwnerId: session.user.id,
+        memberId: data.memberId,
         relationship: data.familyRole, // Map familyRole to relationship enum
         notes: data.notes,
         invitedBy: session.user.id
@@ -251,18 +251,18 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Log the activity (simplified for now)
+    // Log the activity (simplified for now) - familyActivityLog model doesn't exist
     try {
-      await prisma.familyActivityLog.create({
-        data: {
-          familyId: session.user.id,
-          actorId: session.user.id,
-          targetId: data.memberUserId,
-          actionType: 'INVITE_MEMBER',
-          actionDescription: `Added ${memberUser.name} as family member`,
-          resourceId: familyMember.id
-        }
-      })
+      // await prisma.familyActivityLog.create({
+      //   data: {
+      //     familyOwnerId: session.user.id,
+      //     actorId: session.user.id,
+      //     targetId: data.memberId,
+      //     actionType: 'INVITE_MEMBER',
+      //     actionDescription: `Added ${memberUser.name} as family member`,
+      //     resourceId: familyMember.id
+      //   }
+      // })
     } catch (error) {
       console.log('Activity log creation failed:', error)
       // Don't fail the request if activity log fails
