@@ -18,6 +18,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const childId = searchParams.get('childId');
     const venueId = searchParams.get('venueId');
+    // Define temporary type for build compatibility
+    type EmergencyContactType = string;
+    
     const contactType = searchParams.get('contactType') as EmergencyContactType | null;
 
     let where: any = {

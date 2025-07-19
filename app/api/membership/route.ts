@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { MembershipStatus, MembershipTier } from '@prisma/client';
+import { MembershipStatus } from '@prisma/client';
+// import { MembershipTier } from '@prisma/client'; // Type not available in current schema
 
 export const dynamic = 'force-dynamic';
 
