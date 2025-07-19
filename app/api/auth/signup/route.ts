@@ -1,7 +1,7 @@
 
 /**
- * SafePlay Fixed Signup API Route v1.5.21
- * CRITICAL: Comprehensive Payment-Account Sync Fix
+ * SafePlay Fixed Signup API Route v1.5.33-alpha.9
+ * CRITICAL: FREE PLAN Data Validation Fix
  * 
  * FIXES:
  * - Ensures proper user creation and database transactions
@@ -10,6 +10,9 @@
  * - CRITICAL v1.5.21: Fixed payment-account sync issue
  * - Enhanced validation to prevent validation failures after payment success
  * - Improved rollback mechanisms to prevent charging users without accounts
+ * - CRITICAL v1.5.33-alpha.9: Fixed FREE PLAN data validation issues
+ * - Conditional address validation based on plan type (FREE vs PAID)
+ * - Default homeAddress handling for FREE PLAN users
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -25,6 +28,7 @@ import { stripe } from "@/lib/stripe/config";
 export const dynamic = "force-dynamic";
 
 // Enhanced validation schema with better error handling
+// CRITICAL v1.5.33-alpha.9 FIX: FREE PLAN data validation support
 const signupSchema = z.object({
   email: z.preprocess((val) => {
     if (typeof val === "string") return val.trim().toLowerCase();
@@ -59,7 +63,7 @@ const signupSchema = z.object({
   homeAddress: z.preprocess((val) => {
     if (typeof val === "string") return val.trim();
     return String(val || "").trim();
-  }, z.string().min(5, "Home address must be at least 5 characters")),
+  }, z.string()),
   
   homeAddressValidation: z.preprocess((val) => {
     // CRITICAL v1.5.21 FIX: Handle null/undefined homeAddressValidation safely
@@ -104,6 +108,23 @@ const signupSchema = z.object({
   homeAddressFields: z.any().optional(),
   billingAddressFields: z.any().optional(),
   debugMetadata: z.any().optional(),
+}).refine((data) => {
+  // CRITICAL v1.5.33-alpha.9 FIX: Conditional address validation for FREE vs PAID plans
+  const isFreeOrNoPlan = !data.selectedPlan || 
+                         data.selectedPlan.amount === 0 || 
+                         data.selectedPlan.planType === "FREE" || 
+                         data.selectedPlan.billingInterval === "free";
+  
+  // For FREE PLAN users, homeAddress is not required
+  if (isFreeOrNoPlan) {
+    return true;
+  }
+  
+  // For PAID PLAN users, homeAddress must be at least 5 characters
+  return data.homeAddress && data.homeAddress.trim().length >= 5;
+}, {
+  message: "Home address is required for paid plans and must be at least 5 characters",
+  path: ["homeAddress"]
 });
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
@@ -181,7 +202,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     role, 
     agreeToTerms, 
     agreeToPrivacy, 
-    homeAddress,
+    homeAddress: originalHomeAddress,
     homeAddressValidation,
     useDifferentBillingAddress,
     billingAddress,
@@ -190,6 +211,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     subscriptionData,
     paymentMethodId
   } = validation.data;
+  
+  // Create mutable homeAddress for FREE PLAN handling
+  let homeAddress = originalHomeAddress;
 
   // Normalize email
   const email = rawEmail.toLowerCase().trim();
@@ -259,9 +283,26 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
       throw new Error('Missing required fields for account creation');
     }
     
-    // Validate clean account initializer requirements
-    if (!homeAddress || homeAddress.trim().length < 5) {
-      throw new Error('Invalid home address for account creation');
+    // CRITICAL v1.5.33-alpha.9 FIX: Conditional address validation for FREE vs PAID plans
+    const isFreeOrNoPlan = !selectedPlan || 
+                           selectedPlan.amount === 0 || 
+                           selectedPlan.planType === "FREE" || 
+                           selectedPlan.billingInterval === "free";
+    
+    if (isFreeOrNoPlan) {
+      console.log(`🆓 FIXED SIGNUP API [${debugId}]: FREE PLAN detected - address validation skipped`);
+      // For FREE PLAN users, provide a default home address if empty
+      if (!homeAddress || homeAddress.trim().length === 0) {
+        // Use a safe default that won't interfere with functionality
+        homeAddress = "Not Provided (Free Plan)";
+        console.log(`🆓 FIXED SIGNUP API [${debugId}]: Set default homeAddress for FREE PLAN user`);
+      }
+    } else {
+      // For PAID PLAN users, validate address requirements
+      if (!homeAddress || homeAddress.trim().length < 5) {
+        throw new Error('Invalid home address for account creation');
+      }
+      console.log(`💳 FIXED SIGNUP API [${debugId}]: PAID PLAN address validation passed`);
     }
     
     // For paid plans, validate payment requirements
@@ -286,7 +327,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     });
   }
 
-  // CRITICAL v1.5.21: Process payment ONLY after pre-validation passes
+  // CRITICAL v1.5.31: Process payment ONLY after pre-validation passes
   let stripeCustomer = null;
   let stripeSubscription = null;
   let finalSubscriptionData = subscriptionData;
@@ -302,8 +343,8 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     });
     
     try {
-      // Create Stripe customer first
-      console.log(`🏪 FIXED SIGNUP API [${debugId}]: Creating Stripe customer...`);
+      // CRITICAL v1.5.31 FIX: Create single Stripe customer for signup (subscription service will not create duplicate)
+      console.log(`🏪 FIXED SIGNUP API [${debugId}]: Creating Stripe customer for signup...`);
       stripeCustomer = await stripe.customers.create({
         email,
         name,
@@ -313,7 +354,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
           debugId
         }
       });
-      
       console.log(`✅ FIXED SIGNUP API [${debugId}]: Stripe customer created:`, {
         customerId: stripeCustomer.id,
         email: stripeCustomer.email
@@ -461,10 +501,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         prismaInstance: tx, // Pass transaction context to prevent foreign key constraint issues
         // CRITICAL FIX: Pass selected plan information to create correct subscription
         selectedPlan: selectedPlan,
-        // Pass Stripe information from payment processing
+        // CRITICAL v1.5.31 FIX: Pass Stripe information from payment processing to prevent duplicate customer creation
         stripeCustomerId: stripeCustomer?.id || finalSubscriptionData?.stripeCustomerId,
         stripeSubscriptionId: stripeSubscription?.id || finalSubscriptionData?.stripeSubscriptionId,
-        subscriptionMetadata: finalSubscriptionData
+        subscriptionMetadata: finalSubscriptionData,
+        // CRITICAL v1.5.31 FIX: Pass existing customer to prevent duplicate creation
+        existingStripeCustomerId: stripeCustomer?.id
       });
 
       if (!cleanInitResult.success) {
@@ -479,7 +521,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
       console.log(`✅ FIXED SIGNUP API [${debugId}]: Clean account initialization successful`);
       
-      // CRITICAL v1.5.21: Verify account creation integrity within transaction
+      // CRITICAL v1.5.33: Enhanced account creation integrity verification
       console.log(`🔍 FIXED SIGNUP API [${debugId}]: Verifying account creation integrity...`);
       
       // Check that user exists
@@ -488,9 +530,15 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         throw new Error('User creation verification failed - user not found');
       }
       
-      // Check that subscription exists
+      // CRITICAL FIX v1.5.33: Proper subscription verification with correct model name
       const subscriptionCheck = await tx.userSubscription.findFirst({ where: { userId: newUser.id } });
       if (!subscriptionCheck) {
+        console.error(`🚨 FIXED SIGNUP API [${debugId}]: Subscription verification failed - checking transaction state`);
+        
+        // Additional debugging for subscription creation
+        const allSubscriptions = await tx.userSubscription.findMany({ where: { userId: newUser.id } });
+        console.error(`🚨 FIXED SIGNUP API [${debugId}]: Found ${allSubscriptions.length} subscriptions in transaction`);
+        
         throw new Error('Subscription creation verification failed - subscription not found');
       }
       
@@ -500,7 +548,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         throw new Error('Legal agreements creation verification failed - no agreements found');
       }
       
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: Account creation integrity verified`);
+      console.log(`✅ FIXED SIGNUP API [${debugId}]: Account creation integrity verified - User: ${userCheck.email}, Subscription: ${subscriptionCheck.planType}, Legal: ${legalAgreementsCheck} agreements`);
       console.log(`✅ FIXED SIGNUP API [${debugId}]: User setup completed: ${newUser.email}`);
       return newUser;
     }, {

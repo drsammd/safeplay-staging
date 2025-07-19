@@ -1,7 +1,7 @@
 
 # SafePlay™ - Advanced Child Safety & Biometric Monitoring Platform
 
-![SafePlay Version](https://img.shields.io/badge/version-1.5.30-blue.svg)
+![SafePlay Version](https://img.shields.io/badge/version-1.5.33--alpha.1-blue.svg)
 ![Status](https://img.shields.io/badge/status-production--ready-green.svg)
 ![License](https://img.shields.io/badge/license-proprietary-red.svg)
 

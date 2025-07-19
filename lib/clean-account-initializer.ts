@@ -34,6 +34,8 @@ export interface CleanAccountConfig {
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
   subscriptionMetadata?: any;
+  // CRITICAL v1.5.31 FIX: Add existing customer ID to prevent duplicate creation
+  existingStripeCustomerId?: string;
 }
 
 export interface AccountInitializationResult {
@@ -73,11 +75,22 @@ export class CleanAccountInitializer {
     };
 
     try {
-      // Step 1: Validate this is not a demo account (demo accounts are handled separately)
+      // Step 1: Handle demo accounts specially but still create essential structures
       const isDemoAccount = demoAccountProtection.isDemoAccount(config.email);
       
       if (isDemoAccount) {
-        result.warnings.push('Demo account detected - skipping clean initialization');
+        console.log(`🎭 CLEAN INIT [${initId}]: Demo account detected - creating essential structures only`);
+        
+        // CRITICAL FIX v1.5.32: Demo accounts still need subscriptions and legal agreements
+        const currentTime = new Date();
+        
+        // Create legal agreements for demo accounts
+        await this.createLegalAgreements(config, currentTime);
+        
+        // Create subscription for demo accounts (they still need subscriptions to function)
+        await this.createCleanSubscription(config, currentTime);
+        
+        result.warnings.push('Demo account detected - created essential structures only');
         result.success = true;
         result.isClean = true;
         return result;
@@ -207,9 +220,12 @@ export class CleanAccountInitializer {
 
   /**
    * Create clean subscription for new account
-   * CRITICAL v1.5.19 FIX: Now handles both FREE and PAID plans properly
+   * CRITICAL v1.5.33 FIX: Enhanced error handling and validation
    */
   private async createCleanSubscription(config: CleanAccountConfig, currentTime: Date): Promise<void> {
+    const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`💳 CLEAN SUBSCRIPTION [${subscriptionId}]: Starting subscription creation for: ${config.email}`);
+    
     const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
     
     // Determine plan type and subscription settings based on selected plan
@@ -221,7 +237,7 @@ export class CleanAccountInitializer {
     
     // CRITICAL FIX: Use selected plan information if provided
     if (config.selectedPlan) {
-      console.log(`💳 CLEAN SUBSCRIPTION: Processing selected plan:`, {
+      console.log(`💳 CLEAN SUBSCRIPTION [${subscriptionId}]: Processing selected plan:`, {
         planName: config.selectedPlan.name || 'Unknown',
         planType: config.selectedPlan.planType || 'FREE',
         billingInterval: config.selectedPlan.billingInterval || 'free',
@@ -250,14 +266,14 @@ export class CleanAccountInitializer {
         // Calculate trial end date (7 days)
         currentPeriodEnd = new Date(currentTime.getTime() + 7 * 24 * 60 * 60 * 1000);
         
-        console.log(`✅ CLEAN SUBSCRIPTION: Setting up PAID plan:`, {
+        console.log(`✅ CLEAN SUBSCRIPTION [${subscriptionId}]: Setting up PAID plan:`, {
           planType,
           autoRenew,
           subscriptionStatus,
           trialEndDate: currentPeriodEnd
         });
       } else {
-        console.log(`✅ CLEAN SUBSCRIPTION: Setting up FREE plan:`, {
+        console.log(`✅ CLEAN SUBSCRIPTION [${subscriptionId}]: Setting up FREE plan:`, {
           planType,
           autoRenew,
           subscriptionStatus
@@ -278,26 +294,77 @@ export class CleanAccountInitializer {
       ...(config.stripeSubscriptionId && { stripeSubscriptionId: config.stripeSubscriptionId }),
     };
     
-    console.log(`💾 CLEAN SUBSCRIPTION: Creating subscription with data:`, subscriptionData);
+    console.log(`💾 CLEAN SUBSCRIPTION [${subscriptionId}]: Creating subscription with data:`, subscriptionData);
     
-    await dbInstance.userSubscription.create({
-      data: subscriptionData,
-    });
-    
-    console.log(`✅ CLEAN SUBSCRIPTION: Subscription created successfully for plan: ${planType}`);
+    try {
+      // CRITICAL v1.5.33 FIX: Enhanced subscription creation with error handling
+      const createdSubscription = await dbInstance.userSubscription.create({
+        data: subscriptionData,
+      });
+      
+      console.log(`✅ CLEAN SUBSCRIPTION [${subscriptionId}]: Subscription created successfully:`, {
+        subscriptionId: createdSubscription.id,
+        planType: createdSubscription.planType,
+        status: createdSubscription.status,
+        userId: createdSubscription.userId
+      });
+      
+      // CRITICAL v1.5.33 FIX: Immediate verification that subscription was created
+      const verifySubscription = await dbInstance.userSubscription.findUnique({
+        where: { id: createdSubscription.id }
+      });
+      
+      if (!verifySubscription) {
+        throw new Error(`Subscription verification failed - subscription not found after creation`);
+      }
+      
+      console.log(`✅ CLEAN SUBSCRIPTION [${subscriptionId}]: Subscription verified successfully`);
+      
+    } catch (error) {
+      console.error(`🚨 CLEAN SUBSCRIPTION [${subscriptionId}]: Subscription creation failed:`, error);
+      console.error(`🚨 CLEAN SUBSCRIPTION [${subscriptionId}]: Attempted data:`, subscriptionData);
+      throw new Error(`Subscription creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   /**
    * Create clean parent account structure (NO children, NO family members)
+   * CRITICAL v1.5.33 FIX: Enhanced protection against demo data contamination
    */
   private async createCleanParentStructure(config: CleanAccountConfig): Promise<void> {
-    console.log(`👨‍👩‍👧‍👦 PARENT STRUCTURE: Creating clean parent structure for: ${config.email}`);
+    const structureId = `parent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log(`👨‍👩‍👧‍👦 PARENT STRUCTURE [${structureId}]: Creating clean parent structure for: ${config.email}`);
+    
     const dbInstance = config.prismaInstance || prisma; // Use transaction context if provided
     
-    // For parent accounts, we create NO children and NO family members
-    // This ensures a completely clean start
+    // CRITICAL v1.5.33 FIX: Explicit validation to prevent demo data contamination
+    const isDemoAccount = demoAccountProtection.isDemoAccount(config.email);
     
-    // Create email preferences
+    if (!isDemoAccount) {
+      console.log(`🛡️ PARENT STRUCTURE [${structureId}]: NON-DEMO ACCOUNT - Ensuring absolutely NO demo data`);
+      
+      // For non-demo parent accounts, we create NO children and NO family members
+      // This ensures a completely clean start with zero demo data
+      
+      // CRITICAL: Double-check that no demo data exists before proceeding
+      const existingChildren = await dbInstance.child.count({
+        where: { parentId: config.userId }
+      });
+      
+      const existingFamilyMembers = await dbInstance.familyMember.count({
+        where: { familyId: config.userId }
+      });
+      
+      if (existingChildren > 0 || existingFamilyMembers > 0) {
+        console.error(`🚨 PARENT STRUCTURE [${structureId}]: CRITICAL - Demo data contamination detected!`);
+        console.error(`🚨 PARENT STRUCTURE [${structureId}]: Children: ${existingChildren}, Family: ${existingFamilyMembers}`);
+        throw new Error(`Demo data contamination detected for non-demo account: ${config.email}`);
+      }
+      
+      console.log(`✅ PARENT STRUCTURE [${structureId}]: Verified no demo data contamination`);
+    }
+    
+    // Create email preferences (only safe, non-demo data)
     await dbInstance.emailPreferences.create({
       data: {
         userId: config.userId,
@@ -308,7 +375,7 @@ export class CleanAccountInitializer {
       }
     });
     
-    console.log(`✅ PARENT STRUCTURE: Clean parent structure created (no children, no family)`);
+    console.log(`✅ PARENT STRUCTURE [${structureId}]: Clean parent structure created (no children, no family, no demo data)`);
   }
 
   /**

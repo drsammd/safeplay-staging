@@ -184,6 +184,7 @@ export class DemoAccountProtection {
 
   /**
    * CRITICAL: Prevent demo data injection into non-demo accounts
+   * ENHANCED v1.5.31: Additional safeguards against contamination
    */
   public async preventDemoDataInjection(userId: string, email: string, dataType: string): Promise<boolean> {
     const preventionId = `prevent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -192,8 +193,27 @@ export class DemoAccountProtection {
     console.log(`🛡️ DEMO PROTECTION [${preventionId}]: Data type: ${dataType}`);
     
     try {
-      const isDemoAccount = this.isDemoAccount(email);
-      const allowsDemoData = this.allowsDemoData(email);
+      // CRITICAL v1.5.31 FIX: Enhanced email validation to prevent bypass attempts
+      const normalizedEmail = email.toLowerCase().trim();
+      
+      // Check for email variations that might be used to bypass protection
+      const emailVariations = [
+        normalizedEmail,
+        normalizedEmail.replace(/\+.*@/, '@'), // Remove plus addressing
+        normalizedEmail.replace(/\.(?=.*@)/, ''), // Remove dots before @
+      ];
+      
+      let isDemoAccount = false;
+      let allowsDemoData = false;
+      
+      for (const emailVariation of emailVariations) {
+        if (this.isDemoAccount(emailVariation)) {
+          isDemoAccount = true;
+          allowsDemoData = this.allowsDemoData(emailVariation);
+          console.log(`🔍 DEMO PROTECTION [${preventionId}]: Found demo account match: ${emailVariation}`);
+          break;
+        }
+      }
       
       if (isDemoAccount && allowsDemoData) {
         console.log(`✅ DEMO PROTECTION [${preventionId}]: Demo account - allowing demo data`);
@@ -205,8 +225,19 @@ export class DemoAccountProtection {
         return false;
       }
 
-      // For non-demo accounts, NEVER allow demo data
-      console.log(`❌ DEMO PROTECTION [${preventionId}]: Non-demo account - BLOCKING demo data injection`);
+      // CRITICAL v1.5.31 FIX: For non-demo accounts, ABSOLUTELY NEVER allow demo data
+      console.log(`🚨 DEMO PROTECTION [${preventionId}]: NON-DEMO ACCOUNT - STRICTLY BLOCKING demo data injection`);
+      console.log(`🚨 DEMO PROTECTION [${preventionId}]: Account: ${normalizedEmail}, DataType: ${dataType}`);
+      
+      // Log this attempt for security monitoring
+      await this.logContamination(userId, normalizedEmail, {
+        children: 0,
+        familyMembers: 0,
+        venues: 0,
+        attemptedDataType: dataType,
+        preventionAction: 'BLOCKED_DEMO_DATA_INJECTION'
+      } as any);
+      
       return false;
 
     } catch (error) {

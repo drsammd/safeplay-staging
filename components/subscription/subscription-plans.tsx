@@ -112,17 +112,17 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
   const getPlanColor = (planType: string) => {
     switch (planType) {
       case 'FREE':
-        return 'border-green-200 hover:border-green-300 ring-2 ring-green-100 bg-green-50/30';
+        return 'border-green-200 hover:border-green-400 hover:shadow-md ring-2 ring-green-100 bg-green-50/30 transition-all duration-200';
       case 'BASIC':
-        return 'border-blue-200 hover:border-blue-300';
+        return 'border-blue-200 hover:border-blue-400 hover:shadow-md transition-all duration-200';
       case 'PREMIUM':
-        return 'border-purple-200 hover:border-purple-300 ring-2 ring-purple-100';
+        return 'border-purple-200 hover:border-purple-400 hover:shadow-md ring-2 ring-purple-100 transition-all duration-200';
       case 'FAMILY':
-        return 'border-amber-200 hover:border-amber-300';
+        return 'border-amber-200 hover:border-amber-400 hover:shadow-lg hover:ring-2 hover:ring-amber-200 transition-all duration-200';
       case 'LIFETIME':
-        return 'border-green-200 hover:border-green-300';
+        return 'border-green-200 hover:border-green-400 hover:shadow-md transition-all duration-200';
       default:
-        return 'border-gray-200 hover:border-gray-300';
+        return 'border-gray-200 hover:border-gray-400 hover:shadow-md transition-all duration-200';
     }
   };
 
@@ -339,7 +339,7 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
               <CardFooter className="mt-auto">
                 <Button
                   className={`w-full transition-all duration-200 ${
-                    currentPlanId === plan.id ? 'opacity-60 cursor-not-allowed' : ''
+                    currentPlanId === plan.id ? 'opacity-60 cursor-not-allowed' : 'hover:scale-105 hover:shadow-md'
                   } text-sm sm:text-base px-2 sm:px-4 py-2 leading-tight overflow-hidden`}
                   style={{
                     fontSize: 'clamp(0.75rem, 2.5vw, 1rem)',
@@ -347,8 +347,8 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
                     whiteSpace: 'nowrap',
                     textOverflow: 'ellipsis'
                   }}
-                  variant={currentPlanId === plan.id ? 'secondary' : plan.planType === 'FAMILY' ? 'default' : 'outline'}
-                  disabled={loading || downgradeLoading || currentPlanId === plan.id}
+                  variant={currentPlanId === plan.id ? 'secondary' : 'outline'}
+                  disabled={downgradeLoading || currentPlanId === plan.id}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -373,7 +373,7 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
                       return;
                     }
                     
-                    if (loading || downgradeLoading) {
+                    if (downgradeLoading) {
                       console.log('ℹ️ BUTTON CLICK: Currently loading, ignoring click');
                       return;
                     }
@@ -443,7 +443,7 @@ export default function SubscriptionPlans({ onSelectPlan, currentPlanId, loading
                   }}
                 >
                   <span className="truncate">
-                    {loading || downgradeLoading ? 'Processing...' : 
+                    {downgradeLoading ? 'Processing...' : 
                      currentPlanId === plan.id ? 'Current Plan' : 
                      plan.planType === 'FREE' && hasActiveSubscription ? 'Start Free Now!' :
                      plan.planType === 'FREE' ? 'Start Free Now!' :

@@ -71,16 +71,37 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`🏪 SUBSCRIPTION DEMO COMPAT [${debugId}]: Creating real Stripe customer for signup...`);
         
-        // Create Stripe customer first
-        const customer = await stripe.customers.create({
-          email,
-          name,
-          metadata: {
-            signupFlow: 'true',
-            platform: 'safeplay',
-            compatibilityMode: 'demo'
-          }
+        // CRITICAL v1.5.31 FIX: Check for existing customer before creating to prevent duplicates
+        console.log(`🔍 SUBSCRIPTION DEMO COMPAT [${debugId}]: Checking for existing Stripe customer by email...`);
+        
+        const existingCustomers = await stripe.customers.list({
+          email: email,
+          limit: 1
         });
+        
+        let customer;
+        if (existingCustomers.data.length > 0) {
+          customer = existingCustomers.data[0];
+          console.log(`✅ SUBSCRIPTION DEMO COMPAT [${debugId}]: Found existing Stripe customer:`, {
+            customerId: customer.id,
+            email: customer.email
+          });
+        } else {
+          console.log(`🏪 SUBSCRIPTION DEMO COMPAT [${debugId}]: Creating new Stripe customer...`);
+          customer = await stripe.customers.create({
+            email,
+            name,
+            metadata: {
+              signupFlow: 'true',
+              platform: 'safeplay',
+              compatibilityMode: 'demo'
+            }
+          });
+          console.log(`✅ SUBSCRIPTION DEMO COMPAT [${debugId}]: New Stripe customer created:`, {
+            customerId: customer.id,
+            email: customer.email
+          });
+        }
 
         // Attach payment method if provided
         if (paymentMethodId) {

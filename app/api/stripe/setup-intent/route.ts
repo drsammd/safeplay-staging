@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     let customerId = userSub?.stripeCustomerId;
 
     if (!customerId) {
-      // Create customer if doesn't exist
+      // Get user info first
       const user = await prisma.user.findUnique({
         where: { id: session.user.id }
       });
@@ -32,13 +32,29 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'User not found' }, { status: 404 });
       }
 
-      const customer = await stripe.customers.create({
+      // CRITICAL v1.5.31 FIX: Check for existing customer before creating to prevent duplicates
+      console.log('🔍 SETUP INTENT: Checking for existing Stripe customer by email...');
+      
+      const existingCustomers = await stripe.customers.list({
         email: user.email,
-        name: user.name || '',
-        metadata: {
-          userId: session.user.id
-        }
+        limit: 1
       });
+      
+      let customer;
+      if (existingCustomers.data.length > 0) {
+        customer = existingCustomers.data[0];
+        console.log('✅ SETUP INTENT: Found existing Stripe customer:', customer.id);
+      } else {
+        console.log('🏪 SETUP INTENT: Creating new Stripe customer...');
+        customer = await stripe.customers.create({
+          email: user.email,
+          name: user.name || '',
+          metadata: {
+            userId: session.user.id
+          }
+        });
+        console.log('✅ SETUP INTENT: New Stripe customer created:', customer.id);
+      }
 
       customerId = customer.id;
 

@@ -42,15 +42,38 @@ export class SubscriptionService {
         }
       }
 
-      console.log('🏪 SERVICE: Creating new Stripe customer...');
-      const customer = await stripe.customers.create({
-        email,
-        name,
-        metadata: {
-          userId,
-          platform: 'safeplay'
-        }
+      // CRITICAL v1.5.31 FIX: Check for existing Stripe customer by email to prevent duplicates
+      console.log('🔍 SERVICE: Checking for existing Stripe customer by email...');
+      
+      const existingCustomers = await stripe.customers.list({
+        email: email,
+        limit: 1
       });
+      
+      let customer;
+      if (existingCustomers.data.length > 0) {
+        customer = existingCustomers.data[0];
+        console.log('✅ SERVICE: Found existing Stripe customer:', {
+          customerId: customer.id,
+          email: customer.email,
+          created: new Date(customer.created * 1000)
+        });
+        console.log('🚨 SERVICE: DUPLICATE PREVENTION - Using existing customer instead of creating new one');
+      } else {
+        console.log('🏪 SERVICE: No existing customer found, creating new Stripe customer...');
+        customer = await stripe.customers.create({
+          email,
+          name,
+          metadata: {
+            userId,
+            platform: 'safeplay'
+          }
+        });
+        console.log('✅ SERVICE: New Stripe customer created:', {
+          customerId: customer.id,
+          email: customer.email
+        });
+      }
 
       console.log('✅ SERVICE: Stripe customer created:', {
         customerId: customer.id,
@@ -89,7 +112,8 @@ export class SubscriptionService {
     userId: string, 
     priceId: string, 
     paymentMethodId?: string,
-    discountCodeId?: string
+    discountCodeId?: string,
+    existingStripeCustomerId?: string // CRITICAL v1.5.31 FIX: Accept existing customer ID to prevent duplicates
   ) {
     try {
       console.log('=== CREATE SUBSCRIPTION DEBUG START ===');
@@ -216,7 +240,20 @@ export class SubscriptionService {
 
       let stripeCustomerId: string;
 
-      if (!userSub?.stripeCustomerId) {
+      // CRITICAL v1.5.31 FIX: Use existing customer ID if provided to prevent duplicate creation
+      if (existingStripeCustomerId) {
+        stripeCustomerId = existingStripeCustomerId;
+        console.log('✅ SERVICE: Using provided existing customer ID (DUPLICATE PREVENTION):', stripeCustomerId);
+        
+        // Update database with customer ID if subscription exists
+        if (userSub) {
+          await prisma.userSubscription.update({
+            where: { userId },
+            data: { stripeCustomerId }
+          });
+          console.log('📝 SERVICE: Updated subscription record with existing customer ID');
+        }
+      } else if (!userSub?.stripeCustomerId) {
         console.log('🏪 SERVICE: Creating customer in createSubscription...');
         // Create customer first if it doesn't exist
         const customer = await this.createCustomer(userId, user.email, user.name);

@@ -48,21 +48,6 @@ export function SecureSessionProvider({ children }: { children: React.ReactNode 
       timestamp: new Date().toISOString()
     });
 
-    // Clear any existing demo session data that might cause contamination
-    try {
-      // Clear localStorage demo data
-      localStorage.removeItem('mySafePlay_demoMode');
-      localStorage.removeItem('mySafePlay_demoUser');
-      localStorage.removeItem('mySafePlay_demoSession');
-      
-      // Clear sessionStorage demo data
-      sessionStorage.removeItem('mySafePlay_demoMode');
-      sessionStorage.removeItem('mySafePlay_demoUser');
-      sessionStorage.removeItem('mySafePlay_demoSession');
-    } catch (error) {
-      console.warn('🔒 SECURE SESSION PROVIDER: Error clearing demo session data:', error);
-    }
-
     // Update session data based on NextAuth session
     if (nextAuthStatus === 'loading') {
       setIsLoading(true);
@@ -87,6 +72,23 @@ export function SecureSessionProvider({ children }: { children: React.ReactNode 
       console.log('🔒 SECURE SESSION PROVIDER: No authenticated session');
       setSessionData(null);
       setIsLoading(false);
+      
+      // Only clear demo session data when session is actually unauthenticated
+      // This prevents interference with legitimate authenticated sessions during navigation
+      try {
+        console.log('🧹 SECURE SESSION PROVIDER: Clearing demo session data (unauthenticated state)');
+        // Clear localStorage demo data
+        localStorage.removeItem('mySafePlay_demoMode');
+        localStorage.removeItem('mySafePlay_demoUser');
+        localStorage.removeItem('mySafePlay_demoSession');
+        
+        // Clear sessionStorage demo data
+        sessionStorage.removeItem('mySafePlay_demoMode');
+        sessionStorage.removeItem('mySafePlay_demoUser');
+        sessionStorage.removeItem('mySafePlay_demoSession');
+      } catch (error) {
+        console.warn('🔒 SECURE SESSION PROVIDER: Error clearing demo session data:', error);
+      }
     }
   }, [nextAuthSession, nextAuthStatus, refreshTrigger]);
 

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -16,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-type RegistrationStep = 'basic-info' | 'address-collection' | 'plan-selection' | 'payment-setup' | 'account-creation' | 'verification-prompt' | 'complete';
+type RegistrationStep = 'basic-info' | 'plan-selection' | 'payment-setup' | 'account-creation' | 'verification-prompt';
 
 interface SelectedPlan {
   id: string;
@@ -64,14 +64,26 @@ export default function SignUpPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  // 🔧 FREE PLAN FIX v1.5.33-alpha.8: Auto-trigger account creation for FREE PLAN users
+  useEffect(() => {
+    console.log(`🆓 FREE PLAN FIX: Step changed to ${currentStep}, selected plan:`, selectedPlan);
+    
+    // If user reaches account-creation step with a FREE plan, automatically trigger account creation
+    if (currentStep === 'account-creation' && selectedPlan?.planType === 'FREE' && !isLoading && !error) {
+      console.log(`🆓 FREE PLAN FIX: Auto-triggering account creation for FREE plan user`);
+      
+      // Automatically call handleAccountCreation for FREE PLAN users
+      // Pass null as subscriptionData since FREE plans don't have payment/subscription data
+      handleAccountCreation(null, selectedPlan);
+    }
+  }, [currentStep, selectedPlan, isLoading, error]);
+
   const steps = [
     { key: 'basic-info', title: 'Basic Information', description: 'Create your account' },
-    { key: 'address-collection', title: 'Address Information', description: 'Verify your address' },
     { key: 'plan-selection', title: 'Choose Plan', description: 'Select subscription plan' },
-    { key: 'payment-setup', title: 'Payment Setup', description: 'Add payment method' },
+    { key: 'payment-setup', title: 'Payment & Address', description: 'Payment details and address' },
     { key: 'account-creation', title: 'Account Creation', description: 'Finalizing your account' },
-    { key: 'verification-prompt', title: 'Verification', description: 'Complete your profile' },
-    { key: 'complete', title: 'Complete', description: 'Welcome to SafePlay!' }
+    { key: 'verification-prompt', title: 'Account Created', description: 'Welcome to mySafePlay™!' }
   ];
 
   const getCurrentStepIndex = () => {
@@ -88,7 +100,7 @@ export default function SignUpPage() {
     setIsLoading(true);
     setError("");
 
-    // Validation
+    // Basic form validation
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       setIsLoading(false);
@@ -107,29 +119,111 @@ export default function SignUpPage() {
       return;
     }
 
-    // Check if email already exists
+    // CRITICAL FIX: Comprehensive email validation with multiple safeguards
+    console.log(`🔍 EMAIL VALIDATION v1.5.34: Starting email validation for: ${formData.email}`);
+    
     try {
+      // Pre-validation checks
+      if (!formData.email || !formData.email.trim()) {
+        setError("Email address is required");
+        setIsLoading(false);
+        return;
+      }
+
+      const emailToCheck = formData.email.trim().toLowerCase();
+      console.log(`🔍 EMAIL VALIDATION: Normalized email: ${emailToCheck}`);
+
+      // Set timeout for API call to prevent hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 10000); // 10 second timeout
+
+      console.log(`🔍 EMAIL VALIDATION: Making API call to /api/auth/check-email...`);
+      
       const response = await fetch("/api/auth/check-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email: formData.email }),
+        body: JSON.stringify({ email: emailToCheck }),
+        signal: controller.signal
       });
 
-      const data = await response.json();
+      clearTimeout(timeoutId);
+      
+      console.log(`🔍 EMAIL VALIDATION: API response received - Status: ${response.status}`);
 
-      if (data.exists) {
+      let data;
+      try {
+        data = await response.json();
+        console.log(`🔍 EMAIL VALIDATION: API response data:`, data);
+      } catch (parseError) {
+        console.error(`🚨 EMAIL VALIDATION: Failed to parse API response:`, parseError);
+        setError("Server error occurred. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check for API error response
+      if (!response.ok) {
+        console.error(`🚨 EMAIL VALIDATION: API returned error status ${response.status}:`, data);
+        const errorMessage = data?.error || data?.message || "Unable to verify email. Please try again.";
+        setError(errorMessage);
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate response structure
+      if (typeof data !== 'object' || data === null) {
+        console.error(`🚨 EMAIL VALIDATION: Invalid response structure:`, data);
+        setError("Server error occurred. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if email already exists
+      if (data.exists === true) {
+        console.log(`🚨 EMAIL VALIDATION: Email already exists: ${emailToCheck}`);
         setError("An account with this email already exists. Please use a different email or sign in instead.");
         setIsLoading(false);
         return;
       }
 
-      // Proceed to address collection
-      setCurrentStep('address-collection');
+      // Validate that we got a proper response
+      if (data.exists !== false) {
+        console.error(`🚨 EMAIL VALIDATION: Unexpected response structure - exists field:`, data.exists);
+        setError("Unable to verify email. Please try again.");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log(`✅ EMAIL VALIDATION: Email is available: ${emailToCheck}`);
+      
+      // Double-check: ensure we're not proceeding with an existing email
+      if (data.exists) {
+        console.error(`🚨 EMAIL VALIDATION: CRITICAL - Attempting to proceed with existing email!`);
+        setError("An account with this email already exists. Please use a different email or sign in instead.");
+        setIsLoading(false);
+        return;
+      }
+
+      // SAFE TO PROCEED: Email is available
+      setIsLoading(false);
+      setCurrentStep('plan-selection');
+      
     } catch (error: any) {
-      setError(error.message || "Something went wrong. Please try again.");
-    } finally {
+      console.error(`❌ EMAIL VALIDATION: Exception occurred:`, error);
+      
+      // Handle different types of errors
+      if (error.name === 'AbortError') {
+        setError("Email validation timed out. Please check your connection and try again.");
+      } else if (error.message?.includes('fetch')) {
+        setError("Network error occurred. Please check your connection and try again.");
+      } else {
+        setError(error.message || "Unable to verify email. Please try again.");
+      }
+      
       setIsLoading(false);
     }
   };
@@ -195,10 +289,12 @@ export default function SignUpPage() {
             amount
           });
 
-          // 🔧 CRITICAL FIX v1.5.8: Pass the plan object directly instead of relying on state
-          // If free plan, create account directly with the plan object
+          // 🔧 UX IMPROVEMENT v1.5.33-alpha.4: FREE PLAN users skip payment step entirely
+          // If free plan, skip payment-setup and go directly to account creation
           if (plan.planType === 'FREE') {
-            handleAccountCreation(null, planObject);
+            setCurrentStep('account-creation');
+            // Set the plan for later use in account creation
+            setSelectedPlan(planObject);
           } else {
             setCurrentStep('payment-setup');
           }
@@ -224,8 +320,12 @@ export default function SignUpPage() {
     setError("");
 
     try {
-      // 🔧 CRITICAL FIX v1.5.7: Pre-submission validation and form state verification
+      // 🔧 CRITICAL FIX v1.5.7 + UX IMPROVEMENT v1.5.33-alpha.4: Pre-submission validation and form state verification
       console.log(`🔧 SIGNUP FIX v1.5.7: === PRE-SUBMISSION VALIDATION ===`);
+      
+      // Determine if this is a FREE PLAN user (they skip address collection)
+      const isFreePlanUser = (planObject || selectedPlan)?.planType === 'FREE';
+      console.log(`🔧 UX IMPROVEMENT v1.5.33-alpha.4: Is FREE plan user: ${isFreePlanUser}`);
       
       // Validate form state is fully populated before proceeding
       if (!formData.name?.trim()) {
@@ -237,7 +337,8 @@ export default function SignUpPage() {
       if (!formData.password?.trim()) {
         throw new Error("Password is required");
       }
-      if (!formData.homeAddress?.trim()) {
+      // 🔧 UX IMPROVEMENT v1.5.33-alpha.4: Address is only required for paid plans (FREE plan users skip address collection)
+      if (!isFreePlanUser && !formData.homeAddress?.trim()) {
         throw new Error("Home address is required");
       }
       if (formData.agreeToTerms !== true) {
@@ -315,28 +416,32 @@ export default function SignUpPage() {
         password: String(formData.password || ""),
         role: String(formData.role || "PARENT"),
         
-        // 🔧 CRITICAL FIX: Triple-safe boolean conversion to prevent any type inconsistencies
-        agreeToTerms: !!(formData.agreeToTerms === true || formData.agreeToTerms === "true"),
-        agreeToPrivacy: !!(formData.agreeToPrivacy === true || formData.agreeToPrivacy === "true"),
-        useDifferentBillingAddress: !!(formData.useDifferentBillingAddress === true || formData.useDifferentBillingAddress === "true"),
+        // 🔧 CRITICAL FIX: Safe boolean conversion
+        agreeToTerms: !!(formData.agreeToTerms),
+        agreeToPrivacy: !!(formData.agreeToPrivacy),
+        useDifferentBillingAddress: !!(formData.useDifferentBillingAddress),
         
-        // Address fields - ensure they exist and are strings
-        homeAddress: String(formData.homeAddress || "").trim(),
-        homeAddressValidation: homeAddressValidation || null,
-        billingAddress: String(formData.billingAddress || "").trim(),
-        billingAddressValidation: billingAddressValidation || null,
+        // 🔧 UX IMPROVEMENT v1.5.33-alpha.4: Address fields - provide defaults for FREE plan users who skip address collection
+        homeAddress: isFreePlanUser ? "" : String(formData.homeAddress || "").trim(),
+        homeAddressValidation: isFreePlanUser ? null : (homeAddressValidation || null),
+        billingAddress: isFreePlanUser ? "" : String(formData.billingAddress || "").trim(),
+        billingAddressValidation: isFreePlanUser ? null : (billingAddressValidation || null),
         
         // 🔧 CRITICAL FIX v1.5.8: Use passed planObject parameter instead of state to avoid timing issues
         selectedPlan: planObject || selectedPlan || null,
         subscriptionData: subscriptionData || null,
         
-        // Address fields - ensure they exist with proper defaults
-        homeAddressFields: homeAddressFields || {
+        // 🔧 UX IMPROVEMENT v1.5.33-alpha.4: Address fields - provide defaults for FREE plan users
+        homeAddressFields: isFreePlanUser ? {
           street: "", city: "", state: "", zipCode: "", fullAddress: ""
-        },
-        billingAddressFields: billingAddressFields || {
+        } : (homeAddressFields || {
           street: "", city: "", state: "", zipCode: "", fullAddress: ""
-        },
+        }),
+        billingAddressFields: isFreePlanUser ? {
+          street: "", city: "", state: "", zipCode: "", fullAddress: ""
+        } : (billingAddressFields || {
+          street: "", city: "", state: "", zipCode: "", fullAddress: ""
+        }),
         
         // 🔍 DEBUG METADATA: Add debugging information
         debugMetadata: {
@@ -363,7 +468,8 @@ export default function SignUpPage() {
       if (typeof requestData.password !== 'string' || requestData.password.length === 0) {
         throw new Error("Invalid password field after preparation");
       }
-      if (typeof requestData.homeAddress !== 'string' || requestData.homeAddress.length === 0) {
+      // 🔧 UX IMPROVEMENT v1.5.33-alpha.4: Home address only required for paid plans
+      if (!isFreePlanUser && (typeof requestData.homeAddress !== 'string' || requestData.homeAddress.length === 0)) {
         throw new Error("Invalid home address field after preparation");
       }
       if (typeof requestData.agreeToTerms !== 'boolean' || requestData.agreeToTerms !== true) {
@@ -494,16 +600,42 @@ export default function SignUpPage() {
       console.log(`✅ SIGNUP SUCCESS [${attemptId}]: Attempt type: ${attemptType}`);
       console.log(`✅ SIGNUP SUCCESS [${attemptId}]: Response data keys:`, Object.keys(data || {}));
 
-      // Auto-login after successful account creation
+      // 🔧 DASHBOARD NAVIGATION FIX v1.5.33-alpha.6: Ensure proper authentication before proceeding
+      console.log(`🔐 AUTH FIX [${attemptId}]: === AUTO-LOGIN ATTEMPT ===`);
+      
       const signInResult = await signIn("credentials", {
         email: formData.email,
         password: formData.password,
         redirect: false,
       });
 
+      console.log(`🔐 AUTH FIX [${attemptId}]: SignIn result:`, {
+        error: signInResult?.error,
+        ok: signInResult?.ok,
+        status: signInResult?.status,
+        url: signInResult?.url
+      });
+
       if (signInResult?.error) {
-        console.error("Auto-login failed:", signInResult.error);
-        // Still proceed to success, user can login manually
+        console.error(`🚨 AUTH FIX [${attemptId}]: Auto-login failed:`, signInResult.error);
+        
+        // 🔧 CRITICAL FIX: Retry auto-login once more before failing
+        console.log(`🔐 AUTH FIX [${attemptId}]: Retrying auto-login...`);
+        
+        const retrySignInResult = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (retrySignInResult?.error) {
+          console.error(`🚨 AUTH FIX [${attemptId}]: Retry auto-login also failed:`, retrySignInResult.error);
+          throw new Error("Account created successfully, but automatic login failed. Please go to the sign-in page to access your account.");
+        }
+        
+        console.log(`✅ AUTH FIX [${attemptId}]: Retry auto-login successful`);
+      } else {
+        console.log(`✅ AUTH FIX [${attemptId}]: Initial auto-login successful`);
       }
 
       setCurrentStep('verification-prompt');
@@ -603,6 +735,14 @@ export default function SignUpPage() {
                 <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
                   Email Address
                 </label>
+                {error && error.toLowerCase().includes('email') && (
+                  <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm mb-2">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      {error}
+                    </div>
+                  </div>
+                )}
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center">
                     <Mail className="h-5 w-5 text-gray-400" />
@@ -614,7 +754,11 @@ export default function SignUpPage() {
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    className="block w-full pl-10 pr-3 py-3 border border-white/20 rounded-lg bg-white/5 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className={`block w-full pl-10 pr-3 py-3 border rounded-lg bg-white/5 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      error && error.toLowerCase().includes('email') 
+                        ? 'border-red-500/50 focus:ring-red-500' 
+                        : 'border-white/20'
+                    }`}
                     placeholder="Enter your email"
                   />
                 </div>
@@ -767,8 +911,20 @@ export default function SignUpPage() {
                 disabled={isLoading || !formData.agreeToTerms || !formData.agreeToPrivacy}
                 className="w-full btn-primary py-3 text-lg font-semibold disabled:opacity-50"
               >
-                {isLoading ? "Validating..." : "Continue to Address"}
-                <ArrowRight className="ml-2 h-5 w-5" />
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Validating Email...
+                  </span>
+                ) : (
+                  <>
+                    Continue to Plan Selection
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
               </button>
             </form>
 
@@ -784,110 +940,7 @@ export default function SignUpPage() {
           </div>
         );
 
-      case 'address-collection':
-        return (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">Address Information</h3>
-              <p className="text-gray-300">Verify your address for account security and service delivery</p>
-            </div>
-            
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg text-sm mb-6">
-                {error}
-              </div>
-            )}
 
-            <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); handleAddressSubmit(); }}>
-              {/* Home Address */}
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  <Home className="inline h-4 w-4 mr-2" />
-                  Home Address *
-                </label>
-                <AddressAutocomplete
-                  value={formData.homeAddress}
-                  onChange={(value) => handleAddressChange('homeAddress', value)}
-                  onValidationChange={setHomeAddressValidation}
-                  onFieldsChange={(fields) => handleAddressFieldsChange('homeAddress', fields)}
-                  placeholder="Start typing your address (e.g., 123 Main St, City, State)"
-                  required
-                  countryRestriction={['us', 'ca']}
-                  className="w-full"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Type your street address with city and state. Suggestions will appear as you type.
-                </p>
-              </div>
-
-              {/* Different Billing Address Checkbox */}
-              <div className="flex items-start space-x-3">
-                <Checkbox
-                  id="useDifferentBillingAddress"
-                  checked={formData.useDifferentBillingAddress}
-                  onCheckedChange={(checked) => 
-                    setFormData(prev => ({ ...prev, useDifferentBillingAddress: !!checked }))
-                  }
-                  className="mt-1"
-                />
-                <label htmlFor="useDifferentBillingAddress" className="text-sm text-white leading-relaxed">
-                  Use a different billing address for payments
-                </label>
-              </div>
-
-              {/* Billing Address (conditional) */}
-              {formData.useDifferentBillingAddress && (
-                <div>
-                  <label className="block text-sm font-medium text-white mb-2">
-                    <MapPin className="inline h-4 w-4 mr-2" />
-                    Billing Address *
-                  </label>
-                  <AddressAutocomplete
-                    value={formData.billingAddress}
-                    onChange={(value) => handleAddressChange('billingAddress', value)}
-                    onValidationChange={setBillingAddressValidation}
-                    onFieldsChange={(fields) => handleAddressFieldsChange('billingAddress', fields)}
-                    placeholder="Start typing your billing address (e.g., 456 Oak Ave, City, State)"
-                    required
-                    countryRestriction={['us', 'ca']}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">
-                    Type your billing address with city and state. Suggestions will appear as you type.
-                  </p>
-                </div>
-              )}
-
-              {/* Address Information Alert */}
-              <Alert className="bg-blue-900/30 border border-blue-400/20">
-                <MapPin className="h-4 w-4" />
-                <AlertDescription className="text-blue-100">
-                  <strong>Important:</strong> Your address information helps us verify your identity and ensure the safety of your children. This information is encrypted and stored securely.
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex gap-4">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  onClick={handleBackStep}
-                  className="flex-1 text-white border-white/20 hover:bg-white/10"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={!formData.homeAddress}
-                  className="flex-1 btn-primary"
-                >
-                  Continue to Plans
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </form>
-          </div>
-        );
 
       case 'plan-selection':
         return (
@@ -917,7 +970,7 @@ export default function SignUpPage() {
                 className="text-white border-white/20 hover:bg-white/10"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Address
+                Back to Basic Info
               </Button>
             </div>
           </div>
@@ -927,8 +980,8 @@ export default function SignUpPage() {
         return (
           <div className="bg-white/95 backdrop-blur-sm rounded-xl p-8 border border-white/20 shadow-xl">
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment Setup</h3>
-              <p className="text-gray-600">Complete your subscription to {selectedPlan?.name}</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Payment & Address Setup</h3>
+              <p className="text-gray-600">Complete your subscription to {selectedPlan?.name} and verify your address</p>
             </div>
 
             {error && (
@@ -937,42 +990,130 @@ export default function SignUpPage() {
               </div>
             )}
 
-            {selectedPlan && (
-              <div className="max-w-md mx-auto">
-                <PaymentSetup
-                  planId={selectedPlan.id}
-                  stripePriceId={selectedPlan.stripePriceId}
-                  billingInterval={selectedPlan.billingInterval}
-                  planName={selectedPlan.name}
-                  amount={selectedPlan.amount}
-                  onSuccess={handlePaymentSuccess}
-                  onError={(error) => setError(error)}
-                  prefilledBillingAddress={
-                    formData.useDifferentBillingAddress 
-                      ? formData.billingAddress 
-                      : formData.homeAddress
-                  }
-                  billingAddressValidation={
-                    formData.useDifferentBillingAddress 
-                      ? billingAddressValidation 
-                      : homeAddressValidation
-                  }
-                  prefilledBillingFields={
-                    formData.useDifferentBillingAddress
-                      ? billingAddressFields
-                      : homeAddressFields
-                  }
-                  userEmail={formData.email}
-                  userName={formData.name}
-                />
+            <div className="max-w-2xl mx-auto space-y-8">
+              {/* Address Section */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-gray-200">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Address Information</h4>
+                <p className="text-gray-600 mb-6">Verify your address for account security and service delivery</p>
+                
+                <div className="space-y-6">
+                  {/* Home Address */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Home className="inline h-4 w-4 mr-2" />
+                      Home Address *
+                    </label>
+                    <AddressAutocomplete
+                      value={formData.homeAddress}
+                      onChange={(value) => handleAddressChange('homeAddress', value)}
+                      onValidationChange={setHomeAddressValidation}
+                      onFieldsChange={(fields) => handleAddressFieldsChange('homeAddress', fields)}
+                      placeholder="Start typing your address (e.g., 123 Main St, City, State)"
+                      required
+                      countryRestriction={['us', 'ca']}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Type your street address with city and state. Suggestions will appear as you type.
+                    </p>
+                  </div>
+
+                  {/* Different Billing Address Checkbox */}
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="useDifferentBillingAddress"
+                      checked={formData.useDifferentBillingAddress}
+                      onCheckedChange={(checked) => 
+                        setFormData(prev => ({ ...prev, useDifferentBillingAddress: !!checked }))
+                      }
+                      className="mt-1"
+                    />
+                    <label htmlFor="useDifferentBillingAddress" className="text-sm text-gray-700 leading-relaxed">
+                      Use a different billing address for payments
+                    </label>
+                  </div>
+
+                  {/* Billing Address (conditional) */}
+                  {formData.useDifferentBillingAddress && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <MapPin className="inline h-4 w-4 mr-2" />
+                        Billing Address *
+                      </label>
+                      <AddressAutocomplete
+                        value={formData.billingAddress}
+                        onChange={(value) => handleAddressChange('billingAddress', value)}
+                        onValidationChange={setBillingAddressValidation}
+                        onFieldsChange={(fields) => handleAddressFieldsChange('billingAddress', fields)}
+                        placeholder="Start typing your billing address (e.g., 456 Oak Ave, City, State)"
+                        required
+                        countryRestriction={['us', 'ca']}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Type your billing address with city and state. Suggestions will appear as you type.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Address Information Alert */}
+                  <Alert className="bg-blue-50 border border-blue-200">
+                    <MapPin className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-700">
+                      <strong>Important:</strong> Your address information helps us verify your identity and ensure the safety of your children. This information is encrypted and stored securely.
+                    </AlertDescription>
+                  </Alert>
+                </div>
               </div>
-            )}
+
+              {/* Payment Section */}
+              {selectedPlan && formData.homeAddress && (
+                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-6 border border-gray-200">
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h4>
+                  <PaymentSetup
+                    planId={selectedPlan.id}
+                    stripePriceId={selectedPlan.stripePriceId}
+                    billingInterval={selectedPlan.billingInterval}
+                    planName={selectedPlan.name}
+                    amount={selectedPlan.amount}
+                    onSuccess={handlePaymentSuccess}
+                    onError={(error) => setError(error)}
+                    prefilledBillingAddress={
+                      formData.useDifferentBillingAddress 
+                        ? formData.billingAddress 
+                        : formData.homeAddress
+                    }
+                    billingAddressValidation={
+                      formData.useDifferentBillingAddress 
+                        ? billingAddressValidation 
+                        : homeAddressValidation
+                    }
+                    prefilledBillingFields={
+                      formData.useDifferentBillingAddress
+                        ? billingAddressFields
+                        : homeAddressFields
+                    }
+                    userEmail={formData.email}
+                    userName={formData.name}
+                  />
+                </div>
+              )}
+
+              {/* Validation Message */}
+              {!formData.homeAddress && (
+                <div className="text-center py-4">
+                  <p className="text-gray-600">
+                    Please complete your address information above to proceed with payment setup.
+                  </p>
+                </div>
+              )}
+            </div>
 
             <div className="mt-8 flex justify-center">
               <Button 
                 variant="outline" 
                 onClick={handleBackStep}
-                className="text-white border-white/20 hover:bg-white/10"
+                className="text-gray-700 border-gray-300 hover:bg-gray-100"
               >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Plan Selection
@@ -1056,7 +1197,7 @@ export default function SignUpPage() {
               <div>
                 <h3 className="text-2xl font-bold text-white mb-2">Account Created Successfully!</h3>
                 <p className="text-gray-300">
-                  Welcome to SafePlay! Your account has been set up and is ready to use.
+                  Welcome to mySafePlay™! For your protection, full account functionality will be available after you successfully complete identity verification.
                 </p>
               </div>
               
@@ -1080,8 +1221,43 @@ export default function SignUpPage() {
 
               <div className="space-y-3 mt-8">
                 <Button 
-                  onClick={() => {
-                    setCurrentStep('complete');
+                  onClick={async () => {
+                    // 🔧 DASHBOARD NAVIGATION FIX v1.5.33-alpha.7: Enhanced session verification
+                    console.log(`🚀 DASHBOARD NAV: Button clicked, role: ${formData.role}`);
+                    
+                    try {
+                      const targetPath = formData.role === 'PARENT' ? '/parent' : '/venue-admin';
+                      
+                      // Enhanced session verification before navigation
+                      console.log(`🔐 DASHBOARD NAV: Verifying session before navigation...`);
+                      
+                      const { getSession } = await import('next-auth/react');
+                      let currentSession = await getSession();
+                      
+                      if (!currentSession?.user) {
+                        console.log(`🔐 DASHBOARD NAV: No session found, waiting and retrying...`);
+                        // Wait a bit longer and retry session check
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        currentSession = await getSession();
+                      }
+                      
+                      if (currentSession?.user) {
+                        console.log(`✅ DASHBOARD NAV: Session verified, user: ${currentSession.user.email}`);
+                        console.log(`🚀 DASHBOARD NAV: Navigating to ${targetPath}`);
+                        
+                        // Use window.location for more reliable navigation
+                        window.location.href = targetPath;
+                      } else {
+                        console.error(`❌ DASHBOARD NAV: No valid session after retry`);
+                        throw new Error('Session verification failed');
+                      }
+                    } catch (error) {
+                      console.error('🚨 DASHBOARD NAV ERROR:', error);
+                      // Enhanced fallback with session restoration attempt
+                      const returnUrl = formData.role === 'PARENT' ? '/parent' : '/venue-admin';
+                      console.log(`🔄 DASHBOARD NAV: Falling back to signin with return URL: ${returnUrl}`);
+                      window.location.href = `/auth/signin?callbackUrl=${encodeURIComponent(returnUrl)}`;
+                    }
                   }}
                   className="w-full btn-primary"
                 >
@@ -1095,36 +1271,6 @@ export default function SignUpPage() {
                   Complete Identity Verification
                 </Button>
               </div>
-            </div>
-          </div>
-        );
-
-      case 'complete':
-        return (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-8 border border-white/20">
-            <div className="text-center space-y-6">
-              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white mb-2">Welcome to SafePlay!</h3>
-                <p className="text-gray-300">
-                  Your account is ready. You can now start using SafePlay to keep your children safe.
-                </p>
-              </div>
-
-              <Button 
-                onClick={() => {
-                  if (formData.role === 'PARENT') {
-                    router.push('/parent');
-                  } else {
-                    router.push('/venue-admin');
-                  }
-                }}
-                className="w-full btn-primary"
-              >
-                Go to Dashboard
-              </Button>
             </div>
           </div>
         );

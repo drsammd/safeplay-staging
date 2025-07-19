@@ -1,0 +1,20 @@
+
+#!/bin/bash
+
+# SafePlay Version Bump Script
+# Usage: ./version-bump
+
+echo "🚀 SafePlay Automatic Version Bump"
+echo "=================================="
+
+# Navigate to project directory
+cd "$(dirname "$0")"
+
+# Run the version bump script
+node scripts/bump-version.js
+
+echo ""
+echo "💡 To use this script:"
+echo "   ./version-bump"
+echo ""
+echo "📖 Current version can be found in the VERSION file"
