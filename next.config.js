@@ -33,3 +33,4 @@ const nextConfig = {
 
 module.exports = nextConfig;
 // Emergency deployment trigger Sun Jul 20 20:51:25 UTC 2025
+// EMERGENCY: Fixed Vercel build command - Sun Jul 20 20:53:36 UTC 2025
