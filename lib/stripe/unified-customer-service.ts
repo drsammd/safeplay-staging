@@ -213,21 +213,42 @@ export class UnifiedCustomerService {
         const existingCustomer = existingCustomers.data[0];
         console.log(`✅ UNIFIED CUSTOMER [${customerId}]: Found existing Stripe customer: ${existingCustomer.id}`);
         
-        // Update database with the found customer ID
-        await prisma.userSubscription.upsert({
-          where: { userId },
-          create: {
-            userId,
-            stripeCustomerId: existingCustomer.id,
-            planType: forFreePlan ? 'FREE' : 'BASIC',
-            status: 'ACTIVE',
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-          },
-          update: {
-            stripeCustomerId: existingCustomer.id,
+        // CRITICAL v1.5.40-alpha.16 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+        // to prevent foreign key constraint violations in transaction isolation
+        console.log('🚨 EMERGENCY FIX v1.5.40-alpha.16: Using explicit create/update instead of problematic upsert');
+        
+        try {
+          // First check if subscription already exists (should not in clean signup flow)
+          const existingSubscription = await prisma.userSubscription.findUnique({
+            where: { userId }
+          });
+          
+          if (existingSubscription) {
+            console.log('🔄 UNIFIED: Updating existing subscription record with customer ID');
+            await prisma.userSubscription.update({
+              where: { userId },
+              data: {
+                stripeCustomerId: existingCustomer.id,
+              }
+            });
+          } else {
+            console.log('💾 UNIFIED: Creating new subscription record with explicit create');
+            await prisma.userSubscription.create({
+              data: {
+                userId,
+                stripeCustomerId: existingCustomer.id,
+                planType: forFreePlan ? 'FREE' : 'BASIC',
+                status: 'ACTIVE',
+                currentPeriodStart: new Date(),
+                currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+              }
+            });
           }
-        });
+        } catch (dbError) {
+          console.error('🚨 EMERGENCY FIX: Database subscription operation failed:', dbError);
+          console.error('🚨 EMERGENCY FIX: This may indicate foreign key constraint violation');
+          throw new Error(`Database subscription creation failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+        }
         
         result.customer = existingCustomer;
         result.isNewCustomer = false;
@@ -254,21 +275,42 @@ export class UnifiedCustomerService {
 
       console.log(`✅ UNIFIED CUSTOMER [${customerId}]: New Stripe customer created: ${newCustomer.id}`);
 
-      // Step 4: Update database with new customer ID
-      await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          stripeCustomerId: newCustomer.id,
-          planType: forFreePlan ? 'FREE' : 'BASIC',
-          status: 'ACTIVE',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-        },
-        update: {
-          stripeCustomerId: newCustomer.id,
+      // CRITICAL v1.5.40-alpha.16 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // to prevent foreign key constraint violations in transaction isolation
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.16: Using explicit create/update for new customer instead of problematic upsert');
+      
+      try {
+        // First check if subscription already exists (should not in clean signup flow)
+        const existingSubscription = await prisma.userSubscription.findUnique({
+          where: { userId }
+        });
+        
+        if (existingSubscription) {
+          console.log('🔄 UNIFIED: Updating existing subscription record with new customer ID');
+          await prisma.userSubscription.update({
+            where: { userId },
+            data: {
+              stripeCustomerId: newCustomer.id,
+            }
+          });
+        } else {
+          console.log('💾 UNIFIED: Creating new subscription record with explicit create for new customer');
+          await prisma.userSubscription.create({
+            data: {
+              userId,
+              stripeCustomerId: newCustomer.id,
+              planType: forFreePlan ? 'FREE' : 'BASIC',
+              status: 'ACTIVE',
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+            }
+          });
         }
-      });
+      } catch (dbError) {
+        console.error('🚨 EMERGENCY FIX: Database subscription operation failed for new customer:', dbError);
+        console.error('🚨 EMERGENCY FIX: This may indicate foreign key constraint violation');
+        throw new Error(`Database subscription creation failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+      }
 
       result.customer = newCustomer;
       result.isNewCustomer = true;
@@ -331,25 +373,47 @@ export class UnifiedCustomerService {
 
       result.customer = customerResult.customer;
 
-      // Update subscription to FREE plan
-      const subscription = await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          stripeCustomerId: customerResult.customer.id,
-          planType: 'FREE',
-          status: 'ACTIVE',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
-        },
-        update: {
-          stripeCustomerId: customerResult.customer.id,
-          planType: 'FREE',
-          status: 'ACTIVE',
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+      // CRITICAL v1.5.40-alpha.16 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // to prevent foreign key constraint violations in transaction isolation
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.16: Using explicit create/update for FREE plan instead of problematic upsert');
+      
+      let subscription;
+      try {
+        // First check if subscription already exists (should not in clean signup flow)
+        const existingSubscription = await prisma.userSubscription.findUnique({
+          where: { userId }
+        });
+        
+        if (existingSubscription) {
+          console.log('🔄 UNIFIED: Updating existing subscription to FREE plan');
+          subscription = await prisma.userSubscription.update({
+            where: { userId },
+            data: {
+              stripeCustomerId: customerResult.customer.id,
+              planType: 'FREE',
+              status: 'ACTIVE',
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+            }
+          });
+        } else {
+          console.log('💾 UNIFIED: Creating new FREE plan subscription record with explicit create');
+          subscription = await prisma.userSubscription.create({
+            data: {
+              userId,
+              stripeCustomerId: customerResult.customer.id,
+              planType: 'FREE',
+              status: 'ACTIVE',
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+            }
+          });
         }
-      });
+      } catch (dbError) {
+        console.error('🚨 EMERGENCY FIX: Database subscription operation failed for FREE plan:', dbError);
+        console.error('🚨 EMERGENCY FIX: This may indicate foreign key constraint violation');
+        throw new Error(`Database subscription creation failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+      }
 
       result.subscription = subscription;
       result.success = true;
@@ -504,30 +568,52 @@ export class UnifiedCustomerService {
         throw new Error('Invalid date conversion - cannot proceed with database insertion');
       }
 
-      // Update database subscription with validated dates
-      const dbSubscription = await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          stripeCustomerId: customerResult.customer.id,
-          stripeSubscriptionId: stripeSubscription.id,
-          planType: 'BASIC', // Default, will be updated based on price ID
-          status: 'TRIALING',
-          currentPeriodStart,
-          currentPeriodEnd,
-          trialStart,
-          trialEnd,
-        },
-        update: {
-          stripeCustomerId: customerResult.customer.id,
-          stripeSubscriptionId: stripeSubscription.id,
-          status: 'TRIALING',
-          currentPeriodStart,
-          currentPeriodEnd,
-          trialStart,
-          trialEnd,
+      // CRITICAL v1.5.40-alpha.16 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // to prevent foreign key constraint violations in transaction isolation
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.16: Using explicit create/update for paid subscription instead of problematic upsert');
+      
+      let dbSubscription;
+      try {
+        // First check if subscription already exists (should not in clean signup flow)
+        const existingSubscription = await prisma.userSubscription.findUnique({
+          where: { userId }
+        });
+        
+        if (existingSubscription) {
+          console.log('🔄 UNIFIED: Updating existing subscription with validated dates');
+          dbSubscription = await prisma.userSubscription.update({
+            where: { userId },
+            data: {
+              stripeCustomerId: customerResult.customer.id,
+              stripeSubscriptionId: stripeSubscription.id,
+              status: 'TRIALING',
+              currentPeriodStart,
+              currentPeriodEnd,
+              trialStart,
+              trialEnd,
+            }
+          });
+        } else {
+          console.log('💾 UNIFIED: Creating new paid subscription record with explicit create');
+          dbSubscription = await prisma.userSubscription.create({
+            data: {
+              userId,
+              stripeCustomerId: customerResult.customer.id,
+              stripeSubscriptionId: stripeSubscription.id,
+              planType: 'BASIC', // Default, will be updated based on price ID
+              status: 'TRIALING',
+              currentPeriodStart,
+              currentPeriodEnd,
+              trialStart,
+              trialEnd,
+            }
+          });
         }
-      });
+      } catch (dbError) {
+        console.error('🚨 EMERGENCY FIX: Database subscription operation failed for paid subscription:', dbError);
+        console.error('🚨 EMERGENCY FIX: This may indicate foreign key constraint violation');
+        throw new Error(`Database subscription creation failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+      }
 
       result.subscription = {
         stripe: stripeSubscription,
