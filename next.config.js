@@ -32,3 +32,4 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+// Emergency deployment trigger Sun Jul 20 20:51:25 UTC 2025
