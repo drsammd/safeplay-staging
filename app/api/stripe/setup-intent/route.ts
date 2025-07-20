@@ -1,112 +1,126 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/auth-fixed';
 import { stripe } from '@/lib/stripe/config';
 import { prisma } from '@/lib/db';
+import { unifiedCustomerService } from '@/lib/stripe/unified-customer-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  const debugId = `setup_intent_unified_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    console.log(`🔧 UNIFIED SETUP INTENT [${debugId}]: Setup intent creation called`);
+    
+    // CRITICAL v1.5.40-alpha.9 FIX: Use unified customer service session validation (existing user operation)
+    const sessionValidation = await unifiedCustomerService.validateSessionSecurity({
+      isSignupFlow: false,
+      operation: 'setup_intent_creation'
+    });
+    
+    if (!sessionValidation.isValid) {
+      console.error(`🚨 UNIFIED SETUP INTENT [${debugId}]: Session validation failed`);
+      return NextResponse.json({
+        error: 'Authentication required',
+        details: sessionValidation.errors,
+        debugId
+      }, { status: 401 });
     }
 
-    // Get or create customer
-    let userSub = await prisma.userSubscription.findUnique({
-      where: { userId: session.user.id },
-      include: { user: true }
+    console.log(`✅ UNIFIED SETUP INTENT [${debugId}]: Session validation successful`, {
+      userId: sessionValidation.userId,
+      userEmail: sessionValidation.userEmail
     });
 
-    let customerId = userSub?.stripeCustomerId;
+    // Get user info
+    const user = await prisma.user.findUnique({
+      where: { id: sessionValidation.userId! },
+      select: { id: true, email: true, name: true }
+    });
 
-    if (!customerId) {
-      // Get user info first
-      const user = await prisma.user.findUnique({
-        where: { id: session.user.id }
-      });
-
-      if (!user) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      // CRITICAL v1.5.31 FIX: Check for existing customer before creating to prevent duplicates
-      console.log('🔍 SETUP INTENT: Checking for existing Stripe customer by email...');
-      
-      const existingCustomers = await stripe.customers.list({
-        email: user.email,
-        limit: 1
-      });
-      
-      let customer;
-      if (existingCustomers.data.length > 0) {
-        customer = existingCustomers.data[0];
-        console.log('✅ SETUP INTENT: Found existing Stripe customer:', customer.id);
-      } else {
-        console.log('🏪 SETUP INTENT: Creating new Stripe customer...');
-        customer = await stripe.customers.create({
-          email: user.email,
-          name: user.name || '',
-          metadata: {
-            userId: session.user.id
-          }
-        });
-        console.log('✅ SETUP INTENT: New Stripe customer created:', customer.id);
-      }
-
-      customerId = customer.id;
-
-      // Update or create user subscription with customer ID
-      await prisma.userSubscription.upsert({
-        where: { userId: session.user.id },
-        create: {
-          userId: session.user.id,
-          planId: userSub?.planId || await getBasicPlanId(),
-          status: 'INCOMPLETE',
-          stripeCustomerId: customerId,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          billingInterval: 'MONTHLY',
-        },
-        update: {
-          stripeCustomerId: customerId,
-        }
-      });
+    if (!user) {
+      console.error(`🚨 UNIFIED SETUP INTENT [${debugId}]: User not found in database`);
+      return NextResponse.json({ 
+        error: 'User not found',
+        debugId 
+      }, { status: 404 });
     }
 
-    // Create setup intent
+    console.log(`👤 UNIFIED SETUP INTENT [${debugId}]: User found: ${user.email}`);
+
+    // CRITICAL v1.5.40-alpha.9 FIX: Use unified customer service to get or create customer
+    const customerResult = await unifiedCustomerService.getOrCreateCustomer(
+      user.email,
+      user.name || user.email.split('@')[0],
+      user.id,
+      false // Not a free plan
+    );
+
+    if (customerResult.errors.length > 0) {
+      console.error(`🚨 UNIFIED SETUP INTENT [${debugId}]: Customer creation/retrieval failed:`, customerResult.errors);
+      return NextResponse.json({
+        error: 'Failed to get or create customer',
+        details: customerResult.errors,
+        debugId
+      }, { status: 500 });
+    }
+
+    console.log(`✅ UNIFIED SETUP INTENT [${debugId}]: Customer ready:`, {
+      customerId: customerResult.customer.id,
+      isNewCustomer: customerResult.isNewCustomer,
+      source: customerResult.source
+    });
+
+    // Create setup intent with the unified customer
+    console.log(`🔧 UNIFIED SETUP INTENT [${debugId}]: Creating setup intent...`);
+    
     const setupIntent = await stripe.setupIntents.create({
-      customer: customerId,
+      customer: customerResult.customer.id,
       payment_method_types: ['card'],
       usage: 'off_session',
       metadata: {
-        userId: session.user.id
+        userId: user.id,
+        platform: 'safeplay',
+        source: 'unified_customer_service',
+        debugId
       }
     });
 
-    return NextResponse.json({
-      clientSecret: setupIntent.client_secret,
-      setupIntentId: setupIntent.id
+    console.log(`✅ UNIFIED SETUP INTENT [${debugId}]: Setup intent created successfully:`, {
+      setupIntentId: setupIntent.id,
+      customerId: setupIntent.customer,
+      status: setupIntent.status
     });
+
+    return NextResponse.json({
+      success: true,
+      clientSecret: setupIntent.client_secret,
+      setupIntentId: setupIntent.id,
+      customerId: customerResult.customer.id,
+      customerInfo: {
+        isNewCustomer: customerResult.isNewCustomer,
+        source: customerResult.source,
+        warnings: customerResult.warnings
+      },
+      debugId
+    });
+
   } catch (error) {
-    console.error('Error creating setup intent:', error);
+    console.error(`🚨 UNIFIED SETUP INTENT [${debugId}]: Setup intent creation error:`, error);
     return NextResponse.json(
-      { error: 'Failed to create setup intent' },
+      { 
+        error: 'Failed to create setup intent',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        debugId,
+        errorDetails: {
+          location: 'unified setup intent API'
+        }
+      },
       { status: 500 }
     );
   }
 }
 
-async function getBasicPlanId(): Promise<string> {
-  const basicPlan = await prisma.subscriptionPlan.findFirst({
-    where: { planType: 'BASIC' }
-  });
-  
-  if (!basicPlan) {
-    throw new Error('Basic plan not found');
-  }
-  
-  return basicPlan.id;
-}
+

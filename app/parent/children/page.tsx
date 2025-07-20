@@ -26,60 +26,60 @@ export default function ChildrenPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Account-specific demo data for stakeholder presentations
+  // CRITICAL FIX: Only provide demo data for actual demo accounts
   const getDemoChildren = (userEmail?: string) => {
-    // Check if this is john@mysafeplay.ai (should have NO children for security demo)
-    if (userEmail === 'john@mysafeplay.ai' || userEmail === 'john@doe.com') {
-      console.log('🎭 john@mysafeplay.ai account - returning empty children for security enhancement demo');
-      return [];
+    // ONLY return demo data for actual demo accounts
+    if (userEmail === 'parent@mysafeplay.ai') {
+      console.log('🎭 Children: Demo account parent@mysafeplay.ai - returning demo children');
+      return [
+        {
+          id: "demo-1",
+          firstName: "Emma",
+          lastName: "Johnson",
+          dateOfBirth: "2017-03-15",
+          profilePhoto: "https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg",
+          status: "CHECKED_IN",
+          currentVenue: { name: "Adventure Playground" },
+          _count: { memories: 23, trackingEvents: 45 },
+          faceRecognitionEnabled: true,
+          faceRecognitionConsent: true,
+          recognitionThreshold: 0.95,
+          faceCollection: { id: "fc1", status: "ACTIVE", faceRecords: [{ id: "fr1" }, { id: "fr2" }] }
+        },
+        {
+          id: "demo-2",
+          firstName: "Lucas",
+          lastName: "Johnson",
+          dateOfBirth: "2019-07-22",
+          profilePhoto: "https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png",
+          status: "CHECKED_OUT",
+          currentVenue: null,
+          _count: { memories: 18, trackingEvents: 32 },
+          faceRecognitionEnabled: false,
+          faceRecognitionConsent: false,
+          recognitionThreshold: 0.95,
+          faceCollection: null
+        },
+        {
+          id: "demo-3",
+          firstName: "Sophia",
+          lastName: "Johnson",
+          dateOfBirth: "2020-11-08",
+          profilePhoto: "https://thumbs.dreamstime.com/z/portrait-happy-smiling-little-girl-white-background-cute-child-looking-camera-studio-shot-childhood-happiness-concept-192784866.jpg",
+          status: "CHECKED_OUT",
+          currentVenue: null,
+          _count: { memories: 12, trackingEvents: 28 },
+          faceRecognitionEnabled: true,
+          faceRecognitionConsent: true,
+          recognitionThreshold: 0.95,
+          faceCollection: { id: "fc3", status: "ACTIVE", faceRecords: [{ id: "fr3" }] }
+        }
+      ];
     }
 
-    // Default to parent@mysafeplay.ai data (3 children for family management demo)
-    console.log('🎭 parent@mysafeplay.ai account - returning 3 demo children');
-    return [
-      {
-        id: "demo-1",
-        firstName: "Emma",
-        lastName: "Johnson",
-        dateOfBirth: "2017-03-15",
-        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg",
-        status: "CHECKED_IN",
-        currentVenue: { name: "Adventure Playground" },
-        _count: { memories: 23, trackingEvents: 45 },
-        faceRecognitionEnabled: true,
-        faceRecognitionConsent: true,
-        recognitionThreshold: 0.95,
-        faceCollection: { id: "fc1", status: "ACTIVE", faceRecords: [{ id: "fr1" }, { id: "fr2" }] }
-      },
-      {
-        id: "demo-2",
-        firstName: "Lucas",
-        lastName: "Johnson",
-        dateOfBirth: "2019-07-22",
-        profilePhoto: "https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png",
-        status: "CHECKED_OUT",
-        currentVenue: null,
-        _count: { memories: 18, trackingEvents: 32 },
-        faceRecognitionEnabled: false,
-        faceRecognitionConsent: false,
-        recognitionThreshold: 0.95,
-        faceCollection: null
-      },
-      {
-        id: "demo-3",
-        firstName: "Sophia",
-        lastName: "Johnson",
-        dateOfBirth: "2020-11-08",
-        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-happy-smiling-little-girl-white-background-cute-child-looking-camera-studio-shot-childhood-happiness-concept-192784866.jpg",
-        status: "CHECKED_OUT",
-        currentVenue: null,
-        _count: { memories: 12, trackingEvents: 28 },
-        faceRecognitionEnabled: true,
-        faceRecognitionConsent: true,
-        recognitionThreshold: 0.95,
-        faceCollection: { id: "fc3", status: "ACTIVE", faceRecords: [{ id: "fr3" }] }
-      }
-    ];
+    // For ALL other accounts (including new signups), return empty array
+    console.log('🧹 Children: Real user account - returning empty children for clean start');
+    return [];
   };
 
   // Fetch children from API
@@ -119,24 +119,41 @@ export default function ChildrenPage() {
           } : null
         }));
         
-        // If API returns empty results, use account-specific demo data
+        // CRITICAL FIX: Only use demo data for actual demo accounts, not as fallback
         if (transformedChildren.length === 0) {
-          console.log('🎭 API returned empty, using account-specific demo children data');
-          setChildren(getDemoChildren(userEmail));
+          if (userEmail === 'parent@mysafeplay.ai') {
+            console.log('🎭 Children: Demo account - using demo children data');
+            setChildren(getDemoChildren(userEmail));
+          } else {
+            console.log('🧹 Children: Real user account - keeping empty children for clean start');
+            setChildren([]);
+          }
         } else {
           setChildren(transformedChildren);
         }
       } else {
-        // If API fails, fallback to account-specific demo data
-        console.log('🎭 API failed, using account-specific demo children data');
-        setChildren(getDemoChildren(userEmail));
+        // CRITICAL FIX: Only provide demo data for actual demo accounts on API failure
+        if (userEmail === 'parent@mysafeplay.ai') {
+          console.log('🎭 Children: Demo account API failure - using demo children data');
+          setChildren(getDemoChildren(userEmail));
+        } else {
+          console.log('🧹 Children: Real user account API failure - keeping empty children for clean start');
+          setChildren([]);
+        }
       }
     } catch (error) {
       console.error('Error fetching children:', error);
-      // Fallback to account-specific demo data
-      console.log('🎭 Error occurred, using account-specific demo children data');
-      setChildren(getDemoChildren(session?.user?.email));
-      setError(null); // Clear error since we're using demo data
+      // CRITICAL FIX: Only provide demo data for actual demo accounts on error
+      const userEmail = session?.user?.email;
+      if (userEmail === 'parent@mysafeplay.ai') {
+        console.log('🎭 Children: Demo account error fallback - using demo children data');
+        setChildren(getDemoChildren(userEmail));
+        setError(null); // Clear error since we're using demo data
+      } else {
+        console.log('🧹 Children: Real user account error - keeping empty children for clean start');
+        setChildren([]);
+        setError('Failed to load children data. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }
