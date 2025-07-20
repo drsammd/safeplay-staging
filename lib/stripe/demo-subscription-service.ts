@@ -270,32 +270,57 @@ export class DemoSubscriptionService {
 
       // Create/update subscription record in database
       console.log(`💾 DEMO AUTH DEBUG [${debugId}]: Creating/updating subscription record in database...`);
-      const dbResult = await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          planType: plan.planType,
-          status: 'TRIALING' as SubscriptionStatus,
-          stripeCustomerId: demoCustomerId,
-          stripeSubscriptionId: demoSubscriptionId,
-          currentPeriodStart: now,
-          currentPeriodEnd: currentPeriodEnd,
-          trialStart: now,
-          trialEnd: trialEnd,
-          cancelAtPeriodEnd: false,
-        },
-        update: {
-          planType: plan.planType,
-          status: 'TRIALING' as SubscriptionStatus,
-          stripeSubscriptionId: demoSubscriptionId,
-          currentPeriodStart: now,
-          currentPeriodEnd: currentPeriodEnd,
-          trialStart: now,
-          trialEnd: trialEnd,
-          cancelAtPeriodEnd: false,
-          canceledAt: null,
-        }
+      // CRITICAL v1.5.40-alpha.17 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // This prevents foreign key constraint violations during demo subscription creation
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.17: Using explicit create/update for demo subscription instead of problematic upsert');
+      
+      const existingSubscription = await prisma.userSubscription.findUnique({
+        where: { userId }
       });
+      
+      let dbResult;
+      if (existingSubscription) {
+        // Update existing subscription
+        dbResult = await prisma.userSubscription.update({
+          where: { userId },
+          data: {
+            planType: plan.planType,
+            status: 'TRIALING' as SubscriptionStatus,
+            stripeSubscriptionId: demoSubscriptionId,
+            currentPeriodStart: now,
+            currentPeriodEnd: currentPeriodEnd,
+            trialStart: now,
+            trialEnd: trialEnd,
+            cancelAtPeriodEnd: false,
+            canceledAt: null,
+          }
+        });
+      } else {
+        // Create new subscription only if user exists
+        const userExists = await prisma.user.findUnique({
+          where: { id: userId }
+        });
+        
+        if (userExists) {
+          dbResult = await prisma.userSubscription.create({
+            data: {
+              userId,
+              planType: plan.planType,
+              status: 'TRIALING' as SubscriptionStatus,
+              stripeCustomerId: demoCustomerId,
+              stripeSubscriptionId: demoSubscriptionId,
+              currentPeriodStart: now,
+              currentPeriodEnd: currentPeriodEnd,
+              trialStart: now,
+              trialEnd: trialEnd,
+              cancelAtPeriodEnd: false,
+            }
+          });
+        } else {
+          console.error('🚨 DEMO ERROR: User not found for demo subscription creation:', userId);
+          throw new Error('User not found for demo subscription creation');
+        }
+      }
 
       console.log(`✅ DEMO AUTH DEBUG [${debugId}]: Database subscription record created/updated:`, {
         id: dbResult.id,

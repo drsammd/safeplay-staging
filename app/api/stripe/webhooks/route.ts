@@ -169,21 +169,45 @@ async function handleCustomerCreated(customer: any) {
   try {
     const userId = customer.metadata?.userId;
     if (userId) {
-      await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          planId: await getBasicPlanId(),
-          status: 'INCOMPLETE',
-          stripeCustomerId: customer.id,
-          currentPeriodStart: new Date(),
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-          billingInterval: 'MONTHLY',
-        },
-        update: {
-          stripeCustomerId: customer.id,
-        }
+      // CRITICAL v1.5.40-alpha.17 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // This prevents foreign key constraint violations during webhook processing
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.17: Using explicit create/update for webhook instead of problematic upsert');
+      
+      const existingSubscription = await prisma.userSubscription.findUnique({
+        where: { userId }
       });
+      
+      if (existingSubscription) {
+        // Update existing subscription
+        await prisma.userSubscription.update({
+          where: { userId },
+          data: {
+            stripeCustomerId: customer.id,
+          }
+        });
+      } else {
+        // Create new subscription only if user exists
+        const userExists = await prisma.user.findUnique({
+          where: { id: userId }
+        });
+        
+        if (userExists) {
+          await prisma.userSubscription.create({
+            data: {
+              userId,
+              planId: await getBasicPlanId(),
+              status: 'INCOMPLETE',
+              stripeCustomerId: customer.id,
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              billingInterval: 'MONTHLY',
+            }
+          });
+        } else {
+          console.error('🚨 WEBHOOK ERROR: User not found for webhook processing:', userId);
+          throw new Error('User not found for webhook processing');
+        }
+      }
     }
   } catch (error) {
     console.error('Error handling customer created:', error);
