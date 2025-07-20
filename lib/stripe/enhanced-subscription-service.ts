@@ -309,33 +309,57 @@ export class EnhancedSubscriptionService {
         ? new Date(subscription.current_period_end * 1000) 
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          planType: plan.planType as any,
-          status: this.mapStripeStatusToPrisma(subscription.status),
-          stripeCustomerId,
-          stripeSubscriptionId: subscription.id,
-          currentPeriodStart,
-          currentPeriodEnd,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-          trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-          trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-        },
-        update: {
-          planType: plan.planType as any,
-          status: this.mapStripeStatusToPrisma(subscription.status),
-          stripeSubscriptionId: subscription.id,
-          currentPeriodStart,
-          currentPeriodEnd,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-          trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-          trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-        }
+      // CRITICAL v1.5.40-alpha.17 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // This prevents foreign key constraint violations during enhanced subscription processing
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.17: Using explicit create/update for enhanced subscription instead of problematic upsert');
+      
+      const existingSubscription = await prisma.userSubscription.findUnique({
+        where: { userId }
       });
+      
+      if (existingSubscription) {
+        // Update existing subscription
+        await prisma.userSubscription.update({
+          where: { userId },
+          data: {
+            planType: plan.planType as any,
+            status: this.mapStripeStatusToPrisma(subscription.status),
+            stripeSubscriptionId: subscription.id,
+            currentPeriodStart,
+            currentPeriodEnd,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+            trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+            trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+          }
+        });
+      } else {
+        // Create new subscription only if user exists
+        const userExists = await prisma.user.findUnique({
+          where: { id: userId }
+        });
+        
+        if (userExists) {
+          await prisma.userSubscription.create({
+            data: {
+              userId,
+              planType: plan.planType as any,
+              status: this.mapStripeStatusToPrisma(subscription.status),
+              stripeCustomerId,
+              stripeSubscriptionId: subscription.id,
+              currentPeriodStart,
+              currentPeriodEnd,
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
+              canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+              trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+              trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+            }
+          });
+        } else {
+          console.error('🚨 ENHANCED SERVICE ERROR: User not found for enhanced subscription processing:', userId);
+          throw new Error('User not found for enhanced subscription processing');
+        }
+      }
 
       console.log('🎉 ENHANCED SERVICE: Subscription created successfully!');
       return subscription;
