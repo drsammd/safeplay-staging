@@ -36,6 +36,7 @@ export function SecureSessionProvider({ children }: { children: React.ReactNode 
   const [sessionData, setSessionData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [clearTimer, setClearTimer] = useState<NodeJS.Timeout | null>(null);
   
   // Get NextAuth session
   const { data: nextAuthSession, status: nextAuthStatus } = useSession();
@@ -48,10 +49,16 @@ export function SecureSessionProvider({ children }: { children: React.ReactNode 
       timestamp: new Date().toISOString()
     });
 
+    // Clear any existing timer when session state changes
+    if (clearTimer) {
+      clearTimeout(clearTimer);
+      setClearTimer(null);
+    }
+
     // Update session data based on NextAuth session
     if (nextAuthStatus === 'loading') {
       setIsLoading(true);
-      setSessionData(null);
+      // Don't clear session data during loading to prevent race conditions
     } else if (nextAuthStatus === 'authenticated' && nextAuthSession) {
       // Validate session data before using it
       if (nextAuthSession.user?.id && nextAuthSession.user?.email) {
@@ -68,29 +75,43 @@ export function SecureSessionProvider({ children }: { children: React.ReactNode 
         setSessionData(null);
         setIsLoading(false);
       }
-    } else {
-      console.log('🔒 SECURE SESSION PROVIDER: No authenticated session');
+    } else if (nextAuthStatus === 'unauthenticated') {
+      console.log('🔒 SECURE SESSION PROVIDER: Unauthenticated state detected');
       setSessionData(null);
       setIsLoading(false);
       
-      // Only clear demo session data when session is actually unauthenticated
-      // This prevents interference with legitimate authenticated sessions during navigation
-      try {
-        console.log('🧹 SECURE SESSION PROVIDER: Clearing demo session data (unauthenticated state)');
-        // Clear localStorage demo data
-        localStorage.removeItem('mySafePlay_demoMode');
-        localStorage.removeItem('mySafePlay_demoUser');
-        localStorage.removeItem('mySafePlay_demoSession');
-        
-        // Clear sessionStorage demo data
-        sessionStorage.removeItem('mySafePlay_demoMode');
-        sessionStorage.removeItem('mySafePlay_demoUser');
-        sessionStorage.removeItem('mySafePlay_demoSession');
-      } catch (error) {
-        console.warn('🔒 SECURE SESSION PROVIDER: Error clearing demo session data:', error);
-      }
+      // CRITICAL FIX: Use debounced clearing to prevent interference with authentication flow
+      // Only clear demo data after session has been unauthenticated for 2 seconds
+      // This prevents clearing during rapid authentication transitions
+      const timer = setTimeout(() => {
+        try {
+          console.log('🧹 SECURE SESSION PROVIDER: Clearing demo session data (confirmed unauthenticated state)');
+          // Clear localStorage demo data
+          localStorage.removeItem('mySafePlay_demoMode');
+          localStorage.removeItem('mySafePlay_demoUser');
+          localStorage.removeItem('mySafePlay_demoSession');
+          
+          // Clear sessionStorage demo data
+          sessionStorage.removeItem('mySafePlay_demoMode');
+          sessionStorage.removeItem('mySafePlay_demoUser');
+          sessionStorage.removeItem('mySafePlay_demoSession');
+        } catch (error) {
+          console.warn('🔒 SECURE SESSION PROVIDER: Error clearing demo session data:', error);
+        }
+      }, 2000); // Wait 2 seconds before clearing
+      
+      setClearTimer(timer);
     }
   }, [nextAuthSession, nextAuthStatus, refreshTrigger]);
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (clearTimer) {
+        clearTimeout(clearTimer);
+      }
+    };
+  }, [clearTimer]);
 
   const clearSession = () => {
     console.log('🔒 SECURE SESSION PROVIDER: Clearing session');
