@@ -4,8 +4,9 @@ import fs from 'fs';
 import path from 'path';
 
 export async function GET() {
-  let version = '1.5.19';
-  let commit = 'v1.5.19-plan-buttons-and-signup-fixes-FORCED-DEPLOYMENT';
+  let version = 'v1.5.40.9-deployment-tracking-fix';
+  // Use VERCEL_GIT_COMMIT_SHA for accurate deployment tracking (Vercel's recommendation)
+  let commit = process.env.VERCEL_GIT_COMMIT_SHA || 'local-development';
   
   try {
     // Read version from VERSION file
@@ -22,6 +23,7 @@ export async function GET() {
     environment: process.env.NODE_ENV || 'development',
     buildTime: new Date().toISOString(),
     commit,
-    branch: 'main'
+    branch: process.env.VERCEL_GIT_COMMIT_REF || 'main',
+    deploymentId: process.env.VERCEL_DEPLOYMENT_ID || null
   });
 }
