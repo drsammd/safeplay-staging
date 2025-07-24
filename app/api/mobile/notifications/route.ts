@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     };
 
     if (unreadOnly) {
-      whereClause.isRead = false;
+      whereClause.opened = false;
     }
 
     if (notificationType) {
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       db.mobileNotification.count({ 
         where: { 
           userId: session.user.id, 
-          isRead: false,
+          opened: false,
           OR: [
             { expiresAt: null },
             { expiresAt: { gt: new Date() } }
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: session.user.id,
         childId,
-        alertId,
+        relatedEntityId: alertId,
         notificationType,
         title,
         message,
@@ -189,7 +189,7 @@ export async function PUT(request: NextRequest) {
     };
 
     if (action === 'mark_all_read') {
-      whereClause.isRead = false;
+      whereClause.opened = false;
     } else if (notificationIds && Array.isArray(notificationIds)) {
       whereClause.id = { in: notificationIds };
     } else {

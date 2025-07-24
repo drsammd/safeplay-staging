@@ -161,11 +161,7 @@ export async function POST(request: NextRequest) {
       allowedZipCodes = [],
       campaignName,
       affiliateId,
-      autoApplyConditions,
-      autoApplyPriority = 1,
-      notes,
-      tags = [],
-      isTest = false
+      autoApplyConditions
     } = data;
 
     // Validate discount code format
@@ -229,18 +225,14 @@ export async function POST(request: NextRequest) {
         campaignName,
         affiliateId,
         autoApplyConditions,
-        autoApplyPriority,
-        notes,
-        createdBy: session.user.id,
-        tags,
-        isTest,
-        application: autoApplyConditions ? DiscountApplication.AUTOMATIC : DiscountApplication.USER_INPUT
+
+        createdBy: session.user.id
       }
     });
 
     // Create Stripe coupon and promotion code
     try {
-      if (!isTest && discountType !== DiscountType.FREE_TRIAL_EXTENSION) {
+      if (discountType !== DiscountType.FREE_TRIAL_EXTENSION) {
         await discountService.createStripeCoupon(discountCode);
         await discountService.createStripePromotionCode(discountCode);
       }

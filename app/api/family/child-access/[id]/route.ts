@@ -73,7 +73,9 @@ export async function GET(
           }
         },
         familyMember: {
-          include: {
+          select: {
+            id: true,
+            familyOwnerId: true,
             member: {
               select: {
                 id: true,
@@ -90,7 +92,7 @@ export async function GET(
             email: true
           }
         },
-        accessor: {
+        grantee: {
           select: {
             id: true,
             name: true,
@@ -107,7 +109,7 @@ export async function GET(
     // Check if user has permission to view this access
     const hasAccess = childAccess.grantedBy === session.user.id || 
                       childAccess.accessedBy === session.user.id ||
-                      childAccess.familyMember.familyOwnerId === session.user.id
+                      childAccess.familyMember?.familyOwnerId === session.user.id
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })

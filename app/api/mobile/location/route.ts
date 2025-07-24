@@ -193,17 +193,11 @@ export async function POST(request: NextRequest) {
       data: {
         childId,
         venueId,
-        position,
-        detectionType: detectionType || 'MANUAL_CHECK_IN',
-        zoneId,
-        accuracy: accuracy || 1.0,
-        // isCurrentLocation: true, // Field doesn't exist in ChildLocationHistory model
-        confidence: 1.0,
-        entryTime: new Date(),
-        metadata: {
-          recordedBy: 'parent_app',
-          parentId: session.user.id
-        }
+        location: position,
+        source: detectionType || 'MANUAL',
+        zone: zoneId,
+        confidence: accuracy || 1.0,
+        activity: 'Location update'
       },
       include: {
         child: {
@@ -217,13 +211,6 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true
-          }
-        },
-        zone: {
-          select: {
-            id: true,
-            name: true,
-            type: true
           }
         }
       }

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { MembershipStatus, MembershipTier } from '@prisma/client';
+import { MembershipStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const where: any = {};
 
     if (session.user.role === 'PARENT') {
-      where.parentId = session.user.id;
+      where.userId = session.user.id;
     } else if (session.user.role === 'VENUE_ADMIN' && venueId) {
       where.venueId = venueId;
     }
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const memberships = await prisma.membership.findMany({
       where,
       include: {
-        parent: {
+        user: {
           select: {
             id: true,
             name: true,
@@ -59,17 +59,6 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             address: true,
-          },
-        },
-        transactions: {
-          take: 10,
-          orderBy: { timestamp: 'desc' },
-          select: {
-            id: true,
-            transactionType: true,
-            amount: true,
-            paymentStatus: true,
-            timestamp: true,
           },
         },
         checkInEvents: {
@@ -157,24 +146,22 @@ export async function POST(request: NextRequest) {
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + membershipPackage.duration);
 
+    // Generate membership number
+    const membershipNumber = `MEM${Math.random().toString(36).substring(2, 8).toUpperCase()}${Date.now().toString().slice(-4)}`;
+    
     // Create membership
     const membership = await prisma.membership.create({
       data: {
-        memberId,
-        parentId: session.user.id,
+        membershipNumber,
+        userId: session.user.id,
         packageId,
         venueId: venueId || membershipPackage.venueId,
+        startDate: new Date(),
         endDate,
-        autoRenewal,
-        checkInsRemaining: membershipPackage.checkInLimit,
-        photoCreditsRemaining: membershipPackage.photoCredits,
-        videoCreditsRemaining: membershipPackage.videoCredits,
-        emergencyContacts,
-        specialRequests,
-        healthInformation,
-        communicationPrefs,
-        referredBy,
-        referralCode: `REF${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+        autoRenew: autoRenewal || false,
+        paymentMethod: 'pending',
+        discountApplied: 0,
+        totalPaid: membershipPackage.price,
       },
       include: {
         package: {
@@ -242,7 +229,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    if (session.user.role === 'PARENT' && membership.parentId !== session.user.id) {
+    if (session.user.role === 'PARENT' && membership.userId !== session.user.id) {
       return NextResponse.json(
         { error: 'Access denied' },
         { status: 403 }

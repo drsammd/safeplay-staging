@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { MapPin, Clock, Camera, AlertTriangle, Baby, Play, Shield, Eye, Users, Activity, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { FaceDetectionPreview, FaceRecognitionResults } from "@/components/face-recognition";
-import { useSecureSession } from "@/components/providers/fixed-session-provider";
+import { useStableSession } from "@/components/providers/stable-session-provider";
 
 // Type definitions
 interface Child {
@@ -51,7 +51,7 @@ interface FaceActivity {
 }
 
 export default function ParentDashboard() {
-  const { data: session, status } = useSecureSession();
+  const { data: session, status } = useStableSession();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [children, setChildren] = useState<Child[]>([]);

@@ -12,8 +12,8 @@ export default async function ZoneConfigurationPage() {
     redirect('/auth/signin');
   }
 
-  // Allow VENUE_ADMIN, SUPER_ADMIN, and ADMIN roles
-  if (!['VENUE_ADMIN', 'SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+  // Allow VENUE_ADMIN and SUPER_ADMIN roles (ADMIN role doesn't exist in UserRole enum)
+  if (!['VENUE_ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
     redirect('/unauthorized');
   }
 

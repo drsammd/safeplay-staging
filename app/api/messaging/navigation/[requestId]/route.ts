@@ -133,7 +133,7 @@ export async function GET(
       id: navigationRequest.id,
       childId: navigationRequest.childId,
       venue: navigationRequest.venue,
-      targetLocation: navigationRequest.targetLocation,
+      targetLocation: navigationRequest.toLocation,
       estimatedTime: navigationRequest.estimatedTime,
       actualTime: navigationRequest.actualTime,
       requestedAt: navigationRequest.requestedAt,

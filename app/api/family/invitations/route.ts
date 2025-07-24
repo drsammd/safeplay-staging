@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: {
-        createdAt: 'desc'
+        sentAt: 'desc'
       }
     })
 
@@ -205,13 +205,18 @@ export async function POST(request: NextRequest) {
     // Create invitation
     const invitation = await prisma.familyInvitation.create({
       data: {
+        inviterId: session.user.id,
         inviterUserId: session.user.id,
         inviteeEmail: data.inviteeEmail,
         inviteeName: data.inviteeName,
+        relationship: data.familyRole as any, // Cast to FamilyRelationship enum
         familyRole: data.familyRole,
+        message: data.invitationMessage,
         invitationMessage: data.invitationMessage,
+        token: invitationToken,
         invitationToken,
         linkedChildrenIds: data.linkedChildrenIds || [],
+        permissions: data.permissionSet,
         permissionSet: data.permissionSet,
         expiresAt,
         ipAddress: clientIp,
@@ -314,14 +319,19 @@ async function sendFamilyInvitationEmail(invitation: any) {
     // Store email in database for processing by email service
     await prisma.emailNotification.create({
       data: {
+        userId: invitation.inviterId, // Required field - inviter is the family owner
+        email: emailContent.to, // Required field
         recipientEmail: emailContent.to,
         subject: emailContent.subject,
-        htmlContent: emailContent.html,
-        emailType: 'FAMILY_INVITATION',
-        relatedEntityId: invitation.id,
-        relatedEntityType: 'FAMILY_INVITATION',
-        scheduledAt: new Date(),
-        priority: 'HIGH'
+        content: emailContent.html, // Changed from htmlContent
+        status: 'SENT',
+        sentAt: new Date(),
+        metadata: {
+          type: 'FAMILY_INVITATION',
+          relatedEntityId: invitation.id,
+          relatedEntityType: 'FAMILY_INVITATION',
+          priority: 'HIGH'
+        }
       }
     });
 

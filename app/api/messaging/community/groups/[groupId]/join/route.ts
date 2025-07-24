@@ -50,7 +50,7 @@ export async function POST(
     }
 
     // Check member limit
-    if (group.memberLimit && group.members.length >= group.memberLimit) {
+    if (group.maxMembers && group.members.length >= group.maxMembers) {
       return NextResponse.json(
         { error: 'Group has reached its member limit' },
         { status: 400 }
@@ -74,7 +74,7 @@ export async function POST(
         data: {
           groupId,
           userId: session.user.id,
-          role: 'member',
+          role: 'MEMBER',
         },
       });
     }

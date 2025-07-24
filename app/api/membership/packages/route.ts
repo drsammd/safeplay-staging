@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { MembershipType } from '@prisma/client';
+import { MembershipStatus } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const venueId = searchParams.get('venueId');
-    const packageType = searchParams.get('packageType') as MembershipType | null;
+    const packageType = searchParams.get('packageType') as string | null;
     const isActive = searchParams.get('isActive') === 'true';
 
     const where: any = {};
@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
         _count: {
           select: {
             memberships: true,
-            transactions: true,
           },
         },
       },
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest) {
       stats: {
         totalMemberships: pkg._count.memberships,
         activeMemberships: pkg.memberships.filter(m => m.status === 'ACTIVE').length,
-        totalTransactions: pkg._count.transactions,
       },
     }));
 
@@ -157,15 +155,6 @@ export async function POST(request: NextRequest) {
         guestLimit,
         photoCredits,
         videoCredits,
-        prioritySupport,
-        discountPercentage,
-        autoRenewal,
-        minimumAge,
-        maximumAge,
-        familySize,
-        terms,
-        cancellationPolicy,
-        refundPolicy,
       },
       include: {
         venue: {

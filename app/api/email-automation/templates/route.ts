@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailTemplateService } from '@/lib/services/email-template-service';
-// EmailTemplateType and EmailCategory enums removed as they don't exist in schema
+import { EmailTemplateType, EmailCategory } from '@prisma/client';
 
 export const dynamic = "force-dynamic";
 

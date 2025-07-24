@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
     if (dataTypes.length === 0 || dataTypes.includes('RECENT_PHOTOS')) {
       syncData.recentPhotos = await db.photoNotification.findMany({
         where: {
-          parentId: session.user.id,
+          userId: session.user.id,
           capturedAt: { gte: lastSyncDate }
         },
         include: {
@@ -138,13 +138,6 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true
-            }
-          },
-          zone: {
-            select: {
-              id: true,
-              name: true,
-              type: true
             }
           }
         },
@@ -200,10 +193,9 @@ export async function GET(request: NextRequest) {
     if (Object.keys(syncData).length > 0) {
       await db.offlineDataCache.upsert({
         where: {
-          userId_dataType_dataKey: {
+          userId_dataType: {
             userId: session.user.id,
-            dataType: 'SETTINGS', // Use a general type for full sync
-            dataKey: 'mobile_dashboard_sync'
+            dataType: 'SETTINGS' // Use a general type for full sync
           }
         },
         update: {

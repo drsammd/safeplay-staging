@@ -96,7 +96,7 @@ export async function GET(
         },
         timeline: {
           include: {
-            performer: {
+            user: {
               select: {
                 id: true,
                 name: true,

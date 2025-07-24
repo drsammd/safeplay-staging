@@ -1,6 +1,6 @@
 
+
 import { Metadata } from "next";
-import Providers from "@/components/providers/fixed-session-provider";
 import VenueAdminLayout from "@/components/layouts/venue-admin-layout";
 
 export const metadata: Metadata = {
@@ -13,9 +13,8 @@ export default function VenueAdminLayoutWrapper({
 }: {
   children: React.ReactNode;
 }) {
+  // Removed nested StableAuthProvider - using the one from main layout only
   return (
-    <Providers>
-      <VenueAdminLayout>{children}</VenueAdminLayout>
-    </Providers>
+    <VenueAdminLayout>{children}</VenueAdminLayout>
   );
 }

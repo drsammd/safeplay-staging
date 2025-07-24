@@ -7,7 +7,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import { BetaBanner } from "@/components/staging/beta-banner";
 import { VersionTracker } from "@/components/version-tracker";
 import { NO_INDEX_META_TAGS } from "@/lib/security-headers";
-import Providers from "@/components/providers/fixed-session-provider";
+import StableAuthProvider from "@/components/providers/stable-session-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -42,7 +42,7 @@ export default function RootLayout({
       </head>
       <body>
         <ErrorBoundary level="global">
-          <Providers>
+          <StableAuthProvider>
             <ThemeProvider
               attribute="class"
               defaultTheme="light"
@@ -54,7 +54,7 @@ export default function RootLayout({
               {children}
               <Toaster />
             </ThemeProvider>
-          </Providers>
+          </StableAuthProvider>
         </ErrorBoundary>
       </body>
     </html>

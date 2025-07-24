@@ -220,8 +220,8 @@ export async function POST(request: NextRequest) {
     // Check if family relationship already exists
     const existingMember = await prisma.familyMember.findUnique({
       where: {
-        familyOwnerId_memberId: {
-          familyOwnerId: session.user.id,
+        familyId_memberId: {
+          familyId: session.user.id,
           memberId: data.memberId
         }
       }
@@ -234,6 +234,7 @@ export async function POST(request: NextRequest) {
     // Create family member - using only fields that exist in schema
     const familyMember = await prisma.familyMember.create({
       data: {
+        familyId: session.user.id,
         familyOwnerId: session.user.id,
         memberId: data.memberId,
         relationship: data.familyRole, // Map familyRole to relationship enum

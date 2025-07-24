@@ -195,10 +195,10 @@ export async function POST(request: NextRequest) {
       data: {
         childId,
         venueId,
-        parentId: session.user.id,
+        userId: session.user.id,
         eventType,
         method,
-        qrCode,
+        qrCodeUsed: qrCode,
         pickupPersonName,
         pickupPersonId,
         pickupRelation,
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
     await db.child.update({
       where: { id: childId },
       data: {
-        status: eventType === 'CHECK_IN' ? 'CHECKED_IN' : 'CHECKED_OUT',
+        status: 'ACTIVE',
         currentVenueId: eventType === 'CHECK_IN' ? venueId : null
       }
     });
@@ -242,43 +242,31 @@ export async function POST(request: NextRequest) {
     // Update location history
     if (eventType === 'CHECK_IN') {
       // Set previous locations as not current
-      await db.childLocationHistory.updateMany({
-        where: {
-          childId,
-          isCurrentLocation: true
-        },
-        data: {
-          isCurrentLocation: false,
-          exitTime: new Date()
-        }
-      });
+      // Update existing location history to add duration if available
+      // Note: isCurrentLocation field doesn't exist in the model
 
-      // Create new current location
+      // Create new location history record
       await db.childLocationHistory.create({
         data: {
           childId,
           venueId,
-          detectionType: 'MANUAL_CHECK_IN',
-          isCurrentLocation: true,
+          source: 'MANUAL',
           confidence: 1.0,
-          entryTime: new Date(),
-          metadata: {
-            
-            method
-          }
+          location: location || { type: 'manual_checkin' },
+          activity: `Check-in via ${method || 'manual'}`
         }
       });
     } else if (eventType === 'CHECK_OUT') {
       // Update current location to not current
-      await db.childLocationHistory.updateMany({
-        where: {
+      // Create check-out location history record
+      await db.childLocationHistory.create({
+        data: {
           childId,
           venueId,
-          isCurrentLocation: true
-        },
-        data: {
-          isCurrentLocation: false,
-          exitTime: new Date(),
+          source: 'MANUAL',
+          confidence: 1.0,
+          location: location || { type: 'manual_checkout' },
+          activity: `Check-out via ${method || 'manual'}`,
           duration: duration ? duration * 60 : undefined // convert to seconds
         }
       });

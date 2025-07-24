@@ -120,8 +120,11 @@ export async function POST(
     await prisma.alertTimelineEntry.create({
       data: {
         alertId: alertId,
+        entryType: 'ACKNOWLEDGED',
+        title: 'Alert Acknowledged',
         eventType: 'ACKNOWLEDGED',
         description: `Alert acknowledged by ${session.user.name}${data.response ? ': ' + data.response : ''}`,
+        userId: session.user.id,
         performedBy: session.user.id,
         metadata: {
           acknowledgedBy: session.user.name,

@@ -90,7 +90,7 @@ export async function GET(
         }
       },
       orderBy: {
-        createdAt: 'asc'
+        grantedAt: 'asc'
       }
     })
 
@@ -153,9 +153,9 @@ export async function POST(
     // Check if access already exists
     const existingAccess = await prisma.childAccess.findUnique({
       where: {
-        childId_familyMemberId: {
+        childId_granteeId: {
           childId: data.childId,
-          familyMemberId: params.id
+          granteeId: familyMember.memberId
         }
       }
     })
@@ -173,38 +173,42 @@ export async function POST(
     const childAccess = await prisma.childAccess.create({
       data: {
         childId: data.childId,
+        granterId: session.user.id,
+        granteeId: familyMember.memberId,
         familyMemberId: params.id,
-        grantedBy: session.user.id,
-        accessedBy: familyMember.memberId,
         accessLevel: data.accessLevel,
-        canViewProfile: data.canViewProfile,
-        canEditProfile: data.canEditProfile,
-        canViewLocation: data.canViewLocation,
-        canTrackLocation: data.canTrackLocation,
+        permissions: {
+          canViewReports: data.canViewReports,
+          canViewAnalytics: data.canViewAnalytics,
+          canManageEmergencyContacts: data.canManageEmergencyContacts,
+          canTrackLocation: data.canTrackLocation,
+          canDownloadMedia: data.canDownloadMedia,
+          canAuthorizePickup: data.canAuthorizePickup,
+          alertTypes: data.alertTypes || [],
+          emergencyAlerts: data.emergencyAlerts,
+          routineAlerts: data.routineAlerts,
+          photoAlerts: data.photoAlerts
+        },
+        conditions: {
+          timeRestrictions: data.timeRestrictions || {},
+          venueRestrictions: data.venueRestrictions || [],
+          activityRestrictions: data.activityRestrictions || [],
+          isTemporary: data.isTemporary,
+          temporaryStart: temporaryStart,
+          temporaryEnd: temporaryEnd,
+          temporaryReason: data.temporaryReason,
+          grantReason: data.grantReason,
+          legalDocuments: data.legalDocuments || [],
+          consentGiven: data.consentGiven
+        },
         canViewPhotos: data.canViewPhotos,
         canViewVideos: data.canViewVideos,
-        canDownloadMedia: data.canDownloadMedia,
         canPurchaseMedia: data.canPurchaseMedia,
         canReceiveAlerts: data.canReceiveAlerts,
         canCheckInOut: data.canCheckInOut,
-        canAuthorizePickup: data.canAuthorizePickup,
-        canViewReports: data.canViewReports,
-        canViewAnalytics: data.canViewAnalytics,
-        canManageEmergencyContacts: data.canManageEmergencyContacts,
-        alertTypes: data.alertTypes || [],
-        emergencyAlerts: data.emergencyAlerts,
-        routineAlerts: data.routineAlerts,
-        photoAlerts: data.photoAlerts,
-        timeRestrictions: data.timeRestrictions || {},
-        venueRestrictions: data.venueRestrictions || [],
-        activityRestrictions: data.activityRestrictions || [],
-        isTemporary: data.isTemporary,
-        temporaryStart,
-        temporaryEnd,
-        temporaryReason: data.temporaryReason,
-        grantReason: data.grantReason,
-        legalDocuments: data.legalDocuments || [],
-        consentGiven: data.consentGiven,
+        canViewProfile: data.canViewProfile,
+        canEditProfile: data.canEditProfile,
+        canViewLocation: data.canViewLocation,
         expiresAt
       },
       include: {

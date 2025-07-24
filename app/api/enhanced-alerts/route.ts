@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
         },
         timeline: {
           include: {
-            performer: {
+            user: {
               select: {
                 id: true,
                 name: true,
@@ -233,8 +233,11 @@ export async function POST(request: NextRequest) {
     await prisma.alertTimelineEntry.create({
       data: {
         alertId: alert.id,
+        entryType: 'CREATED',
+        title: 'Alert Created',
         eventType: 'CREATED',
         description: `Alert created: ${alert.title}`,
+        userId: session.user.id,
         performedBy: session.user.id,
         metadata: {
           createdBy: session.user.name,
@@ -392,11 +395,8 @@ async function broadcastAlertWebSocketEvent(alert: any) {
         eventType: eventData.type,
         eventAction: eventData.action,
         targetUserId: alert.child?.parentId || alert.venue?.adminId,
-        payload: eventData,
-        relatedEntityId: alert.id,
-        relatedEntityType: 'ENHANCED_ALERT',
-        priority: alert.severity === 'HIGH' ? 'HIGH' : 'MEDIUM',
-        scheduledAt: new Date()
+        eventData: eventData,
+        venueId: alert.venueId
       }
     });
 

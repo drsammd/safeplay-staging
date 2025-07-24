@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useSecureSession } from "@/components/providers/fixed-session-provider";
+import { useStableSession } from "@/components/providers/stable-session-provider";
 import ModernSidebar from "@/components/navigation/modern-sidebar";
 import ModernHeader from "@/components/navigation/modern-header";
 import { VerificationBadge } from "@/components/verification/verification-badge";
@@ -16,7 +16,7 @@ interface ModernParentLayoutProps {
 }
 
 export default function ModernParentLayout({ children }: ModernParentLayoutProps) {
-  const { data: session, status } = useSecureSession();
+  const { data: session, status } = useStableSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const getVerificationPrompt = () => {

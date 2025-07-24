@@ -66,7 +66,6 @@ export async function POST(request: NextRequest) {
         capturedAt: new Date(),
         venueId,
         uploadedBy: session.user.id,
-        facialTagsConfirmed: false,
       },
     });
 
@@ -123,7 +122,7 @@ export async function POST(request: NextRequest) {
             await prisma.sharedMedia.update({
               where: { id: media.id },
               data: {
-                facialTagsConfirmed: true,
+                moderationStatus: 'APPROVED',
               },
             });
           }
@@ -170,8 +169,8 @@ export async function POST(request: NextRequest) {
         fileUrl: media.fileUrl,
         thumbnailUrl: media.thumbnailUrl,
         taggedChildren,
-        facialTagsConfirmed: toBooleanSafe(media.facialTagsConfirmed),
-        createdAt: media.createdAt,
+        moderationStatus: media.moderationStatus,
+        createdAt: media.uploadedAt,
       },
       tagging: {
         autoTagged: taggedChildren.length > 0,
@@ -261,12 +260,12 @@ export async function GET(request: NextRequest) {
     const media = await prisma.sharedMedia.findMany({
       where,
       include: {
-        uploadedBy: {
+        uploader: {
           select: { id: true, name: true, email: true }
         },
         permissions: {
           where: { parentId: session.user.id },
-          select: { status: true, expiresAt: true }
+          select: { granted: true, expiresAt: true }
         }
       },
       orderBy: { capturedAt: 'desc' },
@@ -292,7 +291,7 @@ export async function GET(request: NextRequest) {
         duration: item.duration,
         capturedAt: item.capturedAt,
         taggedChildren: taggedChildrenSafe,
-        facialTagsConfirmed: false, // Fixed: default value since property doesn't exist
+        moderationStatus: item.moderationStatus || 'PENDING',
         watermarked: false, // Fixed: default value since property doesn't exist
         uploadedBy: item.uploadedBy,
         hasPermission: item.uploadedBy === session.user.id,

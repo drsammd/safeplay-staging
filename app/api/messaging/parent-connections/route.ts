@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         requestedAt: connection.requestedAt,
         respondedAt: connection.respondedAt,
         message: connection.message,
-        sharedInterests: connection.sharedInterests || [],
+        connectionType: connection.connectionType,
         compatibilityScore: 0,
         recentActivities: [],
       };
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { receiverId, message, connectionReason, sharedInterests } = body;
+    const { receiverId, message } = body;
 
     if (!receiverId) {
       return NextResponse.json(
@@ -152,11 +152,9 @@ export async function POST(request: NextRequest) {
       data: {
         requesterId: session.user.id,
         receiverId,
-        status: ParentConnectionStatus.PENDING,
+        status: ConnectionStatus.PENDING,
         message,
-        connectionReason,
-        sharedInterests: sharedInterests || [],
-        compatibilityScore,
+        connectionType: 'FRIEND',
       },
       include: {
         requester: {
@@ -181,7 +179,7 @@ export async function POST(request: NextRequest) {
           requesterName: connection.requester.name,
           message: connection.message,
         },
-        priority: 'normal',
+        priority: 'NORMAL',
       },
     });
 

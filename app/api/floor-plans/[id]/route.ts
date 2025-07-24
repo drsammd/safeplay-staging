@@ -40,9 +40,17 @@ export async function GET(
           select: { id: true, name: true, email: true }
         },
         cameras: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            status: true,
+            coordinates: true,
+            orientation: true,
+            coverageArea: true,
             coverageAreas: true,
-            recognitionZones: true
+            position: true,
+            isActive: true
           }
         },
         zones: true

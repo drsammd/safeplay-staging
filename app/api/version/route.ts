@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 export async function GET() {
-  let version = 'v1.5.40.9-deployment-tracking-fix';
+  let version = 'v1.5.40-alpha.9';
   // Use VERCEL_GIT_COMMIT_SHA for accurate deployment tracking (Vercel's recommendation)
   let commit = process.env.VERCEL_GIT_COMMIT_SHA || 'local-development';
   

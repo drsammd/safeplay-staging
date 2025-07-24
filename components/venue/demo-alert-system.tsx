@@ -17,6 +17,7 @@ import {
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { getChildAvatar, DEMO_CHILDREN_NAMES } from "@/lib/avatar-mapping";
 
 interface DemoAlert {
   id: string;
@@ -39,21 +40,7 @@ export default function DemoAlertSystem() {
   const [isSimulating, setIsSimulating] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'resolved'>('all');
 
-  // Demo avatars
-  const demoAvatars = [
-    'https://cdn.abacus.ai/images/f4c211d6-381f-4a4c-9f9e-c83c1f16262a.png',
-    'https://cdn.abacus.ai/images/717d6bf8-00ba-428a-be06-751273e7c291.png',
-    'https://cdn.abacus.ai/images/5b8a3c7b-6ce9-4d97-8ba4-1c5cbbd72a91.png',
-    'https://cdn.abacus.ai/images/c8f16198-68ee-40f3-86b4-43726d5d552b.png',
-    'https://cdn.abacus.ai/images/a06294b5-8deb-4342-86fa-a7498885a50c.png',
-    'https://cdn.abacus.ai/images/0e8496b3-a6f2-45fb-8ac0-a97f5e6eb921.png',
-  ];
-
-  const demoChildren = [
-    'Emma Johnson', 'Michael Chen', 'Sofia Martinez', 
-    'Marcus Thompson', 'Aria Kim', 'Diego Rodriguez',
-    'Zoe Williams', 'Noah Davis', 'Maya Patel'
-  ];
+  // Using centralized avatar mapping for consistent child-avatar assignments
 
   const locations = [
     'Main Entrance', 'Play Area A', 'Play Area B', 'Climbing Zone', 
@@ -113,7 +100,7 @@ export default function DemoAlertSystem() {
   const generateAlert = (): DemoAlert => {
     const scenario = alertScenarios[Math.floor(Math.random() * alertScenarios.length)];
     const childName = scenario.requiresChild 
-      ? demoChildren[Math.floor(Math.random() * demoChildren.length)]
+      ? DEMO_CHILDREN_NAMES[Math.floor(Math.random() * DEMO_CHILDREN_NAMES.length)]
       : undefined;
     
     return {
@@ -125,7 +112,7 @@ export default function DemoAlertSystem() {
         ? `${childName} - ${scenario.description}`
         : scenario.description,
       childName,
-      childAvatar: childName ? demoAvatars[Math.floor(Math.random() * demoAvatars.length)] : undefined,
+      childAvatar: childName ? getChildAvatar(childName) : undefined, // Use consistent avatar from centralized mapping
       location: scenario.location,
       timestamp: new Date(),
       status: 'active',
@@ -148,7 +135,7 @@ export default function DemoAlertSystem() {
         title: 'Child Near Exit',
         description: 'Sofia Martinez detected near unsupervised exit zone',
         childName: 'Sofia Martinez',
-        childAvatar: demoAvatars[2],
+        childAvatar: getChildAvatar('Sofia Martinez'), // Use consistent avatar from centralized mapping
         location: 'Exit Zone',
         timestamp: new Date(Date.now() - 2 * 60 * 1000), // 2 minutes ago
         autoResolveTime: 15

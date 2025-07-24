@@ -76,7 +76,7 @@ export default function LiveTrackingPage() {
   ];
 
   return (
-    <div className="min-h-full bg-tracking bg-overlay-light">
+    <div className="min-h-full bg-tracking bg-overlay-readable">
       <div className="space-y-6 content-overlay">
       {/* Header */}
       <div className="flex items-center justify-between">

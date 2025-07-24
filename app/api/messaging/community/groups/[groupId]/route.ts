@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from 'next-auth/react';
 import { prisma } from '../../../../../../lib/db';
+import { CommunityRole } from '@prisma/client';
 
 // GET /api/messaging/community/groups/[groupId] - Get group details
 export async function GET(
@@ -66,11 +67,11 @@ export async function GET(
       id: group.id,
       name: group.name,
       description: group.description,
-      type: group.type,
+      groupType: group.groupType,
       isPublic: group.isPublic,
-      admin: group.admin,
-      venue: group.venue,
-      memberLimit: group.memberLimit,
+      adminId: group.adminId,
+      venueId: group.venueId,
+      maxMembers: group.maxMembers,
       location: group.location,
       interests: group.interests,
       ageRange: group.ageRange,
@@ -135,7 +136,7 @@ export async function PUT(
     }
 
     const userMembership = group.members[0];
-    if (!userMembership || (userMembership.role !== 'admin' && group.adminId !== session.user.id)) {
+    if (!userMembership || (userMembership.role !== CommunityRole.ADMIN && group.adminId !== session.user.id)) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
@@ -146,7 +147,7 @@ export async function PUT(
         name: body.name || group.name,
         description: body.description !== undefined ? body.description : group.description,
         isPublic: body.isPublic !== undefined ? body.isPublic : group.isPublic,
-        memberLimit: body.memberLimit !== undefined ? body.memberLimit : group.memberLimit,
+        maxMembers: body.maxMembers !== undefined ? body.maxMembers : group.maxMembers,
         location: body.location !== undefined ? body.location : group.location,
         interests: body.interests || group.interests,
         ageRange: body.ageRange !== undefined ? body.ageRange : group.ageRange,

@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
       result.checkInEvent = checkInEvent;
       result.message = `${child.firstName} ${child.lastName} checked in successfully`;
 
-    } else if ((qrCodeData.purpose === 'CHECK_OUT' || action === 'check_out') && childId) {
+    } else if (action === 'check_out' && childId) {
       // Verify parent owns this child
       const child = await db.child.findFirst({
         where: {

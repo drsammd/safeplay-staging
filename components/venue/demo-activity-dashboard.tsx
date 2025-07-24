@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
+import { getChildAvatar, getRandomChildren, DEMO_CHILDREN_NAMES } from "@/lib/avatar-mapping";
 
 interface ActivityEvent {
   id: string;
@@ -43,21 +44,7 @@ export default function DemoActivityDashboard() {
   const [zoneOccupancy, setZoneOccupancy] = useState<ZoneOccupancy[]>([]);
   const [isSimulating, setIsSimulating] = useState(true);
 
-  // Demo avatars
-  const demoAvatars = [
-    'https://cdn.abacus.ai/images/f4c211d6-381f-4a4c-9f9e-c83c1f16262a.png',
-    'https://cdn.abacus.ai/images/717d6bf8-00ba-428a-be06-751273e7c291.png',
-    'https://cdn.abacus.ai/images/5b8a3c7b-6ce9-4d97-8ba4-1c5cbbd72a91.png',
-    'https://cdn.abacus.ai/images/c8f16198-68ee-40f3-86b4-43726d5d552b.png',
-    'https://cdn.abacus.ai/images/a06294b5-8deb-4342-86fa-a7498885a50c.png',
-    'https://cdn.abacus.ai/images/0e8496b3-a6f2-45fb-8ac0-a97f5e6eb921.png',
-  ];
-
-  const demoChildren = [
-    'Emma Johnson', 'Michael Chen', 'Sofia Martinez', 
-    'Marcus Thompson', 'Aria Kim', 'Diego Rodriguez',
-    'Zoe Williams', 'Noah Davis', 'Maya Patel', 'Elijah Brown'
-  ];
+  // Using centralized avatar mapping for consistent child-avatar assignments
 
   const zones = [
     'Main Entrance', 'Play Area A', 'Play Area B', 'Climbing Zone', 
@@ -72,8 +59,8 @@ export default function DemoActivityDashboard() {
 
     const generateEvent = (): ActivityEvent => {
       const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
-      const childName = demoChildren[Math.floor(Math.random() * demoChildren.length)];
-      const childAvatar = demoAvatars[Math.floor(Math.random() * demoAvatars.length)];
+      const childName = DEMO_CHILDREN_NAMES[Math.floor(Math.random() * DEMO_CHILDREN_NAMES.length)];
+      const childAvatar = getChildAvatar(childName); // Use consistent avatar from centralized mapping
       const location = zones[Math.floor(Math.random() * zones.length)];
       
       return {
@@ -89,16 +76,21 @@ export default function DemoActivityDashboard() {
     };
 
     const updateZoneOccupancy = () => {
-      const occupancy: ZoneOccupancy[] = zones.slice(0, 6).map(zone => ({
-        zone,
-        current: Math.floor(Math.random() * 8) + 1,
-        capacity: 15,
-        children: Array.from({ length: Math.floor(Math.random() * 4) + 1 }, (_, i) => ({
-          name: demoChildren[Math.floor(Math.random() * demoChildren.length)],
-          avatar: demoAvatars[Math.floor(Math.random() * demoAvatars.length)],
-          duration: `${Math.floor(Math.random() * 90) + 5}m`
-        }))
-      }));
+      const occupancy: ZoneOccupancy[] = zones.slice(0, 6).map(zone => {
+        const childrenCount = Math.floor(Math.random() * 4) + 1;
+        const randomChildren = getRandomChildren(childrenCount);
+        
+        return {
+          zone,
+          current: Math.floor(Math.random() * 8) + 1,
+          capacity: 15,
+          children: randomChildren.map(child => ({
+            name: child.name,
+            avatar: child.avatar, // Use consistent avatar from centralized mapping
+            duration: `${Math.floor(Math.random() * 90) + 5}m`
+          }))
+        };
+      });
       setZoneOccupancy(occupancy);
     };
 

@@ -13,7 +13,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSecureSession } from '@/components/providers/fixed-session-provider';
+import { useStableSession } from '@/components/providers/stable-session-provider';
 
 interface AuthDebugInfo {
   sessionValid: boolean;
@@ -33,7 +33,7 @@ export default function AuthDebugPanel() {
   });
   
   const [isVisible, setIsVisible] = useState(false);
-  const { data: session, status, user } = useSecureSession();
+  const { data: session, status, user } = useStableSession();
 
   useEffect(() => {
     validateSession();

@@ -1,9 +1,10 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
-import { MapPin, Users, AlertTriangle, Camera, Eye } from "lucide-react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { MapPin, Users, AlertTriangle, Camera, Eye, RotateCcw, Move } from "lucide-react";
 import Image from "next/image";
+import { getChildAvatar, getRandomChildren } from "@/lib/avatar-mapping";
 
 interface ZoneChild {
   id: string;
@@ -28,6 +29,13 @@ interface Zone {
   alertCount: number;
 }
 
+interface DragState {
+  isDragging: boolean;
+  dragZoneId: string | null;
+  startPosition: { x: number; y: number };
+  offset: { x: number; y: number };
+}
+
 interface DemoZoneMapProps {
   selectedZone?: string;
   onZoneSelect?: (zoneName: string) => void;
@@ -36,22 +44,19 @@ interface DemoZoneMapProps {
 export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapProps) {
   const [zones, setZones] = useState<Zone[]>([]);
   const [isSimulating, setIsSimulating] = useState(true);
+  const [isDragEnabled, setIsDragEnabled] = useState(false);
+  const [dragState, setDragState] = useState<DragState>({
+    isDragging: false,
+    dragZoneId: null,
+    startPosition: { x: 0, y: 0 },
+    offset: { x: 0, y: 0 }
+  });
+  
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const STORAGE_KEY = 'safeplay-zone-positions';
 
-  // Demo avatars
-  const demoAvatars = [
-    'https://cdn.abacus.ai/images/f4c211d6-381f-4a4c-9f9e-c83c1f16262a.png',
-    'https://cdn.abacus.ai/images/717d6bf8-00ba-428a-be06-751273e7c291.png',
-    'https://cdn.abacus.ai/images/5b8a3c7b-6ce9-4d97-8ba4-1c5cbbd72a91.png',
-    'https://cdn.abacus.ai/images/c8f16198-68ee-40f3-86b4-43726d5d552b.png',
-    'https://cdn.abacus.ai/images/a06294b5-8deb-4342-86fa-a7498885a50c.png',
-    'https://cdn.abacus.ai/images/0e8496b3-a6f2-45fb-8ac0-a97f5e6eb921.png',
-  ];
-
-  const demoChildren = [
-    'Emma Johnson', 'Michael Chen', 'Sofia Martinez', 
-    'Marcus Thompson', 'Aria Kim', 'Diego Rodriguez',
-    'Zoe Williams', 'Noah Davis', 'Maya Patel', 'Elijah Brown'
-  ];
+  // Using centralized avatar mapping for consistency
+  // No more random avatar assignments - each child has a fixed avatar
 
   // Initial zone layout (scaled for display)
   const initialZones: Omit<Zone, 'children' | 'alertCount'>[] = [
@@ -75,20 +80,172 @@ export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapP
     { id: '5', name: 'Overview Cam', x: 400, y: 300, coverage: '4,6,7' },
   ];
 
+  // Zone position persistence functions
+  const saveZonePositions = useCallback((zonesToSave: Zone[]) => {
+    try {
+      const positions = zonesToSave.reduce((acc, zone) => {
+        acc[zone.id] = { x: zone.x, y: zone.y };
+        return acc;
+      }, {} as Record<string, { x: number; y: number }>);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(positions));
+    } catch (error) {
+      console.error('Failed to save zone positions:', error);
+    }
+  }, [STORAGE_KEY]);
+
+  const loadZonePositions = useCallback(() => {
+    try {
+      const savedPositions = localStorage.getItem(STORAGE_KEY);
+      if (savedPositions) {
+        return JSON.parse(savedPositions) as Record<string, { x: number; y: number }>;
+      }
+    } catch (error) {
+      console.error('Failed to load zone positions:', error);
+    }
+    return {};
+  }, [STORAGE_KEY]);
+
+  const resetZonePositions = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      setZones(currentZones => 
+        currentZones.map(zone => {
+          const originalZone = initialZones.find(z => z.id === zone.id);
+          return originalZone ? { ...zone, x: originalZone.x, y: originalZone.y } : zone;
+        })
+      );
+    } catch (error) {
+      console.error('Failed to reset zone positions:', error);
+    }
+  }, [STORAGE_KEY]);
+
+  // Boundary constraint functions
+  const constrainPosition = useCallback((x: number, y: number, width: number, height: number) => {
+    const container = mapContainerRef.current;
+    if (!container) return { x, y };
+
+    const containerRect = container.getBoundingClientRect();
+    const maxX = containerRect.width - width;
+    const maxY = containerRect.height - height;
+
+    return {
+      x: Math.max(0, Math.min(x, maxX)),
+      y: Math.max(0, Math.min(y, maxY))
+    };
+  }, []);
+
+  // Drag event handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent, zoneId: string) => {
+    if (!isDragEnabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const zone = zones.find(z => z.id === zoneId);
+    if (!zone) return;
+
+    setDragState({
+      isDragging: true,
+      dragZoneId: zoneId,
+      startPosition: { x: e.clientX, y: e.clientY },
+      offset: {
+        x: e.clientX - containerRect.left - zone.x,
+        y: e.clientY - containerRect.top - zone.y
+      }
+    });
+  }, [isDragEnabled, zones]);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!dragState.isDragging || !dragState.dragZoneId) return;
+
+    const container = mapContainerRef.current;
+    if (!container) return;
+
+    const containerRect = container.getBoundingClientRect();
+
+    setZones(currentZones => {
+      const zone = currentZones.find(z => z.id === dragState.dragZoneId);
+      if (!zone) return currentZones;
+
+      const newX = e.clientX - containerRect.left - dragState.offset.x;
+      const newY = e.clientY - containerRect.top - dragState.offset.y;
+      const constrainedPosition = constrainPosition(newX, newY, zone.width, zone.height);
+
+      return currentZones.map(z =>
+        z.id === dragState.dragZoneId
+          ? { ...z, x: constrainedPosition.x, y: constrainedPosition.y }
+          : z
+      );
+    });
+  }, [dragState, constrainPosition]);
+
+  const handleMouseUp = useCallback(() => {
+    if (dragState.isDragging) {
+      setDragState({
+        isDragging: false,
+        dragZoneId: null,
+        startPosition: { x: 0, y: 0 },
+        offset: { x: 0, y: 0 }
+      });
+      
+      // Save positions after drag ends
+      setTimeout(() => {
+        setZones(currentZones => {
+          saveZonePositions(currentZones);
+          return currentZones;
+        });
+      }, 100);
+    }
+  }, [dragState.isDragging, saveZonePositions]);
+
+  // Mouse event listeners
+  useEffect(() => {
+    if (dragState.isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [dragState.isDragging, handleMouseMove, handleMouseUp]);
+
+  // Initialize zones with saved positions
+  useEffect(() => {
+    const savedPositions = loadZonePositions();
+    
+    const zonesWithPositions = initialZones.map(zone => ({
+      ...zone,
+      x: savedPositions[zone.id]?.x ?? zone.x,
+      y: savedPositions[zone.id]?.y ?? zone.y,
+      children: [],
+      alertCount: 0
+    }));
+    
+    setZones(zonesWithPositions);
+  }, [loadZonePositions]);
+
   // Simulate zone occupancy and child movements
   useEffect(() => {
-    if (!isSimulating) return;
+    if (!isSimulating || zones.length === 0) return;
 
     const updateZones = () => {
-      const updatedZones = initialZones.map(zone => {
+      setZones(currentZones => currentZones.map(zone => {
         const childCount = Math.floor(Math.random() * Math.min(zone.capacity, 6));
         const children: ZoneChild[] = [];
         
+        // Get random children using centralized avatar mapping
+        const randomChildren = getRandomChildren(childCount);
+        
         for (let i = 0; i < childCount; i++) {
+          const selectedChild = randomChildren[i] || randomChildren[0]; // Fallback to first child
           const child: ZoneChild = {
             id: `${zone.id}-child-${i}`,
-            name: demoChildren[Math.floor(Math.random() * demoChildren.length)],
-            avatar: demoAvatars[Math.floor(Math.random() * demoAvatars.length)],
+            name: selectedChild.name,
+            avatar: selectedChild.avatar, // Use consistent avatar from centralized mapping
             x: zone.x + 20 + Math.random() * (zone.width - 40),
             y: zone.y + 20 + Math.random() * (zone.height - 40),
             confidence: 0.85 + Math.random() * 0.15,
@@ -103,16 +260,14 @@ export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapP
           children,
           alertCount: children.filter(c => c.alertLevel !== 'green').length
         };
-      });
-
-      setZones(updatedZones);
+      }));
     };
 
     updateZones();
     const interval = setInterval(updateZones, 4000);
 
     return () => clearInterval(interval);
-  }, [isSimulating]);
+  }, [isSimulating, zones.length]);
 
   const getZoneColor = (zone: Zone) => {
     const occupancyRatio = zone.children.length / zone.capacity;
@@ -131,11 +286,17 @@ export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapP
       {/* Controls and Stats */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h3 className="text-lg font-semibold text-gray-900">Interactive Zone Map</h3>
+          <h3 className="text-3xl font-bold text-gray-900">Interactive Zone Map</h3>
           <div className="flex items-center space-x-1">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-sm text-green-600 font-medium">LIVE</span>
           </div>
+          {isDragEnabled && (
+            <div className="flex items-center space-x-1">
+              <Move className="h-3 w-3 text-blue-600" />
+              <span className="text-sm text-blue-600 font-medium">DRAG MODE</span>
+            </div>
+          )}
         </div>
         
         <div className="flex items-center space-x-4">
@@ -149,12 +310,38 @@ export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapP
               <span>{totalAlerts} alerts</span>
             </div>
           )}
+          
+          {/* Drag Controls */}
+          <button
+            onClick={() => setIsDragEnabled(!isDragEnabled)}
+            className={`px-3 py-1 text-sm rounded flex items-center space-x-1 ${
+              isDragEnabled 
+                ? 'bg-blue-100 text-blue-700 border border-blue-300' 
+                : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+            }`}
+            title="Enable zone repositioning"
+          >
+            <Move className="h-3 w-3" />
+            <span>{isDragEnabled ? 'Exit Edit' : 'Edit Layout'}</span>
+          </button>
+          
+          {isDragEnabled && (
+            <button
+              onClick={resetZonePositions}
+              className="px-3 py-1 text-sm rounded flex items-center space-x-1 bg-orange-100 text-orange-700 border border-orange-300 hover:bg-orange-200"
+              title="Reset zones to default positions"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Reset</span>
+            </button>
+          )}
+          
           <button
             onClick={() => setIsSimulating(!isSimulating)}
             className={`px-3 py-1 text-sm rounded ${
               isSimulating 
-                ? 'bg-red-100 text-red-700' 
-                : 'bg-green-100 text-green-700'
+                ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                : 'bg-green-100 text-green-700 hover:bg-green-200'
             }`}
           >
             {isSimulating ? 'Pause' : 'Resume'}
@@ -164,7 +351,15 @@ export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapP
 
       {/* Interactive Map */}
       <div className="card">
-        <div className="relative w-full h-96 bg-gray-50 rounded-lg overflow-hidden border-2 border-gray-200">
+        <div 
+          ref={mapContainerRef}
+          className="relative w-full h-96 bg-venue rounded-lg overflow-hidden border-2 border-gray-200 select-none"
+          style={{
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        >
           {/* Venue background grid */}
           <div className="absolute inset-0 opacity-20">
             <div className="grid grid-cols-16 grid-rows-12 h-full">
@@ -175,25 +370,43 @@ export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapP
           </div>
 
           {/* Zones */}
-          {zones.map((zone) => (
-            <div
-              key={zone.id}
-              className={`absolute border-2 rounded-lg transition-all duration-300 cursor-pointer hover:opacity-80 ${
-                getZoneColor(zone)
-              } ${selectedZone === zone.name ? 'ring-2 ring-blue-500' : ''}`}
-              style={{
-                left: `${zone.x}px`,
-                top: `${zone.y}px`,
-                width: `${zone.width}px`,
-                height: `${zone.height}px`,
-              }}
-              onClick={() => onZoneSelect?.(zone.name)}
-            >
+          {zones.map((zone) => {
+            const isDragging = dragState.isDragging && dragState.dragZoneId === zone.id;
+            const isSelected = selectedZone === zone.name;
+            
+            return (
+              <div
+                key={zone.id}
+                className={`absolute border-2 rounded-lg transition-all duration-200 ${
+                  getZoneColor(zone)
+                } ${isSelected ? 'ring-2 ring-blue-500' : ''} ${
+                  isDragEnabled 
+                    ? 'cursor-move hover:ring-2 hover:ring-blue-400 hover:shadow-lg' 
+                    : 'cursor-pointer hover:opacity-80'
+                } ${isDragging ? 'opacity-80 shadow-2xl z-50 scale-105' : 'hover:scale-102'}`}
+                style={{
+                  left: `${zone.x}px`,
+                  top: `${zone.y}px`,
+                  width: `${zone.width}px`,
+                  height: `${zone.height}px`,
+                  transform: isDragging ? 'scale(1.05)' : undefined,
+                  zIndex: isDragging ? 50 : undefined
+                }}
+                onMouseDown={(e) => isDragEnabled && handleMouseDown(e, zone.id)}
+                onClick={() => !isDragEnabled && onZoneSelect?.(zone.name)}
+              >
               {/* Zone label */}
               <div className="absolute -top-6 left-0 bg-white px-2 py-1 rounded text-xs font-medium shadow-sm border">
                 {zone.name}
                 <span className="ml-1 text-gray-500">({zone.children.length}/{zone.capacity})</span>
               </div>
+
+              {/* Drag handle indicator */}
+              {isDragEnabled && (
+                <div className="absolute top-1 right-1 opacity-60 hover:opacity-100 transition-opacity">
+                  <Move className="h-3 w-3 text-gray-600" />
+                </div>
+              )}
 
               {/* Alert indicator */}
               {zone.alertCount > 0 && (
@@ -243,7 +456,8 @@ export default function DemoZoneMap({ selectedZone, onZoneSelect }: DemoZoneMapP
                 </div>
               ))}
             </div>
-          ))}
+          );
+          })}
 
           {/* Cameras */}
           {cameras.map((camera) => (

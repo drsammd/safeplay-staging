@@ -62,7 +62,7 @@ export async function GET(
             email: true
           }
         },
-        recipient: {
+        grantee: {
           select: {
             id: true,
             name: true,

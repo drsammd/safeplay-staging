@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
             email: true
           }
         },
-        recipient: {
+        grantee: {
           select: {
             id: true,
             name: true,
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
         }
       },
       orderBy: {
-        createdAt: 'desc'
+        grantedAt: 'desc'
       }
     })
 
@@ -179,6 +179,8 @@ export async function POST(request: NextRequest) {
     const permission = await prisma.familyPermission.create({
       data: {
         familyMemberId: data.familyMemberId,
+        granterId: session.user.id,
+        granteeId: familyMember.memberId,
         grantedBy: session.user.id,
         receivedBy: familyMember.memberId,
         permissionType: data.permissionType,
@@ -188,14 +190,16 @@ export async function POST(request: NextRequest) {
         canRead: data.canRead,
         canWrite: data.canWrite,
         canDelete: data.canDelete,
-        canShare: data.canShare,
-        canDownload: data.canDownload,
+        canShare: data.canShare || data.canDownload, // Map canDownload to canShare
         expiresAt,
-        timeRestrictions: data.timeRestrictions || {},
-        locationRestrictions: data.locationRestrictions || [],
-        contextRestrictions: data.contextRestrictions || {},
-        usageLimit: data.usageLimit,
-        grantReason: data.grantReason
+        conditions: {
+          timeRestrictions: data.timeRestrictions || {},
+          locationRestrictions: data.locationRestrictions || [],
+          contextRestrictions: data.contextRestrictions || {},
+          usageLimit: data.usageLimit,
+          grantReason: data.grantReason,
+          canDownload: data.canDownload
+        }
       },
       include: {
         familyMember: {

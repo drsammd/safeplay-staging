@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           participants: {
             some: {
               userId: session.user.id,
-              status: { in: ['registered', 'confirmed', 'attended'] },
+              status: { in: ['REGISTERED', 'CONFIRMED', 'ATTENDED'] },
             },
           },
         },
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       where,
       include: {
         group: {
-          select: { id: true, name: true, type: true },
+          select: { id: true, name: true, groupType: true },
         },
         venue: {
           select: { id: true, name: true },
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           select: {
             participants: {
               where: {
-                status: { in: ['registered', 'confirmed'] },
+                status: { in: ['REGISTERED', 'CONFIRMED'] },
               },
             },
           },
@@ -93,11 +93,10 @@ export async function GET(request: NextRequest) {
         startTime: event.startTime,
         endTime: event.endTime,
         maxParticipants: event.maxParticipants,
-        currentParticipants: event._count.participants,
-        ageRange: event.ageRange,
+        currentParticipants: event._count?.participants || event.currentParticipants,
         cost: event.cost,
         isPublic: event.isPublic,
-        requiresApproval: event.requiresApproval,
+        requiresRSVP: event.requiresRSVP,
         group: event.group,
         venue: event.venue,
         organizer: event.organizer,
@@ -222,8 +221,7 @@ export async function POST(request: NextRequest) {
       data: {
         eventId: event.id,
         userId: session.user.id,
-        status: 'confirmed',
-        childrenIds: [], // Could be populated with organizer's children
+        status: 'CONFIRMED',
       },
     });
 
@@ -242,7 +240,7 @@ export async function POST(request: NextRequest) {
           prisma.communicationNotification.create({
             data: {
               userId: member.userId,
-              type: 'COMMUNITY_INVITE',
+              notificationType: 'COMMUNITY_INVITE',
               title: 'New Community Event',
               message: `${event.organizer.name} created a new event: ${event.title}`,
               data: {
@@ -250,7 +248,7 @@ export async function POST(request: NextRequest) {
                 groupId: event.groupId,
                 organizerId: session.user.id,
               },
-              priority: 'normal',
+              priority: 'NORMAL',
             },
           })
         )

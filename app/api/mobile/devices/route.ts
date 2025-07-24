@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         isActive: true
       },
       orderBy: {
-        lastActiveAt: 'desc'
+        lastSeen: 'desc'
       }
     });
 
@@ -57,13 +57,12 @@ export async function POST(request: NextRequest) {
         where: { deviceId },
         data: {
           userId: session.user.id,
-          deviceToken: deviceToken || existingDevice.deviceToken,
+          pushToken: deviceToken || existingDevice.pushToken,
           platform,
           appVersion: appVersion || existingDevice.appVersion,
           osVersion: osVersion || existingDevice.osVersion,
-          lastActiveAt: new Date(),
-          isActive: true,
-          notificationSettings: notificationSettings || existingDevice.notificationSettings
+          lastSeen: new Date(),
+          isActive: true
         }
       });
     } else {
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
           platform,
           appVersion,
           osVersion,
-          lastActiveAt: new Date()
+          lastSeen: new Date()
         }
       });
     }

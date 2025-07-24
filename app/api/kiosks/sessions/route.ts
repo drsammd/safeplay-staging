@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import { KioskManager, KioskSession } from '../../../../utils/kiosk-manager';
 
 // Mock kiosk sessions storage (in production, this would be in a database)
@@ -38,10 +38,6 @@ let kioskSessions: KioskSession[] = [
     ],
     currentStep: 'qr_scan',
     completedSteps: ['welcome'],
-    kiosk: {
-      name: 'Main Entrance Kiosk',
-      location: 'Main Entrance',
-    },
   },
   {
     id: 'session-2',
@@ -84,10 +80,6 @@ let kioskSessions: KioskSession[] = [
     ],
     currentStep: 'confirmation',
     completedSteps: ['welcome', 'qr_scan'],
-    kiosk: {
-      name: 'Exit Kiosk',
-      location: 'Main Exit',
-    },
   },
 ];
 
@@ -173,10 +165,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Add kiosk information
-    newSession.kiosk = {
-      name: 'Demo Kiosk',
-      location: 'Demo Location',
-    };
+    newSession.kioskId = kioskId;
 
     // Add to storage
     kioskSessions.push(newSession);

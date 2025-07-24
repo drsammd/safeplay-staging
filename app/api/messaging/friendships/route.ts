@@ -52,12 +52,8 @@ export async function GET(request: NextRequest) {
         child2: {
           include: { parent: { select: { id: true, name: true } } },
         },
-        interactions: {
-          orderBy: { detectedAt: 'desc' },
-          take: 5,
-        },
       },
-      orderBy: { lastInteractionAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     const formattedFriendships = friendships.map(friendship => {
@@ -66,19 +62,16 @@ export async function GET(request: NextRequest) {
       return {
         id: friendship.id,
         friend: {
-          id: friend.id,
-          name: `${friend.firstName} ${friend.lastName}`,
-          parent: friend.parent,
+          id: friend?.id,
+          name: friend ? `${friend.firstName} ${friend.lastName}` : 'Unknown',
+          parent: friend?.parent,
         },
         status: friendship.status,
-        confidenceScore: friendship.confidenceScore,
-        interactionCount: friendship.interactionCount,
-        totalInteractionTime: friendship.totalInteractionTime,
-        lastInteractionAt: friendship.lastInteractionAt,
-        sharedActivities: friendship.sharedActivities,
-        recentInteractions: friendship.interactions,
-        detectedAt: friendship.detectedAt,
-        confirmedAt: friendship.confirmedAt,
+        createdAt: friendship.createdAt,
+        approvedAt: friendship.approvedAt,
+        notes: friendship.notes,
+        initiatedBy: friendship.initiatedBy,
+        approvedBy: friendship.approvedBy,
       };
     });
 

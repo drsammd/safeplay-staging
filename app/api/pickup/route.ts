@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { PickupAuthStatus, PickupVerificationMethod } from '@prisma/client';
+import { VerificationMethod } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,18 +17,18 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const childId = searchParams.get('childId');
-    const status = searchParams.get('status') as PickupAuthStatus | null;
+    const isActive = searchParams.get('isActive') === 'true';
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const where: any = {};
 
     if (session.user.role === 'PARENT') {
-      where.parentId = session.user.id;
+      where.authorizedBy = session.user.id;
     }
 
     if (childId) where.childId = childId;
-    if (status) where.status = status;
+    if (searchParams.get('isActive') !== null) where.isActive = isActive;
 
     const pickupAuthorizations = await prisma.pickupAuthorization.findMany({
       where,
@@ -41,22 +41,11 @@ export async function GET(request: NextRequest) {
             profilePhoto: true,
           },
         },
-        parent: {
+        authorizer: {
           select: {
             id: true,
             name: true,
             email: true,
-          },
-        },
-        pickupEvents: {
-          take: 5,
-          orderBy: { timestamp: 'desc' },
-          select: {
-            id: true,
-            timestamp: true,
-            verificationMethod: true,
-            biometricVerified: true,
-            parentNotified: true,
           },
         },
       },

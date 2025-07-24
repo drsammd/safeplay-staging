@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-// EmergencyContactType enum removed as it doesn't exist in schema
+import { EmergencyContactType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 

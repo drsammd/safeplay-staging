@@ -31,6 +31,8 @@ model User {
   twoFactorEnabled  Boolean   @default(false)
   twoFactorSecret   String?   // For authenticator apps
   twoFactorPhone    String?   // Phone number for SMS 2FA
+  resetToken        String?   // Password reset token
+  resetTokenExpiry  DateTime? // Password reset token expiry
   verificationNotes String?   // Admin notes about verification status
   
   // Freemium Usage Tracking Fields (v1.5.0)
@@ -1276,6 +1278,7 @@ model CheckInOutEvent {
   childId           String
   venueId           String
   userId            String
+  membershipId      String?                // Link to membership used for check-in/out
   eventType         CheckInOutType
   timestamp         DateTime               @default(now())
   method            CheckInMethod          @default(MANUAL)
@@ -1290,6 +1293,7 @@ model CheckInOutEvent {
   child             Child                  @relation(fields: [childId], references: [id])
   venue             Venue                  @relation(fields: [venueId], references: [id])
   user              User                   @relation("UserCheckInOutEvents", fields: [userId], references: [id])
+  membership        Membership?            @relation(fields: [membershipId], references: [id])
   identityVerifications IdentityVerification[] @relation("CheckInOutIdentityVerifications") // Added missing relation
   
   @@index([childId, timestamp])
@@ -1625,7 +1629,12 @@ model MembershipPackage {
   description       String?
   packageType       String?                // Type of membership package
   price             Float
+  currency          String                 @default("USD") // Currency for the price
   duration          Int                    // Duration in days
+  checkInLimit      Int?                   // Maximum check-ins per month/period
+  guestLimit        Int?                   // Maximum guests allowed per membership
+  photoCredits      Int?                   // Photo/video credits included in package
+  videoCredits      Int?                   // Video credits included in package
   benefits          Json                   // List of benefits
   restrictions      Json?                  // Any restrictions
   isActive          Boolean                @default(true)
@@ -1657,6 +1666,7 @@ model Membership {
   user              User                   @relation("ParentMemberships", fields: [userId], references: [id])
   venue             Venue                  @relation("VenueMemberships", fields: [venueId], references: [id])
   package           MembershipPackage      @relation(fields: [packageId], references: [id])
+  checkInEvents     CheckInOutEvent[]      // Check-in/out events using this membership
   
   @@index([userId, status])
   @@index([venueId, status])
@@ -2208,13 +2218,16 @@ model SharedActivity {
 model Chat {
   id                String                 @id @default(cuid())
   name              String?                // Group chat name
+  title             String?                // Chat title/subject
   type              ChatType               @default(PRIVATE)
   venueId           String?                // If venue-specific chat
+  groupId           String?                // If community group chat
   isActive          Boolean                @default(true)
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
   lastMessageAt     DateTime?
   venue             Venue?                 @relation("VenueChats", fields: [venueId], references: [id])
+  group             CommunityGroup?        @relation(fields: [groupId], references: [id])
   participants      ChatParticipant[]
   messages          Message[]
   
@@ -2315,6 +2328,10 @@ model CommunityGroup {
   groupType         CommunityGroupType
   venueId           String?                // If venue-specific
   adminId           String
+  location          String?                // Physical or virtual location
+  interests         Json?                  // Group interests/topics
+  ageRange          String?                // Target age range
+  requirements      String?                // Requirements to join
   isPublic          Boolean                @default(true)
   requiresApproval  Boolean                @default(false)
   maxMembers        Int?
@@ -2327,6 +2344,7 @@ model CommunityGroup {
   admin             User                   @relation("UserAdminGroups", fields: [adminId], references: [id])
   members           CommunityMember[]
   events            CommunityEvent[]
+  chats             Chat[]                 // Community group chats
   
   @@index([venueId, isPublic])
   @@index([adminId, createdAt])
@@ -2339,6 +2357,8 @@ model CommunityMember {
   userId            String
   role              CommunityRole          @default(MEMBER)
   status            MembershipStatus       @default(ACTIVE)
+  isActive          Boolean                @default(true) // Whether the member is currently active
+  contributionScore Int                    @default(0) // Member's contribution score
   joinedAt          DateTime               @default(now())
   leftAt            DateTime?
   invitedBy         String?
@@ -2366,7 +2386,9 @@ model CommunityEvent {
   cost              Float?                 @default(0)
   isPublic          Boolean                @default(true)
   requiresRSVP      Boolean                @default(false)
+  requiresApproval  Boolean                @default(false) // Whether organizer must approve participants
   status            EventStatus            @default(SCHEDULED)
+  ageRange          String?                // Age range for the event (e.g., "5-12", "Teen", "Adult")
   tags              Json?
   mediaUrls         Json?
   createdAt         DateTime               @default(now())
@@ -4358,6 +4380,7 @@ enum ChatType {
   GROUP
   VENUE_CHAT
   SUPPORT_CHAT
+  COMMUNITY
 }
 
 enum ChatRole {
@@ -4482,6 +4505,7 @@ enum CommunicationNotificationType {
   MEDIA_SHARED
   COMMENT_REPLY
   MENTION
+  COMMUNITY_INVITE
 }
 
 enum ProfileVisibility {

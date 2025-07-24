@@ -1,6 +1,6 @@
 
+
 import { Metadata } from "next";
-import Providers from "@/components/providers/fixed-session-provider";
 import ParentLayout from "@/components/layouts/parent-layout";
 
 export const metadata: Metadata = {
@@ -13,9 +13,8 @@ export default function ParentLayoutWrapper({
 }: {
   children: React.ReactNode;
 }) {
+  // Removed nested StableAuthProvider - using the one from main layout only
   return (
-    <Providers>
-      <ParentLayout>{children}</ParentLayout>
-    </Providers>
+    <ParentLayout>{children}</ParentLayout>
   );
 }

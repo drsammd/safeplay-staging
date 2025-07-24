@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
       data: {
         familyId: invitation.inviterUserId,
         memberId: acceptedByUserId,
+        relationship: invitation.familyRole as any, // Cast to FamilyRelationship enum
         familyRole: invitation.familyRole,
         displayName: invitation.inviteeName,
         invitationId: invitation.id,
@@ -123,17 +124,7 @@ export async function POST(request: NextRequest) {
         canEditChildren: permissionSet.canEditChildren || false,
         canCheckInOut: permissionSet.canCheckInOut || false,
         canViewPhotos: permissionSet.canViewPhotos !== false,
-        canViewVideos: permissionSet.canViewVideos !== false,
-        canPurchaseMedia: permissionSet.canPurchaseMedia || false,
-        canReceiveAlerts: permissionSet.canReceiveAlerts !== false,
-        canViewLocation: permissionSet.canViewLocation !== false,
-        canViewReports: permissionSet.canViewReports || false,
-        canManageFamily: permissionSet.canManageFamily || false,
-        canMakePayments: permissionSet.canMakePayments || false,
-        photoAccess: permissionSet.photoAccess || 'FULL',
-        videoAccess: permissionSet.videoAccess || 'FULL',
-        emergencyContact: permissionSet.emergencyContact || false,
-        notificationFrequency: permissionSet.notificationFrequency || 'REAL_TIME'
+        canPurchaseMedia: permissionSet.canPurchaseMedia || false
       }
     })
 
@@ -141,10 +132,21 @@ export async function POST(request: NextRequest) {
     if (invitation.linkedChildrenIds && Array.isArray(invitation.linkedChildrenIds)) {
       const childAccessRecords = (invitation.linkedChildrenIds as string[]).map(childId => ({
         childId,
+        granterId: invitation.inviterUserId,
+        granteeId: acceptedByUserId,
         familyMemberId: familyMember.id,
         grantedBy: invitation.inviterUserId,
         accessedBy: acceptedByUserId,
         accessLevel: 'BASIC' as const,
+        permissions: {
+          canViewProfile: true,
+          canViewLocation: permissionSet.canViewLocation !== false,
+          canViewPhotos: permissionSet.canViewPhotos !== false,
+          canViewVideos: permissionSet.canViewVideos !== false,
+          canReceiveAlerts: permissionSet.canReceiveAlerts !== false,
+          canCheckInOut: permissionSet.canCheckInOut || false,
+          canPurchaseMedia: permissionSet.canPurchaseMedia || false
+        },
         canViewProfile: true,
         canViewLocation: permissionSet.canViewLocation !== false,
         canViewPhotos: permissionSet.canViewPhotos !== false,
