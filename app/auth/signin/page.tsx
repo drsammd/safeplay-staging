@@ -95,7 +95,10 @@ export default function SignInPage() {
           // Fall back to manual login
           setError('Auto-login failed. Please enter your credentials manually.');
         } else if (result?.ok) {
-          console.log('✅ Auto-signin successful, redirecting...');
+          // CRITICAL FIX: Add delay for auto-login session establishment
+          console.log('✅ Auto-signin successful, waiting for session establishment...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const session = await getSession();
           
           // Clear demo session storage since we're now properly authenticated
@@ -103,12 +106,19 @@ export default function SignInPage() {
           sessionStorage.removeItem('mySafePlay_demoUser');
           sessionStorage.removeItem('mySafePlay_demoMode');
           
-          // Redirect based on user role
-          if (session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'COMPANY_ADMIN') {
-            router.push('/admin');
-          } else if (session?.user?.role === 'VENUE_ADMIN') {
-            router.push('/venue-admin');
+          if (session?.user?.role) {
+            console.log('✅ Auto-login session confirmed, redirecting based on role:', session.user.role);
+            
+            // Redirect based on user role
+            if (session.user.role === 'SUPER_ADMIN' || session.user.role === 'COMPANY_ADMIN') {
+              router.push('/admin');
+            } else if (session.user.role === 'VENUE_ADMIN') {
+              router.push('/venue-admin');
+            } else {
+              router.push('/parent');
+            }
           } else {
+            console.error('❌ Auto-login session establishment failed, defaulting to parent dashboard');
             router.push('/parent');
           }
         }
@@ -158,25 +168,65 @@ export default function SignInPage() {
         await sendSMS2FACode();
       } else {
         // User doesn't have 2FA, proceed with normal sign in
+        console.log('🔐 SIGNIN PAGE: Starting authentication for:', formData.email);
+        
         const result = await signIn("credentials", {
           email: formData.email,
           password: formData.password,
           redirect: false,
         });
 
+        console.log('🔐 SIGNIN PAGE: SignIn result:', {
+          ok: result?.ok,
+          error: result?.error,
+          status: result?.status,
+          url: result?.url
+        });
+
         if (result?.error) {
+          console.error('❌ SIGNIN PAGE: Authentication failed:', result.error);
           setError(result.error === 'CredentialsSignin' ? 'Invalid email or password' : result.error);
         } else if (result?.ok) {
-          // Successful login without 2FA
+          // CRITICAL FIX: Add delay to ensure session is properly established before navigation
+          // This prevents race conditions during authentication flow
+          console.log('✅ Authentication successful, waiting for session establishment...');
+          
+          // Small delay to ensure session is fully established
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Get fresh session after delay
           const session = await getSession();
           
-          // Redirect based on user role
-          if (session?.user?.role === 'SUPER_ADMIN') {
-            router.push('/admin');
-          } else if (session?.user?.role === 'VENUE_ADMIN') {
-            router.push('/venue-admin');
+          if (session?.user?.role) {
+            console.log('✅ Session confirmed, redirecting based on role:', session.user.role);
+            
+            // Redirect based on user role
+            if (session.user.role === 'SUPER_ADMIN') {
+              router.push('/admin');
+            } else if (session.user.role === 'VENUE_ADMIN') {
+              router.push('/venue-admin');
+            } else {
+              router.push('/parent');
+            }
           } else {
-            router.push('/parent');
+            console.warn('⚠️ Session not fully established, retrying...');
+            // Fallback: try once more after another brief delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const retrySession = await getSession();
+            
+            if (retrySession?.user?.role) {
+              console.log('✅ Session established on retry, redirecting:', retrySession.user.role);
+              if (retrySession.user.role === 'SUPER_ADMIN') {
+                router.push('/admin');
+              } else if (retrySession.user.role === 'VENUE_ADMIN') {
+                router.push('/venue-admin');
+              } else {
+                router.push('/parent');
+              }
+            } else {
+              console.error('❌ Session establishment failed, defaulting to parent dashboard');
+              router.push('/parent');
+            }
           }
         }
       }
@@ -240,14 +290,25 @@ export default function SignInPage() {
         });
 
         if (result?.ok) {
+          // CRITICAL FIX: Add delay for 2FA session establishment
+          console.log('✅ 2FA Authentication successful, waiting for session establishment...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const session = await getSession();
           
-          // Redirect based on user role
-          if (session?.user?.role === 'SUPER_ADMIN') {
-            router.push('/admin');
-          } else if (session?.user?.role === 'VENUE_ADMIN') {
-            router.push('/venue-admin');
+          if (session?.user?.role) {
+            console.log('✅ 2FA Session confirmed, redirecting based on role:', session.user.role);
+            
+            // Redirect based on user role
+            if (session.user.role === 'SUPER_ADMIN') {
+              router.push('/admin');
+            } else if (session.user.role === 'VENUE_ADMIN') {
+              router.push('/venue-admin');
+            } else {
+              router.push('/parent');
+            }
           } else {
+            console.error('❌ 2FA Session establishment failed, defaulting to parent dashboard');
             router.push('/parent');
           }
         } else {

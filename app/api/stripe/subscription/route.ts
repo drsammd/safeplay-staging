@@ -1,8 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/auth-fixed';
 import { SubscriptionService } from '@/lib/stripe/subscription-service';
+import { unifiedCustomerService } from '@/lib/stripe/unified-customer-service';
 import { stripe } from '@/lib/stripe/config';
 
 export const dynamic = 'force-dynamic';
@@ -10,112 +11,100 @@ export const dynamic = 'force-dynamic';
 const subscriptionService = new SubscriptionService();
 
 export async function POST(request: NextRequest) {
-  const debugId = `subscription_real_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const debugId = `subscription_unified_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
-    console.log(`🔍 REAL SUBSCRIPTION DEBUG [${debugId}]: API endpoint called at ${new Date().toISOString()}`);
+    console.log(`🔍 UNIFIED SUBSCRIPTION [${debugId}]: API endpoint called at ${new Date().toISOString()}`);
     
-    const session = await getServerSession(authOptions);
-    console.log(`🔍 REAL SUBSCRIPTION DEBUG [${debugId}]: Session check:`, {
-      hasSession: !!session,
-      userId: session?.user?.id,
-      userEmail: session?.user?.email,
-      userName: session?.user?.name
-    });
-
     const requestBody = await request.json();
     const { priceId, paymentMethodId, isSignupFlow, email, name, clientDebugId, isFreePlan } = requestBody;
     
-    console.log(`🔍 REAL SUBSCRIPTION DEBUG [${debugId}]: Request body:`, {
+    console.log(`🔍 UNIFIED SUBSCRIPTION [${debugId}]: Request body:`, {
       priceId,
       paymentMethodId,
       isSignupFlow,
       email,
       name,
       clientDebugId,
-      isFreePlan,
-      fullRequestBody: requestBody
+      isFreePlan
     });
 
-    // Handle FREE plan creation/downgrade (v1.5.1) - No payment required
+    // CRITICAL v1.5.40-alpha.11 FIX: Handle FREE plan creation with Stripe customer
     if (isFreePlan) {
-      console.log(`🆓 REAL SUBSCRIPTION DEBUG [${debugId}]: Handling FREE plan creation/downgrade`);
+      console.log(`🆓 UNIFIED SUBSCRIPTION [${debugId}]: Handling FREE plan with unified customer service`);
       
-      if (!session?.user?.id) {
-        console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: Authentication required for FREE plan`);
+      // CRITICAL FIX: For FREE plans during signup, always skip database checks
+      // During signup flow, user hasn't been created in database yet
+      const isActualSignupFlow = isSignupFlow || email; // If email is provided, it's likely a signup
+      
+      console.log(`🔍 UNIFIED SUBSCRIPTION [${debugId}]: FREE plan context detection:`, {
+        isSignupFlow,
+        hasEmail: !!email,
+        isActualSignupFlow,
+        operation: 'free_plan_request'
+      });
+      
+      // Validate session for FREE plan requests with proper signup context
+      const sessionValidation = await unifiedCustomerService.validateSessionSecurity({
+        isSignupFlow: isActualSignupFlow,
+        skipDatabaseChecks: isActualSignupFlow, // Explicitly skip DB checks for signup
+        operation: 'free_plan_request'
+      });
+      
+      if (!sessionValidation.isValid) {
+        console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: Session validation failed for FREE plan`);
         return NextResponse.json(
-          { error: 'Authentication required', debugId },
+          { 
+            error: 'Authentication required for FREE plan',
+            details: sessionValidation.errors,
+            debugId 
+          },
           { status: 401 }
         );
       }
 
       try {
-        // Check if user already has a subscription (downgrade case)
-        const { prisma } = await import('@/lib/db');
-        const existingSubscription = await prisma.userSubscription.findUnique({
-          where: { userId: session.user.id }
-        });
+        // Use unified customer service to create FREE plan with customer
+        const freePlanResult = await unifiedCustomerService.createFreePlanWithCustomer(
+          sessionValidation.userId!,
+          sessionValidation.userEmail!,
+          sessionValidation.userEmail!.split('@')[0] // Use email prefix as name fallback
+        );
 
-        if (existingSubscription && existingSubscription.status === 'ACTIVE' && existingSubscription.planType !== 'FREE') {
-          // This is a downgrade case
-          console.log(`🔽 REAL SUBSCRIPTION DEBUG [${debugId}]: Downgrading existing subscription to FREE plan`);
-          
-          const result = await subscriptionService.downgradeToFreePlan(session.user.id);
-          
-          console.log(`✅ REAL SUBSCRIPTION DEBUG [${debugId}]: Downgrade to FREE plan successful:`, result);
-
-          const response = {
-            success: true,
-            planType: 'FREE',
-            subscription: result,
-            message: 'Successfully downgraded to FREE plan!',
-            isDowngrade: true,
-            debugId
-          };
-
-          console.log(`🎉 REAL SUBSCRIPTION DEBUG [${debugId}]: Returning downgrade response`);
-          return NextResponse.json(response);
-        } else {
-          // This is a new FREE plan signup
-          console.log(`🆓 REAL SUBSCRIPTION DEBUG [${debugId}]: Creating new FREE plan subscription...`);
-          
-          const result = await subscriptionService.createFreePlanSubscription(
-            session.user.id,
-            session.user.email || '',
-            session.user.name || ''
+        if (!freePlanResult.success) {
+          return NextResponse.json(
+            { 
+              error: 'Failed to create FREE plan',
+              details: freePlanResult.errors,
+              debugId 
+            },
+            { status: 500 }
           );
-
-          console.log(`✅ REAL SUBSCRIPTION DEBUG [${debugId}]: FREE plan created successfully:`, result);
-
-          const response = {
-            success: true,
-            planType: 'FREE',
-            customer: result.customer,
-            message: 'FREE plan activated successfully!',
-            isDowngrade: false,
-            debugId
-          };
-
-          console.log(`🎉 REAL SUBSCRIPTION DEBUG [${debugId}]: Returning FREE plan response`);
-          return NextResponse.json(response);
         }
+
+        console.log(`✅ UNIFIED SUBSCRIPTION [${debugId}]: FREE plan with customer created successfully`);
+
+        const response = {
+          success: true,
+          planType: 'FREE',
+          customer: freePlanResult.customer,
+          subscription: freePlanResult.subscription,
+          message: 'FREE plan activated successfully with upgrade path!',
+          debugId
+        };
+
+        return NextResponse.json(response);
         
       } catch (freePlanError) {
-        console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: FREE plan creation/downgrade error:`, {
-          errorMessage: freePlanError?.message,
-          errorStack: freePlanError?.stack,
-          errorName: freePlanError?.name,
-          fullError: freePlanError
-        });
+        console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: FREE plan creation error:`, freePlanError);
         
         return NextResponse.json(
           { 
             error: freePlanError?.message || 'Failed to process FREE plan request',
             debugId,
             errorDetails: {
-              service: 'SubscriptionService',
-              method: 'createFreePlanSubscription or downgradeToFreePlan',
-              userId: session.user.id
+              service: 'UnifiedCustomerService',
+              method: 'createFreePlanWithCustomer'
             }
           },
           { status: 500 }
@@ -123,89 +112,70 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (!priceId && !isFreePlan) {
-      console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: Missing priceId for paid plan`);
-      return NextResponse.json(
-        { error: 'Price ID is required for paid plans', debugId },
-        { status: 400 }
-      );
-    }
-
-    // Handle signup flow (no authentication required)
-    if (!session?.user?.id && isSignupFlow) {
-      console.log(`🚀 REAL SUBSCRIPTION DEBUG [${debugId}]: Handling signup flow - creating customer first`);
+    // Handle signup flow (no authentication required) - LEGACY SUPPORT
+    if (!isFreePlan && isSignupFlow && email && name) {
+      console.log(`🚀 UNIFIED SUBSCRIPTION [${debugId}]: Handling legacy signup flow - will be deprecated`);
       
-      if (!email || !name) {
-        console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: Missing email or name for signup`);
+      if (!priceId) {
+        console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: Missing priceId for paid signup`);
         return NextResponse.json(
-          { error: 'Email and name are required for signup', debugId },
+          { error: 'Price ID is required for paid plans', debugId },
           { status: 400 }
         );
       }
 
       try {
-        console.log(`🏪 REAL SUBSCRIPTION DEBUG [${debugId}]: Creating Stripe customer for signup...`);
+        // For signup flow, we still need to create a temporary customer
+        // This will be associated with the user account when created
+        console.log(`🏪 UNIFIED SUBSCRIPTION [${debugId}]: Creating customer for signup flow...`);
         
-        // Create Stripe customer first
         const customer = await stripe.customers.create({
           email,
           name,
           metadata: {
             signupFlow: 'true',
-            platform: 'safeplay'
+            platform: 'safeplay',
+            debugId
           }
         });
 
-        console.log(`✅ REAL SUBSCRIPTION DEBUG [${debugId}]: Stripe customer created:`, {
-          customerId: customer.id,
-          email: customer.email,
-          name: customer.name
-        });
+        console.log(`✅ UNIFIED SUBSCRIPTION [${debugId}]: Signup customer created: ${customer.id}`);
 
-        // Attach payment method to customer if provided
+        // Attach payment method if provided
         if (paymentMethodId) {
-          console.log(`💳 REAL SUBSCRIPTION DEBUG [${debugId}]: Attaching payment method to customer...`);
           await stripe.paymentMethods.attach(paymentMethodId, {
             customer: customer.id,
           });
           
-          // Set as default payment method
           await stripe.customers.update(customer.id, {
             invoice_settings: {
               default_payment_method: paymentMethodId,
             },
           });
-          console.log(`✅ REAL SUBSCRIPTION DEBUG [${debugId}]: Payment method attached and set as default`);
+          
+          console.log(`✅ UNIFIED SUBSCRIPTION [${debugId}]: Payment method attached for signup`);
         }
 
-        // Create subscription
-        console.log(`📞 REAL SUBSCRIPTION DEBUG [${debugId}]: Creating Stripe subscription...`);
+        // Create subscription for signup
         const subscriptionParams: any = {
           customer: customer.id,
           items: [{ price: priceId }],
           metadata: {
             signupFlow: 'true',
             platform: 'safeplay',
-            debugId: debugId
+            debugId
           },
           expand: ['latest_invoice.payment_intent'],
+          trial_period_days: 7
         };
 
         if (paymentMethodId) {
           subscriptionParams.default_payment_method = paymentMethodId;
         }
 
-        // Add trial period
-        subscriptionParams.trial_period_days = 7;
-
         const subscription = await stripe.subscriptions.create(subscriptionParams);
 
-        console.log(`✅ REAL SUBSCRIPTION DEBUG [${debugId}]: Stripe subscription created:`, {
-          subscriptionId: subscription.id,
-          status: subscription.status,
-          customerId: subscription.customer,
-          hasLatestInvoice: !!subscription.latest_invoice
-        });
+        console.log(`✅ UNIFIED SUBSCRIPTION [${debugId}]: Signup subscription created: ${subscription.id}`);
 
         const response = {
           success: true,
@@ -216,27 +186,18 @@ export async function POST(request: NextRequest) {
           debugId
         };
 
-        console.log(`🎉 REAL SUBSCRIPTION DEBUG [${debugId}]: Returning successful signup response`);
         return NextResponse.json(response);
         
       } catch (signupError) {
-        console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: Signup subscription error:`, {
-          errorMessage: signupError?.message,
-          errorStack: signupError?.stack,
-          errorName: signupError?.name,
-          fullError: signupError
-        });
+        console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: Signup error:`, signupError);
         
         return NextResponse.json(
           { 
             error: signupError?.message || 'Failed to create subscription for signup',
             debugId,
             errorDetails: {
-              service: 'SubscriptionService',
-              method: 'signup_flow',
-              priceId,
-              email,
-              name
+              service: 'UnifiedCustomerService',
+              method: 'signup_flow'
             }
           },
           { status: 500 }
@@ -244,77 +205,117 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Handle authenticated user flow
-    if (!session?.user?.id) {
-      console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: No authentication and not signup flow`);
-      return NextResponse.json(
-        { error: 'Authentication required', debugId },
-        { status: 401 }
-      );
-    }
-
-    console.log(`🎭 REAL SUBSCRIPTION DEBUG [${debugId}]: Creating subscription for authenticated user:`, session.user.id, 'Price:', priceId);
-
-    try {
-      console.log(`📞 REAL SUBSCRIPTION DEBUG [${debugId}]: Calling SubscriptionService.createSubscription...`);
+    // CRITICAL v1.5.40-alpha.11 FIX: Handle authenticated paid subscriptions
+    if (!isFreePlan && !isSignupFlow) {
+      console.log(`💳 UNIFIED SUBSCRIPTION [${debugId}]: Handling authenticated paid subscription`);
       
-      // Create subscription using real service
-      const subscription = await subscriptionService.createSubscription(
-        session.user.id,
-        priceId,
-        paymentMethodId
-      );
-
-      console.log(`✅ REAL SUBSCRIPTION DEBUG [${debugId}]: Authenticated subscription created:`, subscription);
-
-      const response = {
-        success: true,
-        subscription,
-        message: 'Subscription created successfully!',
-        debugId
-      };
-
-      console.log(`🎉 REAL SUBSCRIPTION DEBUG [${debugId}]: Returning authenticated response`);
-      return NextResponse.json(response);
+      // CRITICAL FIX: Detect if this is actually a signup flow even if not explicitly marked
+      const isActualSignupFlow = isSignupFlow || email; // If email is provided, it's likely a signup
       
-    } catch (authServiceError) {
-      console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: Authenticated subscription service error:`, {
-        errorMessage: authServiceError?.message,
-        errorStack: authServiceError?.stack,
-        errorName: authServiceError?.name,
-        fullError: authServiceError
+      console.log(`🔍 UNIFIED SUBSCRIPTION [${debugId}]: Paid subscription context detection:`, {
+        isSignupFlow,
+        hasEmail: !!email,
+        isActualSignupFlow,
+        operation: 'authenticated_paid_subscription'
       });
       
-      return NextResponse.json(
-        { 
-          error: authServiceError?.message || 'Failed to create authenticated subscription',
-          debugId,
-          errorDetails: {
-            service: 'SubscriptionService',
-            method: 'createSubscription',
-            userId: session.user.id,
-            priceId,
-            paymentMethodId
-          }
-        },
-        { status: 500 }
-      );
+      // Validate session for authenticated requests with proper context detection
+      const sessionValidation = await unifiedCustomerService.validateSessionSecurity({
+        isSignupFlow: isActualSignupFlow,
+        skipDatabaseChecks: isActualSignupFlow, // Skip DB checks if it's actually a signup
+        operation: 'authenticated_paid_subscription'
+      });
+      
+      if (!sessionValidation.isValid) {
+        console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: Session validation failed for paid subscription`);
+        return NextResponse.json({ 
+          error: 'Session validation failed. Please sign in again.',
+          details: sessionValidation.errors,
+          action: 'SIGN_IN_REQUIRED',
+          debugId
+        }, { status: 401 });
+      }
+
+      if (!priceId) {
+        console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: Missing priceId for paid plan`);
+        return NextResponse.json(
+          { error: 'Price ID is required for paid plans', debugId },
+          { status: 400 }
+        );
+      }
+
+      try {
+        console.log(`📞 UNIFIED SUBSCRIPTION [${debugId}]: Creating paid subscription with unified service...`);
+        
+        // Use unified customer service for paid subscription
+        const paidSubResult = await unifiedCustomerService.createPaidSubscription(
+          sessionValidation.userId!,
+          sessionValidation.userEmail!,
+          sessionValidation.userEmail!.split('@')[0], // Use email prefix as name fallback
+          priceId,
+          paymentMethodId
+        );
+
+        if (!paidSubResult.success) {
+          return NextResponse.json(
+            { 
+              error: 'Failed to create paid subscription',
+              details: paidSubResult.errors,
+              debugId 
+            },
+            { status: 500 }
+          );
+        }
+
+        console.log(`✅ UNIFIED SUBSCRIPTION [${debugId}]: Paid subscription created successfully`);
+
+        const response = {
+          success: true,
+          subscription: paidSubResult.subscription.stripe,
+          customer: paidSubResult.customer,
+          message: 'Subscription created successfully!',
+          debugId
+        };
+
+        return NextResponse.json(response);
+        
+      } catch (paidSubError) {
+        console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: Paid subscription error:`, paidSubError);
+        
+        return NextResponse.json(
+          { 
+            error: paidSubError?.message || 'Failed to create paid subscription',
+            debugId,
+            errorDetails: {
+              service: 'UnifiedCustomerService',
+              method: 'createPaidSubscription'
+            }
+          },
+          { status: 500 }
+        );
+      }
     }
 
+    // If we get here, invalid request
+    console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: Invalid request parameters`);
+    return NextResponse.json(
+      { 
+        error: 'Invalid request parameters',
+        debugId,
+        received: { isFreePlan, isSignupFlow, hasEmail: !!email, hasPriceId: !!priceId }
+      },
+      { status: 400 }
+    );
+
   } catch (error) {
-    console.error(`🚨 REAL SUBSCRIPTION DEBUG [${debugId}]: General API error:`, {
-      errorMessage: error?.message,
-      errorStack: error?.stack,
-      errorName: error?.name,
-      fullError: error
-    });
+    console.error(`🚨 UNIFIED SUBSCRIPTION [${debugId}]: General API error:`, error);
     
     return NextResponse.json(
       { 
         error: error?.message || 'Failed to create subscription',
         debugId,
         errorDetails: {
-          location: 'subscription API root catch block'
+          location: 'unified subscription API root catch block'
         }
       },
       { status: 500 }
@@ -323,49 +324,58 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const debugId = `subscription_change_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const debugId = `subscription_change_unified_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
-    console.log(`🔄 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: API endpoint called at ${new Date().toISOString()}`);
+    console.log(`🔄 UNIFIED SUBSCRIPTION CHANGE [${debugId}]: API endpoint called at ${new Date().toISOString()}`);
     
-    const session = await getServerSession(authOptions);
-    console.log(`🔄 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: Session check:`, {
-      hasSession: !!session,
-      userId: session?.user?.id
+    // CRITICAL v1.5.40-alpha.11 FIX: Use unified customer service session validation (existing user operation)
+    const sessionValidation = await unifiedCustomerService.validateSessionSecurity({
+      isSignupFlow: false,
+      skipDatabaseChecks: false, // For subscription changes, always validate existing user
+      operation: 'subscription_change'
     });
-
-    if (!session?.user?.id) {
-      console.error(`🚨 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: No authentication for subscription change`);
-      return NextResponse.json(
-        { error: 'Authentication required', debugId },
-        { status: 401 }
-      );
+    
+    if (!sessionValidation.isValid) {
+      console.error(`🚨 UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Session validation failed`);
+      return NextResponse.json({ 
+        error: 'Session validation failed. Please sign in again.',
+        details: sessionValidation.errors,
+        action: 'SIGN_IN_REQUIRED',
+        debugId
+      }, { status: 401 });
     }
+
+    console.log(`✅ UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Session validation successful`, {
+      userId: sessionValidation.userId,
+      userEmail: sessionValidation.userEmail
+    });
 
     const requestBody = await request.json();
     const { newPriceId } = requestBody;
     
-    console.log(`🔄 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: Request body:`, {
+    console.log(`🔄 UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Request body:`, {
       newPriceId,
-      userId: session.user.id
+      userId: sessionValidation.userId
     });
 
     if (!newPriceId) {
-      console.error(`🚨 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: Missing newPriceId`);
+      console.error(`🚨 UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Missing newPriceId`);
       return NextResponse.json(
         { error: 'New price ID is required', debugId },
         { status: 400 }
       );
     }
 
-    console.log(`📞 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: Calling SubscriptionService.changeSubscription...`);
+    console.log(`📞 UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Calling SubscriptionService.changeSubscription...`);
     
+    // Use existing subscription service for changes (it will be updated to use unified service later)
     const updatedSubscription = await subscriptionService.changeSubscription(
-      session.user.id,
+      sessionValidation.userId!,
       newPriceId
     );
 
-    console.log(`✅ REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: Subscription changed successfully:`, {
+    console.log(`✅ UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Subscription changed successfully:`, {
       subscriptionId: updatedSubscription.id,
       status: updatedSubscription.status
     });
@@ -377,23 +387,20 @@ export async function PUT(request: NextRequest) {
       debugId
     };
 
-    console.log(`🎉 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: Returning successful change response`);
+    console.log(`🎉 UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Returning successful change response`);
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error(`🚨 REAL SUBSCRIPTION CHANGE DEBUG [${debugId}]: Subscription change error:`, {
-      errorMessage: error?.message,
-      errorStack: error?.stack,
-      errorName: error?.name,
-      fullError: error
-    });
+    console.error(`🚨 UNIFIED SUBSCRIPTION CHANGE [${debugId}]: Subscription change error:`, error);
     
     return NextResponse.json(
       { 
         error: error?.message || 'Failed to change subscription',
         debugId,
         errorDetails: {
-          location: 'subscription change API catch block'
+          service: 'SubscriptionService',
+          method: 'changeSubscription',
+          location: 'unified subscription change API'
         }
       },
       { status: 500 }
@@ -402,38 +409,56 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const debugId = `subscription_status_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const debugId = `subscription_status_unified_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
-    console.log(`🔍 REAL SUBSCRIPTION STATUS DEBUG [${debugId}]: Status check called`);
+    console.log(`🔍 UNIFIED SUBSCRIPTION STATUS [${debugId}]: Status check called`);
     
-    const session = await getServerSession(authOptions);
-    console.log(`🔍 REAL SUBSCRIPTION STATUS DEBUG [${debugId}]: Session check:`, {
-      hasSession: !!session,
-      userId: session?.user?.id
+    // CRITICAL v1.5.40-alpha.11 FIX: Use unified customer service session validation (existing user operation)
+    const sessionValidation = await unifiedCustomerService.validateSessionSecurity({
+      isSignupFlow: false,
+      skipDatabaseChecks: false, // For status checks, always validate existing user
+      operation: 'subscription_status_check'
     });
     
-    if (!session?.user?.id) {
-      console.log(`❌ REAL SUBSCRIPTION STATUS DEBUG [${debugId}]: No authentication for status check`);
+    if (!sessionValidation.isValid) {
+      console.log(`❌ UNIFIED SUBSCRIPTION STATUS [${debugId}]: Session validation failed`);
       return NextResponse.json(
-        { error: 'Authentication required', debugId },
+        { 
+          error: 'Authentication required', 
+          details: sessionValidation.errors,
+          debugId 
+        },
         { status: 401 }
       );
     }
 
-    console.log(`📞 REAL SUBSCRIPTION STATUS DEBUG [${debugId}]: Getting subscription status...`);
+    console.log(`✅ UNIFIED SUBSCRIPTION STATUS [${debugId}]: Session validation successful`, {
+      userId: sessionValidation.userId,
+      userEmail: sessionValidation.userEmail
+    });
+
+    console.log(`📞 UNIFIED SUBSCRIPTION STATUS [${debugId}]: Getting subscription status...`);
     
     // Get subscription status from database
     const { prisma } = await import('@/lib/db');
     const subscription = await prisma.userSubscription.findUnique({
-      where: { userId: session.user.id }
+      where: { userId: sessionValidation.userId! }
     });
 
-    console.log(`✅ REAL SUBSCRIPTION STATUS DEBUG [${debugId}]: Status retrieved:`, {
+    console.log(`✅ UNIFIED SUBSCRIPTION STATUS [${debugId}]: Status retrieved:`, {
       hasSubscription: !!subscription,
       status: subscription?.status,
-      planType: subscription?.planType
+      planType: subscription?.planType,
+      hasStripeCustomerId: !!subscription?.stripeCustomerId
     });
+
+    // Get customer audit information for debugging if needed
+    const customerAudit = await unifiedCustomerService.getCustomerAudit(sessionValidation.userId!);
+    
+    if (customerAudit.issues.length > 0) {
+      console.log(`⚠️ UNIFIED SUBSCRIPTION STATUS [${debugId}]: Customer audit issues:`, customerAudit.issues);
+    }
 
     return NextResponse.json({
       success: true,
@@ -441,15 +466,23 @@ export async function GET(request: NextRequest) {
       hasSubscription: !!subscription,
       subscription: subscription || null,
       isActive: subscription ? ['ACTIVE', 'TRIALING'].includes(subscription.status) : false,
-      isTrialing: subscription?.status === 'TRIALING'
+      isTrialing: subscription?.status === 'TRIALING',
+      customerInfo: {
+        hasStripeCustomer: !!subscription?.stripeCustomerId,
+        customerId: subscription?.stripeCustomerId || null,
+        auditIssues: customerAudit.issues
+      }
     });
 
   } catch (error) {
-    console.error(`🚨 REAL SUBSCRIPTION STATUS DEBUG [${debugId}]: Status API error:`, error);
+    console.error(`🚨 UNIFIED SUBSCRIPTION STATUS [${debugId}]: Status API error:`, error);
     return NextResponse.json(
       { 
         error: error?.message || 'Failed to get subscription status',
-        debugId 
+        debugId,
+        errorDetails: {
+          location: 'unified subscription status API'
+        }
       },
       { status: 500 }
     );

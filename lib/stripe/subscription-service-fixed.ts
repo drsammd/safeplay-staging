@@ -14,8 +14,8 @@ const PLAN_DEFINITIONS = {
     price: 9.99,
     yearlyPrice: 99.99,
     lifetimePrice: null,
-    stripePriceId: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || 'price_basic_monthly',
-    stripeYearlyPriceId: process.env.STRIPE_BASIC_YEARLY_PRICE_ID || 'price_basic_yearly',
+    stripePriceId: process.env.STRIPE_BASIC_MONTHLY_PRICE_ID || 'price_1RjxePC2961Zxi3Wku9h51bx',
+    stripeYearlyPriceId: process.env.STRIPE_BASIC_YEARLY_PRICE_ID || 'price_1RjxePC2961Zxi3W1DWonzM2',
     stripeLifetimePriceId: null,
     currency: 'usd',
     trialDays: 7,
@@ -40,8 +40,8 @@ const PLAN_DEFINITIONS = {
     price: 19.99,
     yearlyPrice: 199.99,
     lifetimePrice: null,
-    stripePriceId: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || 'price_premium_monthly',
-    stripeYearlyPriceId: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID || 'price_premium_yearly',
+    stripePriceId: process.env.STRIPE_PREMIUM_MONTHLY_PRICE_ID || 'price_1RjxeQC2961Zxi3WYMyCkKBk',
+    stripeYearlyPriceId: process.env.STRIPE_PREMIUM_YEARLY_PRICE_ID || 'price_1RjxeQC2961Zxi3WJiOiKaME',
     stripeLifetimePriceId: null,
     currency: 'usd',
     trialDays: 7,
@@ -66,8 +66,8 @@ const PLAN_DEFINITIONS = {
     price: 29.99,
     yearlyPrice: 299.99,
     lifetimePrice: null,
-    stripePriceId: process.env.STRIPE_FAMILY_MONTHLY_PRICE_ID || 'price_family_monthly',
-    stripeYearlyPriceId: process.env.STRIPE_FAMILY_YEARLY_PRICE_ID || 'price_family_yearly',
+    stripePriceId: process.env.STRIPE_FAMILY_MONTHLY_PRICE_ID || 'price_1RjxeRC2961Zxi3WbYHieRfm',
+    stripeYearlyPriceId: process.env.STRIPE_FAMILY_YEARLY_PRICE_ID || 'price_1RjxeRC2961Zxi3WiuHVSCVe',
     stripeLifetimePriceId: null,
     currency: 'usd',
     trialDays: 7,
@@ -355,33 +355,57 @@ export class FixedSubscriptionService {
         ? new Date(subscription.current_period_end * 1000) 
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          planType: plan.planType,
-          status: this.mapStripeStatusToPrisma(subscription.status),
-          stripeCustomerId,
-          stripeSubscriptionId: subscription.id,
-          currentPeriodStart,
-          currentPeriodEnd,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-          trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-          trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-        },
-        update: {
-          planType: plan.planType,
-          status: this.mapStripeStatusToPrisma(subscription.status),
-          stripeSubscriptionId: subscription.id,
-          currentPeriodStart,
-          currentPeriodEnd,
-          cancelAtPeriodEnd: subscription.cancel_at_period_end,
-          canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-          trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-          trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
-        }
+      // CRITICAL v1.5.40-alpha.17 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // This prevents foreign key constraint violations during subscription processing
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.17: Using explicit create/update for subscription-fixed instead of problematic upsert');
+      
+      const existingSubscription = await prisma.userSubscription.findUnique({
+        where: { userId }
       });
+      
+      if (existingSubscription) {
+        // Update existing subscription
+        await prisma.userSubscription.update({
+          where: { userId },
+          data: {
+            planType: plan.planType,
+            status: this.mapStripeStatusToPrisma(subscription.status),
+            stripeSubscriptionId: subscription.id,
+            currentPeriodStart,
+            currentPeriodEnd,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end,
+            canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+            trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+            trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+          }
+        });
+      } else {
+        // Create new subscription only if user exists
+        const userExists = await prisma.user.findUnique({
+          where: { id: userId }
+        });
+        
+        if (userExists) {
+          await prisma.userSubscription.create({
+            data: {
+              userId,
+              planType: plan.planType,
+              status: this.mapStripeStatusToPrisma(subscription.status),
+              stripeCustomerId,
+              stripeSubscriptionId: subscription.id,
+              currentPeriodStart,
+              currentPeriodEnd,
+              cancelAtPeriodEnd: subscription.cancel_at_period_end,
+              canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
+              trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+              trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+            }
+          });
+        } else {
+          console.error('🚨 SUBSCRIPTION ERROR: User not found for subscription processing:', userId);
+          throw new Error('User not found for subscription processing');
+        }
+      }
 
       console.log('✅ SERVICE: Database subscription record created/updated');
 

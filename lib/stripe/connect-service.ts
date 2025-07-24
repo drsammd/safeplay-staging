@@ -33,22 +33,45 @@ export class ConnectService {
         }
       });
 
-      // Create or update venue payment settings
-      await prisma.venuePaymentSettings.upsert({
-        where: { venueId },
-        create: {
-          venueId,
-          stripeConnectAccountId: account.id,
-          stripeAccountStatus: StripeAccountStatus.PENDING,
-          revenuePercentage: stripeConfig.revenueSharing.defaultVenuePercentage,
-          minimumPayoutAmount: stripeConfig.revenueSharing.minimumPayoutAmount,
-          payoutSchedule: PayoutSchedule.WEEKLY,
-        },
-        update: {
-          stripeConnectAccountId: account.id,
-          stripeAccountStatus: StripeAccountStatus.PENDING,
-        }
+      // CRITICAL v1.5.40-alpha.17 EMERGENCY FIX: Replace problematic upsert with explicit create/update
+      // This prevents foreign key constraint violations during venue payment setup
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.17: Using explicit create/update for venue payment settings instead of problematic upsert');
+      
+      const existingSettings = await prisma.venuePaymentSettings.findUnique({
+        where: { venueId }
       });
+      
+      if (existingSettings) {
+        // Update existing venue payment settings
+        await prisma.venuePaymentSettings.update({
+          where: { venueId },
+          data: {
+            stripeConnectAccountId: account.id,
+            stripeAccountStatus: StripeAccountStatus.PENDING,
+          }
+        });
+      } else {
+        // Create new venue payment settings only if venue exists
+        const venueExists = await prisma.venue.findUnique({
+          where: { id: venueId }
+        });
+        
+        if (venueExists) {
+          await prisma.venuePaymentSettings.create({
+            data: {
+              venueId,
+              stripeConnectAccountId: account.id,
+              stripeAccountStatus: StripeAccountStatus.PENDING,
+              revenuePercentage: stripeConfig.revenueSharing.defaultVenuePercentage,
+              minimumPayoutAmount: stripeConfig.revenueSharing.minimumPayoutAmount,
+              payoutSchedule: PayoutSchedule.WEEKLY,
+            }
+          });
+        } else {
+          console.error('🚨 CONNECT SERVICE ERROR: Venue not found for payment settings setup:', venueId);
+          throw new Error('Venue not found for payment settings setup');
+        }
+      }
 
       return account;
     } catch (error) {

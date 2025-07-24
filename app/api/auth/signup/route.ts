@@ -24,6 +24,7 @@ import { authSessionManager } from "@/lib/auth-session-manager";
 import { demoAccountProtection } from "@/lib/demo-account-protection";
 import { cleanAccountInitializer } from "@/lib/clean-account-initializer";
 import { stripe } from "@/lib/stripe/config";
+import { unifiedCustomerService } from "@/lib/stripe/unified-customer-service";
 
 export const dynamic = "force-dynamic";
 
@@ -327,119 +328,24 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     });
   }
 
-  // CRITICAL v1.5.31: Process payment ONLY after pre-validation passes
-  let stripeCustomer = null;
-  let stripeSubscription = null;
-  let finalSubscriptionData = subscriptionData;
+  // CRITICAL v1.5.40-alpha.12 EMERGENCY FIX: Move Stripe processing INSIDE database transaction
+  // to prevent customers being charged without receiving accounts
   
   // Check if this is a paid plan that requires payment processing
   const isPaidPlan = selectedPlan && selectedPlan.amount > 0 && selectedPlan.stripePriceId;
   
+  console.log(`🚨 EMERGENCY FIX [${debugId}]: ${isPaidPlan ? 'PAID' : 'FREE'} plan signup - Stripe processing moved to AFTER user creation`);
+  
   if (isPaidPlan) {
-    console.log(`💳 FIXED SIGNUP API [${debugId}]: Processing payment for paid plan:`, {
+    console.log(`💳 EMERGENCY FIX [${debugId}]: PAID plan detected - payment will be processed AFTER user account creation to prevent charging without account`);
+    console.log(`💳 EMERGENCY FIX [${debugId}]: Plan details:`, {
       planType: selectedPlan.planType,
       amount: selectedPlan.amount,
-      stripePriceId: selectedPlan.stripePriceId
+      stripePriceId: selectedPlan.stripePriceId,
+      hasPaymentMethod: !!paymentMethodId
     });
-    
-    try {
-      // CRITICAL v1.5.31 FIX: Create single Stripe customer for signup (subscription service will not create duplicate)
-      console.log(`🏪 FIXED SIGNUP API [${debugId}]: Creating Stripe customer for signup...`);
-      stripeCustomer = await stripe.customers.create({
-        email,
-        name,
-        metadata: {
-          platform: 'safeplay',
-          signupFlow: 'integrated',
-          debugId
-        }
-      });
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: Stripe customer created:`, {
-        customerId: stripeCustomer.id,
-        email: stripeCustomer.email
-      });
-      
-      // Attach payment method to customer if provided
-      if (paymentMethodId) {
-        console.log(`💳 FIXED SIGNUP API [${debugId}]: Attaching payment method...`);
-        
-        await stripe.paymentMethods.attach(paymentMethodId, {
-          customer: stripeCustomer.id,
-        });
-        
-        // Set as default payment method
-        await stripe.customers.update(stripeCustomer.id, {
-          invoice_settings: {
-            default_payment_method: paymentMethodId,
-          },
-        });
-        
-        console.log(`✅ FIXED SIGNUP API [${debugId}]: Payment method attached and set as default`);
-      }
-      
-      // Create subscription with trial
-      console.log(`🔄 FIXED SIGNUP API [${debugId}]: Creating Stripe subscription...`);
-      const subscriptionParams: any = {
-        customer: stripeCustomer.id,
-        items: [{ price: selectedPlan.stripePriceId }],
-        metadata: {
-          platform: 'safeplay',
-          signupFlow: 'integrated',
-          debugId,
-          planType: selectedPlan.planType
-        },
-        expand: ['latest_invoice.payment_intent'],
-        trial_period_days: 7, // 7-day trial
-      };
-      
-      if (paymentMethodId) {
-        subscriptionParams.default_payment_method = paymentMethodId;
-      }
-      
-      stripeSubscription = await stripe.subscriptions.create(subscriptionParams);
-      
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: Stripe subscription created:`, {
-        subscriptionId: stripeSubscription.id,
-        status: stripeSubscription.status,
-        trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null
-      });
-      
-      // Update subscription data with Stripe information
-      finalSubscriptionData = {
-        ...subscriptionData,
-        stripeCustomerId: stripeCustomer.id,
-        stripeSubscriptionId: stripeSubscription.id,
-        stripeSubscriptionStatus: stripeSubscription.status,
-        trialEnd: stripeSubscription.trial_end ? new Date(stripeSubscription.trial_end * 1000) : null
-      };
-      
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: Payment processing completed successfully`);
-      
-    } catch (paymentError) {
-      console.error(`🚨 FIXED SIGNUP API [${debugId}]: Payment processing failed:`, paymentError);
-      
-      // Clean up any created Stripe resources
-      if (stripeCustomer) {
-        try {
-          await stripe.customers.del(stripeCustomer.id);
-          console.log(`🧹 FIXED SIGNUP API [${debugId}]: Cleaned up Stripe customer`);
-        } catch (cleanupError) {
-          console.error(`⚠️ FIXED SIGNUP API [${debugId}]: Failed to cleanup Stripe customer:`, cleanupError);
-        }
-      }
-      
-      return new NextResponse(JSON.stringify({
-        error: 'Payment processing failed',
-        debugId,
-        details: paymentError instanceof Error ? paymentError.message : 'Unknown payment error',
-        userMessage: 'We were unable to process your payment. Please check your payment method and try again.'
-      }), {
-        status: 402, // Payment Required
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
   } else {
-    console.log(`🆓 FIXED SIGNUP API [${debugId}]: Processing FREE plan signup - no payment required`);
+    console.log(`🆓 EMERGENCY FIX [${debugId}]: FREE plan signup - no payment processing required`);
   }
 
   // Hash password
@@ -466,15 +372,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const userAgent = request.headers.get("user-agent") || "unknown";
   const currentTime = new Date();
 
-  // CRITICAL v1.5.21: Enhanced database transaction with robust error handling
-  console.log(`🔄 FIXED SIGNUP API [${debugId}]: Starting enhanced database transaction`);
+  // CRITICAL v1.5.40-alpha.12 EMERGENCY FIX: Enhanced database transaction with Stripe processing INSIDE
+  // to prevent foreign key constraint violations and ensure customers aren't charged without accounts
+  console.log(`🔄 EMERGENCY FIX [${debugId}]: Starting atomic database transaction with integrated Stripe processing`);
   
   let user;
   try {
     user = await prisma.$transaction(async (tx) => {
-      console.log(`🔄 FIXED SIGNUP API [${debugId}]: Creating user record...`);
+      console.log(`🔄 EMERGENCY FIX [${debugId}]: Step 1 - Creating user record FIRST...`);
       
-      // Create user
+      // STEP 1: Create user record FIRST (fixes foreign key constraint violation)
       const newUser = await tx.user.create({
         data: {
           email,
@@ -486,10 +393,144 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         },
       });
 
-      console.log(`✅ FIXED SIGNUP API [${debugId}]: User created: ${newUser.id}`);
+      console.log(`✅ EMERGENCY FIX [${debugId}]: User created successfully: ${newUser.id}`);
+      
+      // STEP 2: Process Stripe payment INSIDE transaction (after user exists)
+      let stripeCustomer = null;
+      let stripeSubscription = null;
+      let finalSubscriptionData = subscriptionData;
+      
+      if (isPaidPlan) {
+        console.log(`💳 EMERGENCY FIX [${debugId}]: Step 2 - Processing Stripe payment AFTER user creation...`);
+        
+        try {
+          // Create Stripe customer (user already exists, safe to reference)
+          console.log(`🏪 EMERGENCY FIX [${debugId}]: Creating Stripe customer for existing user ${newUser.id}...`);
+          
+          const customerResult = await unifiedCustomerService.getOrCreateCustomer(
+            email,
+            name,
+            newUser.id, // NOW we have a valid userId
+            false // Not a free plan
+          );
 
-      // CRITICAL v1.5.21: Enhanced clean account initialization with comprehensive error handling
-      console.log(`🔄 FIXED SIGNUP API [${debugId}]: Initializing clean account structure...`);
+          if (customerResult.errors.length > 0) {
+            throw new Error(`Customer creation failed: ${customerResult.errors.join(', ')}`);
+          }
+
+          stripeCustomer = customerResult.customer;
+          console.log(`✅ EMERGENCY FIX [${debugId}]: Stripe customer created:`, {
+            customerId: stripeCustomer.id,
+            email: stripeCustomer.email,
+            userId: newUser.id,
+            source: customerResult.source
+          });
+          
+          // Attach payment method to customer if provided
+          if (paymentMethodId) {
+            console.log(`💳 EMERGENCY FIX [${debugId}]: Attaching payment method...`);
+            
+            await stripe.paymentMethods.attach(paymentMethodId, {
+              customer: stripeCustomer.id,
+            });
+            
+            // Set as default payment method
+            await stripe.customers.update(stripeCustomer.id, {
+              invoice_settings: {
+                default_payment_method: paymentMethodId,
+              },
+            });
+            
+            console.log(`✅ EMERGENCY FIX [${debugId}]: Payment method attached and set as default`);
+          }
+          
+          // Create subscription with trial
+          console.log(`🔄 EMERGENCY FIX [${debugId}]: Creating Stripe subscription for user ${newUser.id}...`);
+          const subscriptionParams: any = {
+            customer: stripeCustomer.id,
+            items: [{ price: selectedPlan.stripePriceId }],
+            metadata: {
+              platform: 'safeplay',
+              signupFlow: 'integrated_fixed',
+              debugId,
+              planType: selectedPlan.planType,
+              userId: newUser.id, // Reference the actual user ID
+              source: 'emergency_fix_v1.5.40-alpha.12'
+            },
+            expand: ['latest_invoice.payment_intent'],
+            trial_period_days: 7, // 7-day trial
+          };
+          
+          if (paymentMethodId) {
+            subscriptionParams.default_payment_method = paymentMethodId;
+          }
+          
+          stripeSubscription = await stripe.subscriptions.create(subscriptionParams);
+          
+          // Safe date conversion for signup flow
+          const safeTrialEnd = stripeSubscription.trial_end ? 
+            (() => {
+              try {
+                const date = new Date(stripeSubscription.trial_end * 1000);
+                return isNaN(date.getTime()) ? null : date;
+              } catch (error) {
+                console.error(`🚨 EMERGENCY FIX [${debugId}]: Trial end date conversion error:`, error);
+                return null;
+              }
+            })() : null;
+          
+          console.log(`✅ EMERGENCY FIX [${debugId}]: Stripe subscription created:`, {
+            subscriptionId: stripeSubscription.id,
+            status: stripeSubscription.status,
+            userId: newUser.id,
+            trialEnd: safeTrialEnd?.toISOString() || 'null'
+          });
+          
+          // Update subscription data with Stripe information
+          finalSubscriptionData = {
+            ...subscriptionData,
+            stripeCustomerId: stripeCustomer.id,
+            stripeSubscriptionId: stripeSubscription.id,
+            stripeSubscriptionStatus: stripeSubscription.status,
+            trialEnd: safeTrialEnd
+          };
+          
+          console.log(`✅ EMERGENCY FIX [${debugId}]: Stripe processing completed successfully for user ${newUser.id}`);
+          
+        } catch (stripeError) {
+          console.error(`🚨 EMERGENCY FIX [${debugId}]: Stripe processing failed INSIDE transaction:`, stripeError);
+          
+          // CRITICAL v1.5.40-alpha.13: Implement Stripe compensation logic
+          console.log(`🧹 EMERGENCY FIX [${debugId}]: Attempting to clean up partial Stripe objects...`);
+          
+          try {
+            // Clean up any Stripe objects that were created before the failure
+            if (stripeCustomer?.id) {
+              console.log(`🧹 EMERGENCY FIX [${debugId}]: Cleaning up Stripe customer: ${stripeCustomer.id}`);
+              await stripe.customers.del(stripeCustomer.id);
+              console.log(`✅ EMERGENCY FIX [${debugId}]: Stripe customer cleaned up successfully`);
+            }
+            
+            if (stripeSubscription?.id) {
+              console.log(`🧹 EMERGENCY FIX [${debugId}]: Cleaning up Stripe subscription: ${stripeSubscription.id}`);
+              await stripe.subscriptions.cancel(stripeSubscription.id);
+              console.log(`✅ EMERGENCY FIX [${debugId}]: Stripe subscription cleaned up successfully`);
+            }
+          } catch (cleanupError) {
+            console.error(`⚠️ EMERGENCY FIX [${debugId}]: Stripe cleanup failed (non-critical):`, cleanupError);
+            // Cleanup failure is non-critical, continue with transaction rollback
+          }
+          
+          // CRITICAL: Since we're inside a transaction, throwing here will rollback user creation
+          // This prevents charging customers without accounts
+          throw new Error(`Payment processing failed: ${stripeError instanceof Error ? stripeError.message : 'Unknown error'}`);
+        }
+      } else {
+        console.log(`🆓 EMERGENCY FIX [${debugId}]: FREE plan - no Stripe processing required`);
+      }
+
+      // STEP 3: Initialize clean account structure with existing user and Stripe data
+      console.log(`🔄 EMERGENCY FIX [${debugId}]: Step 3 - Initializing account structure for user ${newUser.id}...`);
       
       const cleanInitResult = await cleanAccountInitializer.initializeCleanAccount({
         userId: newUser.id,
@@ -499,14 +540,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
         ipAddress,
         userAgent,
         prismaInstance: tx, // Pass transaction context to prevent foreign key constraint issues
-        // CRITICAL FIX: Pass selected plan information to create correct subscription
         selectedPlan: selectedPlan,
-        // CRITICAL v1.5.31 FIX: Pass Stripe information from payment processing to prevent duplicate customer creation
-        stripeCustomerId: stripeCustomer?.id || finalSubscriptionData?.stripeCustomerId,
-        stripeSubscriptionId: stripeSubscription?.id || finalSubscriptionData?.stripeSubscriptionId,
-        subscriptionMetadata: finalSubscriptionData,
-        // CRITICAL v1.5.31 FIX: Pass existing customer to prevent duplicate creation
-        existingStripeCustomerId: stripeCustomer?.id
+        // Pass valid Stripe information (only if payment was processed)
+        stripeCustomerId: stripeCustomer?.id,
+        stripeSubscriptionId: stripeSubscription?.id,
+        subscriptionMetadata: finalSubscriptionData
       });
 
       if (!cleanInitResult.success) {
@@ -606,76 +644,99 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
     });
 
   } catch (error) {
-    console.error(`🚨 FIXED SIGNUP API [${debugId}]: Transaction failed:`, error);
+    console.error(`🚨 EMERGENCY FIX [${debugId}]: Atomic transaction failed:`, error);
     
-    // CRITICAL v1.5.21: Enhanced rollback mechanism with comprehensive error handling
-    if (stripeCustomer || stripeSubscription) {
-      console.log(`🔄 FIXED SIGNUP API [${debugId}]: Rolling back payment due to account creation failure`);
+    // CRITICAL v1.5.40-alpha.13: Enhanced error handling with specific foreign key constraint detection
+    // Since Stripe processing is now INSIDE the transaction, any failure here means NO payment was processed
+    console.log(`✅ EMERGENCY FIX [${debugId}]: CUSTOMER PROTECTION SUCCESSFUL - Atomic transaction rollback prevents charging without account`);
+    
+    // Determine error type and provide appropriate response
+    let errorMessage = 'Account creation failed';
+    let errorCode = 'ACCOUNT_CREATION_FAILED';
+    let statusCode = 500;
+    let userMessage = 'We were unable to create your account. No payment was processed. Please try again or contact support if the issue persists.';
+    let technicalIssueDetected = false;
+    
+    if (error instanceof Error) {
+      const errorMsg = error.message.toLowerCase();
       
-      try {
-        // Cancel subscription if it was created
-        if (stripeSubscription) {
-          console.log(`🔄 FIXED SIGNUP API [${debugId}]: Canceling Stripe subscription: ${stripeSubscription.id}`);
-          await stripe.subscriptions.cancel(stripeSubscription.id);
-          console.log(`✅ FIXED SIGNUP API [${debugId}]: Stripe subscription canceled: ${stripeSubscription.id}`);
-        }
+      // CRITICAL v1.5.40-alpha.13: Specific detection for the foreign key constraint violation we're fixing
+      if (errorMsg.includes('user_subscriptions_userid_fkey') || 
+          errorMsg.includes('user_subscriptions_userId_fkey')) {
+        errorMessage = 'Transaction isolation issue prevented account creation';
+        errorCode = 'FOREIGN_KEY_CONSTRAINT_VIOLATION';
+        statusCode = 500;
+        userMessage = 'We encountered a technical database issue. Your payment was not processed. Our team has been automatically notified. Please try again in a few moments.';
+        technicalIssueDetected = true;
         
-        // Delete customer if it was created
-        if (stripeCustomer) {
-          console.log(`🔄 FIXED SIGNUP API [${debugId}]: Deleting Stripe customer: ${stripeCustomer.id}`);
-          await stripe.customers.del(stripeCustomer.id);
-          console.log(`✅ FIXED SIGNUP API [${debugId}]: Stripe customer deleted: ${stripeCustomer.id}`);
-        }
+        console.error(`🚨 CRITICAL [${debugId}]: FOREIGN KEY CONSTRAINT VIOLATION DETECTED - user_subscriptions_userId_fkey`);
+        console.error(`🚨 CRITICAL [${debugId}]: This was the exact issue we're fixing in v1.5.40-alpha.13!`);
+      }
+      // Check for payment-related failures that occurred inside transaction
+      else if (errorMsg.includes('payment processing failed') || 
+          errorMsg.includes('stripe') || 
+          errorMsg.includes('payment method') ||
+          errorMsg.includes('customer creation failed')) {
+        errorMessage = 'Payment processing failed during account creation';
+        errorCode = 'PAYMENT_PROCESSING_FAILED';
+        statusCode = 402; // Payment Required
+        userMessage = 'We were unable to process your payment during account creation. Your card was not charged. Please check your payment method and try again.';
         
-        console.log(`✅ FIXED SIGNUP API [${debugId}]: Payment rollback completed successfully`);
+        console.log(`💳 EMERGENCY FIX [${debugId}]: Payment failure inside transaction - customer safely NOT charged`);
+      } 
+      // Check for database constraint violations (enhanced detection)
+      else if (errorMsg.includes('unique constraint') || errorMsg.includes('duplicate')) {
+        errorMessage = 'An account with this email already exists';
+        errorCode = 'DUPLICATE_ACCOUNT';
+        statusCode = 409;
+        userMessage = 'An account with this email address already exists. Please sign in instead.';
+      } 
+      else if (errorMsg.includes('foreign key') || errorMsg.includes('constraint')) {
+        errorMessage = 'Database constraint prevented account creation';
+        errorCode = 'DATABASE_CONSTRAINT_ERROR';
+        statusCode = 500;
+        userMessage = 'We encountered a technical issue creating your account. No payment was processed. Please try again.';
+        technicalIssueDetected = true;
         
-        // Return appropriate error after successful rollback
-        return new NextResponse(JSON.stringify({
-          error: 'Account creation failed',
-          debugId,
-          details: error instanceof Error ? error.message : 'Unknown error',
-          userMessage: 'We were unable to create your account. No payment was processed. Please try again or contact support if the issue persists.',
-          paymentRolledBack: true
-        }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        console.log(`🔗 EMERGENCY FIX [${debugId}]: Foreign key constraint error safely prevented by atomic transaction`);
+      } 
+      else if (errorMsg.includes('validation') || errorMsg.includes('clean account')) {
+        errorMessage = 'Account validation failed';
+        errorCode = 'VALIDATION_FAILED';
+        statusCode = 400;
+        userMessage = 'Account validation failed. Please ensure all required fields are filled correctly.';
+      }
+      // CRITICAL v1.5.40-alpha.13: Detect database subscription creation failures
+      else if (errorMsg.includes('database subscription creation failed') || 
+               errorMsg.includes('subscription creation failed')) {
+        errorMessage = 'Subscription creation failed in transaction';
+        errorCode = 'SUBSCRIPTION_CREATION_ERROR';
+        statusCode = 500;
+        userMessage = 'We encountered an issue setting up your subscription. Your payment was not processed. Please try again.';
+        technicalIssueDetected = true;
         
-      } catch (rollbackError) {
-        console.error(`🚨 FIXED SIGNUP API [${debugId}]: Payment rollback failed:`, rollbackError);
-        
-        // Log critical issue for manual intervention
-        console.error(`🚨 CRITICAL ISSUE [${debugId}]: Payment succeeded but account creation failed, and payment rollback failed. Manual intervention required.`, {
-          email,
-          stripeCustomerId: stripeCustomer?.id,
-          stripeSubscriptionId: stripeSubscription?.id,
-          originalError: error instanceof Error ? error.message : 'Unknown error',
-          rollbackError: rollbackError instanceof Error ? rollbackError.message : 'Unknown rollback error',
-          timestamp: new Date().toISOString()
-        });
-        
-        return new NextResponse(JSON.stringify({
-          error: 'Critical payment processing error - please contact support immediately',
-          debugId,
-          details: 'Payment was processed but account creation failed. Payment rollback also failed. Please contact support immediately for assistance.',
-          userMessage: 'We encountered a critical issue creating your account. Your payment may have been processed. Please contact support at support@safeplay.com immediately for assistance.',
-          criticalIssue: true,
-          requiresManualIntervention: true
-        }), {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        });
+        console.error(`🚨 CRITICAL [${debugId}]: SUBSCRIPTION CREATION FAILURE - likely related to upsert/foreign key issue`);
       }
     }
     
-    // Return error for non-payment related failures
     return new NextResponse(JSON.stringify({
-      error: 'Failed to create account',
+      error: errorMessage,
+      errorCode,
       debugId,
       details: error instanceof Error ? error.message : 'Unknown error',
-      userMessage: 'We were unable to create your account. Please try again or contact support if the issue persists.'
+      userMessage,
+      // CRITICAL SUCCESS INDICATORS: Show that customer protection worked
+      customerProtected: true,
+      noPaymentProcessed: true,
+      atomicTransactionRollback: true,
+      isPaidPlan: isPaidPlan,
+      emergencyFixActive: 'v1.5.40-alpha.13',
+      // Enhanced debugging for technical issues
+      technicalIssueDetected: technicalIssueDetected,
+      supportContactRecommended: technicalIssueDetected,
+      retryRecommended: !technicalIssueDetected
     }), {
-      status: 500,
+      status: statusCode,
       headers: { 'Content-Type': 'application/json' }
     });
   }

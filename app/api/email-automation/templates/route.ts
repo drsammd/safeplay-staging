@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
+    // Define temporary types for build compatibility
+    type EmailTemplateType = string;
+    type EmailCategory = string;
+    
     const templateType = searchParams.get('templateType') as EmailTemplateType;
     const category = searchParams.get('category') as EmailCategory;
     const isActive = searchParams.get('isActive') === 'true' ? true : 

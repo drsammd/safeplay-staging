@@ -324,23 +324,65 @@ export default function FamilyMemberDashboard({
         const data = await response.json()
         const apiFamilyMembers = data.ownedFamilies || []
         
-        // If API returns empty results but we're in a demo environment, use demo data
+        // CRITICAL FIX: Only use demo data for actual demo accounts
         if (apiFamilyMembers.length === 0) {
-          console.log('🎭 Using demo family data for stakeholder presentation')
-          setFamilyMembers(getDemoFamilyMembers())
+          // Check if this is the demo account by trying to get session
+          const userResponse = await fetch('/api/auth/user')
+          if (userResponse.ok) {
+            const userData = await userResponse.json()
+            if (userData.user?.email === 'parent@mysafeplay.ai') {
+              console.log('🎭 Dashboard: Demo account parent@mysafeplay.ai - using demo family data')
+              setFamilyMembers(getDemoFamilyMembers())
+            } else {
+              console.log('🧹 Dashboard: Real user account - keeping empty family for clean start')
+              setFamilyMembers([])
+            }
+          } else {
+            console.log('🧹 Dashboard: Cannot verify user - keeping empty family for clean start')
+            setFamilyMembers([])
+          }
         } else {
           setFamilyMembers(apiFamilyMembers)
         }
       } else {
-        // If API fails, fallback to demo data for stakeholder demos
-        console.log('🎭 API failed, using demo family data for stakeholder presentation')
-        setFamilyMembers(getDemoFamilyMembers())
+        // CRITICAL FIX: Only use demo data for actual demo accounts on API failure
+        const userResponse = await fetch('/api/auth/user')
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          if (userData.user?.email === 'parent@mysafeplay.ai') {
+            console.log('🎭 Dashboard: Demo account API failure - using demo family data')
+            setFamilyMembers(getDemoFamilyMembers())
+          } else {
+            console.log('🧹 Dashboard: Real user account API failure - keeping empty family for clean start')
+            setFamilyMembers([])
+          }
+        } else {
+          console.log('🧹 Dashboard: Cannot verify user on API failure - keeping empty family for clean start')
+          setFamilyMembers([])
+        }
       }
     } catch (error) {
       console.error('Error fetching family members:', error)
-      // Fallback to demo data for stakeholder demos
-      console.log('🎭 Error occurred, using demo family data for stakeholder presentation')
-      setFamilyMembers(getDemoFamilyMembers())
+      // CRITICAL FIX: Only use demo data for actual demo accounts on error
+      try {
+        const userResponse = await fetch('/api/auth/user')
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          if (userData.user?.email === 'parent@mysafeplay.ai') {
+            console.log('🎭 Dashboard: Demo account error fallback - using demo family data')
+            setFamilyMembers(getDemoFamilyMembers())
+          } else {
+            console.log('🧹 Dashboard: Real user account error - keeping empty family for clean start')
+            setFamilyMembers([])
+          }
+        } else {
+          console.log('🧹 Dashboard: Cannot verify user on error - keeping empty family for clean start')
+          setFamilyMembers([])
+        }
+      } catch (userError) {
+        console.log('🧹 Dashboard: User verification failed on error - keeping empty family for clean start')
+        setFamilyMembers([])
+      }
     } finally {
       setIsLoading(false)
     }

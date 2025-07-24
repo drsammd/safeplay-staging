@@ -2,59 +2,128 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { Camera, Play, Download, Filter, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 
 export default function MemoriesPage() {
-  const [memories, setMemories] = useState([
-    {
-      id: 1,
-      type: "PHOTO",
-      fileName: "emma_playground_001.jpg",
-      fileUrl: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhn3NX43OWwDOHuKinz4Nd3FzThFH0ZHXdCBN1dRFusjKSfHYzGlVYV_rJ3WA-8TGhwi0GufcklHF9tQVNG8xEzuZOzpoqU-heJgLhYfzpw-YhmD_XTxKt6k5sUYfMuk2yc39aiL75orY8cPrVjaNI42xXdBGoQkrk2Tq0pUMRnDyiAXyLNY7zPcad31cQa/s1920/school-playground-equipment.jpg",
-      capturedAt: "2025-01-15T15:30:00Z",
-      price: 2.99,
-      status: "AVAILABLE",
-      child: { firstName: "Emma", lastName: "Johnson" },
-      venue: { name: "Adventure Playground" }
-    },
-    {
-      id: 2,
-      type: "VIDEO",
-      fileName: "emma_swing_video.mp4",
-      fileUrl: "https://as2.ftcdn.net/v2/jpg/05/64/89/15/1000_F_564891556_FYqWlRk2H1wd4l1LxUUeHZ85EB5Wmp2i.jpg",
-      capturedAt: "2025-01-15T14:45:00Z",
-      price: 9.99,
-      status: "AVAILABLE",
-      child: { firstName: "Emma", lastName: "Johnson" },
-      venue: { name: "Adventure Playground" }
-    },
-    {
-      id: 3,
-      type: "PHOTO",
-      fileName: "lucas_ballpit_002.jpg",
-      fileUrl: "https://img.freepik.com/premium-photo/laughing-child-boy-having-fun-ball-pit-birthday-party-kids-amusement-park-indoor-play-center-laughing-playing-with-colorful-balls-playground-ball-pool_1032209-9.jpg",
-      capturedAt: "2025-01-14T16:20:00Z",
-      price: 2.99,
-      status: "PURCHASED",
-      child: { firstName: "Lucas", lastName: "Johnson" },
-      venue: { name: "Fun Zone" }
-    },
-    {
-      id: 4,
-      type: "PHOTO",
-      fileName: "emma_climbing_003.jpg",
-      fileUrl: "https://i.ytimg.com/vi/vA4x585ipqM/maxresdefault.jpg",
-      capturedAt: "2025-01-14T13:15:00Z",
-      price: 2.99,
-      status: "PURCHASED",
-      child: { firstName: "Emma", lastName: "Johnson" },
-      venue: { name: "Adventure Playground" }
+  const { data: session } = useSession();
+  const [memories, setMemories] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // CRITICAL FIX: Only provide demo data for actual demo accounts
+  const getDemoMemories = (userEmail?: string) => {
+    // ONLY return demo data for actual demo accounts
+    if (userEmail !== 'parent@mysafeplay.ai') {
+      console.log('🧹 Memories: Real user account - returning empty memories for clean start');
+      return [];
     }
-  ]);
+    
+    console.log('🎭 Memories: Demo account parent@mysafeplay.ai - returning demo memories');
+    return [
+      {
+        id: 'demo-1',
+        type: "PHOTO",
+        fileName: "emma_playground_001.jpg",
+        fileUrl: "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhn3NX43OWwDOHuKinz4Nd3FzThFH0ZHXdCBN1dRFusjKSfHYzGlVYV_rJ3WA-8TGhwi0GufcklHF9tQVNG8xEzuZOzpoqU-heJgLhYfzpw-YhmD_XTxKt6k5sUYfMuk2yc39aiL75orY8cPrVjaNI42xXdBGoQkrk2Tq0pUMRnDyiAXyLNY7zPcad31cQa/s1920/school-playground-equipment.jpg",
+        capturedAt: "2025-01-15T15:30:00Z",
+        price: 2.99,
+        status: "AVAILABLE",
+        child: { firstName: "Emma", lastName: "Johnson" },
+        venue: { name: "Adventure Playground" }
+      },
+      {
+        id: 'demo-2',
+        type: "VIDEO",
+        fileName: "emma_swing_video.mp4",
+        fileUrl: "https://as2.ftcdn.net/v2/jpg/05/64/89/15/1000_F_564891556_FYqWlRk2H1wd4l1LxUUeHZ85EB5Wmp2i.jpg",
+        capturedAt: "2025-01-15T14:45:00Z",
+        price: 9.99,
+        status: "AVAILABLE",
+        child: { firstName: "Emma", lastName: "Johnson" },
+        venue: { name: "Adventure Playground" }
+      },
+      {
+        id: 'demo-3',
+        type: "PHOTO",
+        fileName: "lucas_ballpit_002.jpg",
+        fileUrl: "https://img.freepik.com/premium-photo/laughing-child-boy-having-fun-ball-pit-birthday-party-kids-amusement-park-indoor-play-center-laughing-playing-with-colorful-balls-playground-ball-pool_1032209-9.jpg",
+        capturedAt: "2025-01-14T16:20:00Z",
+        price: 2.99,
+        status: "PURCHASED",
+        child: { firstName: "Lucas", lastName: "Johnson" },
+        venue: { name: "Fun Zone" }
+      },
+      {
+        id: 'demo-4',
+        type: "PHOTO",
+        fileName: "emma_climbing_003.jpg",
+        fileUrl: "https://i.ytimg.com/vi/vA4x585ipqM/maxresdefault.jpg",
+        capturedAt: "2025-01-14T13:15:00Z",
+        price: 2.99,
+        status: "PURCHASED",
+        child: { firstName: "Emma", lastName: "Johnson" },
+        venue: { name: "Adventure Playground" }
+      }
+    ];
+  };
 
   const [filter, setFilter] = useState("all");
   const [selectedChild, setSelectedChild] = useState("all");
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchMemories();
+    }
+  }, [session]);
+
+  const fetchMemories = async () => {
+    try {
+      setIsLoading(true);
+      const userEmail = session?.user?.email;
+      
+      // First try to fetch from API
+      const response = await fetch('/api/memories');
+      if (response.ok) {
+        const apiMemories = await response.json();
+        
+        // CRITICAL FIX: Only use demo data for actual demo accounts, not as fallback
+        if (apiMemories.length === 0) {
+          if (userEmail === 'parent@mysafeplay.ai') {
+            console.log('🎭 Memories: Demo account - using demo memories data');
+            setMemories(getDemoMemories(userEmail));
+          } else {
+            console.log('🧹 Memories: Real user account - keeping empty memories for clean start');
+            setMemories([]);
+          }
+        } else {
+          setMemories(apiMemories);
+        }
+      } else {
+        // CRITICAL FIX: Only provide demo data for actual demo accounts on API failure
+        if (userEmail === 'parent@mysafeplay.ai') {
+          console.log('🎭 Memories: Demo account API failure - using demo memories data');
+          setMemories(getDemoMemories(userEmail));
+        } else {
+          console.log('🧹 Memories: Real user account API failure - keeping empty memories for clean start');
+          setMemories([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching memories:', error);
+      // CRITICAL FIX: Only provide demo data for actual demo accounts on error
+      const userEmail = session?.user?.email;
+      if (userEmail === 'parent@mysafeplay.ai') {
+        console.log('🎭 Memories: Demo account error fallback - using demo memories data');
+        setMemories(getDemoMemories(userEmail));
+      } else {
+        console.log('🧹 Memories: Real user account error - keeping empty memories for clean start');
+        setMemories([]);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filteredMemories = memories.filter(memory => {
     if (filter !== "all" && memory.status !== filter) return false;
@@ -80,6 +149,16 @@ export default function MemoriesPage() {
         : memory
     ));
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-full bg-gallery bg-overlay-light">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full bg-gallery bg-overlay-light">

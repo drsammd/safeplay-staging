@@ -457,33 +457,55 @@ export class SubscriptionService {
         currentPeriodEnd
       });
 
-      await prisma.userSubscription.upsert({
-        where: { userId },
-        create: {
-          userId,
-          planType: plan.planType as any,
-          status: this.mapStripeStatusToPrisma((subscription as any).status),
-          stripeCustomerId,
-          stripeSubscriptionId: (subscription as any).id,
-          currentPeriodStart,
-          currentPeriodEnd,
-          cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
-          canceledAt: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
-          trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
-          trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
-        },
-        update: {
-          planType: plan.planType as any,
-          status: this.mapStripeStatusToPrisma((subscription as any).status),
-          stripeSubscriptionId: (subscription as any).id,
-          currentPeriodStart,
-          currentPeriodEnd,
-          cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
-          canceledAt: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
-          trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
-          trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
+      // CRITICAL v1.5.40-alpha.13 EMERGENCY FIX: Replace problematic upsert with explicit create
+      // to prevent foreign key constraint violations in transaction isolation
+      console.log('🚨 EMERGENCY FIX v1.5.40-alpha.13: Using explicit create instead of problematic upsert');
+      
+      try {
+        // First check if subscription already exists (should not in clean signup flow)
+        const existingSubscription = await prisma.userSubscription.findUnique({
+          where: { userId }
+        });
+        
+        if (existingSubscription) {
+          console.log('🔄 SERVICE: Updating existing subscription record');
+          await prisma.userSubscription.update({
+            where: { userId },
+            data: {
+              planType: plan.planType as any,
+              status: this.mapStripeStatusToPrisma((subscription as any).status),
+              stripeSubscriptionId: (subscription as any).id,
+              currentPeriodStart,
+              currentPeriodEnd,
+              cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
+              canceledAt: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
+              trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
+              trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
+            }
+          });
+        } else {
+          console.log('💾 SERVICE: Creating new subscription record with explicit create');
+          await prisma.userSubscription.create({
+            data: {
+              userId,
+              planType: plan.planType as any,
+              status: this.mapStripeStatusToPrisma((subscription as any).status),
+              stripeCustomerId,
+              stripeSubscriptionId: (subscription as any).id,
+              currentPeriodStart,
+              currentPeriodEnd,
+              cancelAtPeriodEnd: (subscription as any).cancel_at_period_end,
+              canceledAt: (subscription as any).canceled_at ? new Date((subscription as any).canceled_at * 1000) : null,
+              trialStart: (subscription as any).trial_start ? new Date((subscription as any).trial_start * 1000) : null,
+              trialEnd: (subscription as any).trial_end ? new Date((subscription as any).trial_end * 1000) : null,
+            }
+          });
         }
-      });
+      } catch (dbError) {
+        console.error('🚨 EMERGENCY FIX: Database subscription operation failed:', dbError);
+        console.error('🚨 EMERGENCY FIX: This may indicate foreign key constraint violation');
+        throw new Error(`Database subscription creation failed: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`);
+      }
 
       console.log('✅ SERVICE: Database subscription record created/updated');
 

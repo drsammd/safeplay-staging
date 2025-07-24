@@ -73,8 +73,16 @@ export default function FamilyManagementPage() {
     }
   }
 
-  // Demo data for stakeholder presentations - same as dashboard component
-  const getDemoFamilyMembers = () => [
+  // CRITICAL FIX: Only provide demo data for actual demo accounts
+  const getDemoFamilyMembers = (userEmail?: string) => {
+    // ONLY return demo data for actual demo accounts
+    if (userEmail !== 'parent@mysafeplay.ai') {
+      console.log('🧹 Family: Real user account - returning empty family for clean start');
+      return [];
+    }
+    
+    console.log('🎭 Family: Demo account parent@mysafeplay.ai - returning demo family members');
+    return [
     {
       id: 'demo-1',
       familyId: 'demo-family',
@@ -250,32 +258,50 @@ export default function FamilyManagementPage() {
         verificationLevel: 'UNVERIFIED'
       }
     }
-  ]
+  ];
+  }
 
   const fetchFamilyMembers = async () => {
     try {
+      const userEmail = session?.user?.email;
       const response = await fetch('/api/family/members')
       if (response.ok) {
         const data = await response.json()
         const apiFamilyMembers = data.ownedFamilies || []
         
-        // If API returns empty results but we're in a demo environment, use demo data
+        // CRITICAL FIX: Only use demo data for actual demo accounts, not as fallback
         if (apiFamilyMembers.length === 0) {
-          console.log('🎭 Using demo family data for stakeholder presentation')
-          setFamilyMembers(getDemoFamilyMembers())
+          if (userEmail === 'parent@mysafeplay.ai') {
+            console.log('🎭 Family: Demo account - using demo family data')
+            setFamilyMembers(getDemoFamilyMembers(userEmail))
+          } else {
+            console.log('🧹 Family: Real user account - keeping empty family for clean start')
+            setFamilyMembers([])
+          }
         } else {
           setFamilyMembers(apiFamilyMembers)
         }
       } else {
-        // If API fails, fallback to demo data for stakeholder demos
-        console.log('🎭 API failed, using demo family data for stakeholder presentation')
-        setFamilyMembers(getDemoFamilyMembers())
+        // CRITICAL FIX: Only provide demo data for actual demo accounts on API failure
+        if (userEmail === 'parent@mysafeplay.ai') {
+          console.log('🎭 Family: Demo account API failure - using demo family data')
+          setFamilyMembers(getDemoFamilyMembers(userEmail))
+        } else {
+          console.log('🧹 Family: Real user account API failure - keeping empty family for clean start')
+          setFamilyMembers([])
+        }
       }
     } catch (error) {
       console.error('Error fetching family members:', error)
-      // Fallback to demo data for stakeholder demos
-      console.log('🎭 Error occurred, using demo family data for stakeholder presentation')
-      setFamilyMembers(getDemoFamilyMembers())
+      // CRITICAL FIX: Only provide demo data for actual demo accounts on error
+      const userEmail = session?.user?.email;
+      if (userEmail === 'parent@mysafeplay.ai') {
+        console.log('🎭 Family: Demo account error fallback - using demo family data')
+        setFamilyMembers(getDemoFamilyMembers(userEmail))
+      } else {
+        console.log('🧹 Family: Real user account error - keeping empty family for clean start')
+        setFamilyMembers([])
+      }
     }
   }
 

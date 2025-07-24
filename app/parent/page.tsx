@@ -60,51 +60,51 @@ export default function ParentDashboard() {
   const [recentMemories, setRecentMemories] = useState<Memory[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  // Account-specific demo data for stakeholder presentations (same as children page)
+  // CRITICAL FIX: Only provide demo data for actual demo accounts
   const getDemoChildren = (userEmail?: string) => {
-    // Check if this is john@mysafeplay.ai (should have NO children for security demo)
-    if (userEmail === 'john@mysafeplay.ai' || userEmail === 'john@doe.com') {
-      console.log('🎭 Dashboard: john@mysafeplay.ai account - returning empty children for security enhancement demo');
-      return [];
+    // ONLY return demo data for actual demo accounts
+    if (userEmail === 'parent@mysafeplay.ai') {
+      console.log('🎭 Dashboard: Demo account parent@mysafeplay.ai - returning demo children');
+      return [
+        {
+          id: "demo-1",
+          name: "Emma Johnson",
+          age: 7,
+          status: "CHECKED_IN",
+          venue: "Adventure Playground",
+          checkInTime: "2:30 PM",
+          profilePhoto: "https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg",
+          faceRecognitionEnabled: true,
+          registeredFaces: 2
+        },
+        {
+          id: "demo-2", 
+          name: "Lucas Johnson",
+          age: 5,
+          status: "CHECKED_OUT",
+          venue: null,
+          checkInTime: null,
+          profilePhoto: "https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png",
+          faceRecognitionEnabled: false,
+          registeredFaces: 0
+        },
+        {
+          id: "demo-3",
+          name: "Sophia Johnson", 
+          age: 4,
+          status: "CHECKED_OUT",
+          venue: null,
+          checkInTime: null,
+          profilePhoto: "https://thumbs.dreamstime.com/z/portrait-happy-smiling-little-girl-white-background-cute-child-looking-camera-studio-shot-childhood-happiness-concept-192784866.jpg",
+          faceRecognitionEnabled: true,
+          registeredFaces: 1
+        }
+      ];
     }
 
-    // Default to parent@mysafeplay.ai data (3 children for family management demo)
-    console.log('🎭 Dashboard: parent@mysafeplay.ai account - returning 3 demo children');
-    return [
-      {
-        id: "demo-1",
-        name: "Emma Johnson",
-        age: 7,
-        status: "CHECKED_IN",
-        venue: "Adventure Playground",
-        checkInTime: "2:30 PM",
-        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-cute-young-girl-pigtails-isolated-white-68910712.jpg",
-        faceRecognitionEnabled: true,
-        registeredFaces: 2
-      },
-      {
-        id: "demo-2", 
-        name: "Lucas Johnson",
-        age: 5,
-        status: "CHECKED_OUT",
-        venue: null,
-        checkInTime: null,
-        profilePhoto: "https://i.pinimg.com/originals/be/e3/55/bee3559c606717fec5f0d7b753a5f788.png",
-        faceRecognitionEnabled: false,
-        registeredFaces: 0
-      },
-      {
-        id: "demo-3",
-        name: "Sophia Johnson", 
-        age: 4,
-        status: "CHECKED_OUT",
-        venue: null,
-        checkInTime: null,
-        profilePhoto: "https://thumbs.dreamstime.com/z/portrait-happy-smiling-little-girl-white-background-cute-child-looking-camera-studio-shot-childhood-happiness-concept-192784866.jpg",
-        faceRecognitionEnabled: true,
-        registeredFaces: 1
-      }
-    ];
+    // For ALL other accounts (including new signups), return empty array
+    console.log('🧹 Dashboard: Real user account - returning empty children for clean start');
+    return [];
   };
 
   useEffect(() => {
@@ -148,10 +148,16 @@ export default function ParentDashboard() {
         }));
       }
       
-      // If API returns empty results, use account-specific demo data
+      // CRITICAL FIX: Only use demo data for actual demo accounts, not as fallback
       if (childrenData.length === 0) {
-        console.log('🎭 Dashboard: API returned empty, using account-specific demo children data');
-        childrenData = getDemoChildren(userEmail);
+        // Only provide demo data for actual demo accounts
+        if (userEmail === 'parent@mysafeplay.ai') {
+          console.log('🎭 Dashboard: Demo account - using demo children data');
+          childrenData = getDemoChildren(userEmail);
+        } else {
+          console.log('🧹 Dashboard: Real user account - keeping empty children for clean start');
+          childrenData = [];
+        }
       }
       
       // Fetch user's memories
@@ -171,10 +177,15 @@ export default function ParentDashboard() {
       
     } catch (error) {
       console.error('Dashboard: Error fetching user data:', error);
-      // Fallback to account-specific demo data
-      console.log('🎭 Dashboard: Error occurred, using account-specific demo children data');
+      // CRITICAL FIX: Only provide demo data for actual demo accounts on error
       const userEmail = session?.user?.email;
-      setChildren(getDemoChildren(userEmail));
+      if (userEmail === 'parent@mysafeplay.ai') {
+        console.log('🎭 Dashboard: Demo account error fallback - using demo children data');
+        setChildren(getDemoChildren(userEmail));
+      } else {
+        console.log('🧹 Dashboard: Real user account error - keeping empty children for clean start');
+        setChildren([]);
+      }
       setRecentMemories([]);
       setRecentFaceActivity([]);
       setNotifications([]);

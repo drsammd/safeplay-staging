@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/lib/auth-fixed';
 import { subscriptionService } from '@/lib/stripe/subscription-service';
 import { prisma } from '@/lib/db';
 
@@ -14,34 +14,25 @@ export async function POST(request: NextRequest) {
     console.log('🚀 SUBSCRIPTION API: Timestamp:', new Date().toISOString());
     console.log('🚀 SUBSCRIPTION API: Request headers:', Object.fromEntries(request.headers.entries()));
     
+    // 🔒 v1.5.40-alpha.6 SIMPLE SESSION FIX: Use standard NextAuth pattern
+    console.log('🔒 SUBSCRIPTION API: Using simple NextAuth session validation');
     const session = await getServerSession(authOptions);
     
-    // 🔍 AGGRESSIVE DEBUGGING: Trace phantom user ID "cmcxeysqi0000jiij569qtc8m"
-    const PHANTOM_USER_ID = 'cmcxeysqi0000jiij569qtc8m';
-    const isPhantomUserInSession = session?.user?.id === PHANTOM_USER_ID;
-    
-    if (isPhantomUserInSession) {
-      console.log('🚨🚨🚨 PHANTOM USER ID IN SESSION! 🚨🚨🚨');
-      console.log('🔍 Session contains phantom user ID:', session?.user?.id);
-      console.log('🔍 Session user data:', session?.user);
-      console.log('🔍 Full session:', session);
-      console.log('🔍 This confirms the session contains stale/deleted user data');
-      console.log('🔍 Location: subscription/create/route.ts');
-      console.log('🔍 Time:', new Date().toISOString());
+    if (!session?.user?.id) {
+      console.log('❌ SUBSCRIPTION API: No valid session found');
+      return NextResponse.json({ 
+        error: 'Session validation failed. Please sign in again.',
+        action: 'SIGN_IN_REQUIRED'
+      }, { status: 401 });
     }
     
-    console.log('👤 SUBSCRIPTION API: Session check:', { 
-      hasSession: !!session, 
-      userId: session?.user?.id,
-      userEmail: session?.user?.email,
-      userRole: session?.user?.role,
-      isPhantomUser: isPhantomUserInSession
+    console.log('✅ SUBSCRIPTION API: Session validation successful', {
+      userId: session.user.id,
+      userEmail: session.user.email
     });
     
-    if (!session?.user?.id) {
-      console.log('❌ SUBSCRIPTION API: Unauthorized - no session');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Use session data directly
+    const validatedUser = session.user;
 
     const requestData = await request.json();
 
