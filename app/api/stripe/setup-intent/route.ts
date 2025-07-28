@@ -1,7 +1,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-fixed';
+import { authOptions } from '@/lib/auth';
 import { stripe } from '@/lib/stripe/config';
 import { prisma } from '@/lib/db';
 import { unifiedCustomerService } from '@/lib/stripe/unified-customer-service';

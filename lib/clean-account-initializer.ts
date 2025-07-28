@@ -220,7 +220,7 @@ export class CleanAccountInitializer {
 
   /**
    * Create clean subscription for new account
-   * CRITICAL v1.5.33 FIX: Enhanced error handling and validation
+   * CRITICAL v1.5.50-alpha.2 FIX: Use proper SubscriptionStatus enum values
    */
   private async createCleanSubscription(config: CleanAccountConfig, currentTime: Date): Promise<void> {
     const subscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -232,7 +232,7 @@ export class CleanAccountInitializer {
     let planType = "FREE";
     let autoRenew = false;
     let cancelAtPeriodEnd = false;
-    let subscriptionStatus = "ACTIVE";
+    let subscriptionStatus = "ACTIVE"; // Will be converted to enum value
     let currentPeriodEnd = new Date(currentTime.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year for free
     
     // CRITICAL FIX: Use selected plan information if provided
@@ -261,7 +261,7 @@ export class CleanAccountInitializer {
       const planAmount = config.selectedPlan.amount || 0;
       if (planAmount > 0) {
         autoRenew = true;
-        subscriptionStatus = "TRIALING"; // Start with trial for paid plans
+        subscriptionStatus = "TRIALING"; // Start with trial for paid plans (will be converted to enum)
         
         // Calculate trial end date (7 days)
         currentPeriodEnd = new Date(currentTime.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -281,9 +281,18 @@ export class CleanAccountInitializer {
       }
     }
     
-    const subscriptionData = {
+    // CRITICAL v1.5.50-alpha.2 FIX: Map status string to proper SubscriptionStatus enum value
+    const mapToSubscriptionStatus = (status: string): string => {
+      const statusUpper = status.toUpperCase();
+      // Ensure we only use valid enum values
+      const validStatuses = ['ACTIVE', 'CANCELLED', 'EXPIRED', 'PAST_DUE', 'UNPAID', 'TRIALING'];
+      return validStatuses.includes(statusUpper) ? statusUpper : 'ACTIVE';
+    };
+    
+    // CRITICAL v1.5.50-alpha.2 FIX: Enhanced Stripe subscription data handling for paid plans
+    let subscriptionData: any = {
       userId: config.userId,
-      status: subscriptionStatus,
+      status: mapToSubscriptionStatus(subscriptionStatus),
       planType: planType as any,
       autoRenew: autoRenew,
       cancelAtPeriodEnd: cancelAtPeriodEnd,
@@ -293,6 +302,34 @@ export class CleanAccountInitializer {
       ...(config.stripeCustomerId && { stripeCustomerId: config.stripeCustomerId }),
       ...(config.stripeSubscriptionId && { stripeSubscriptionId: config.stripeSubscriptionId }),
     };
+    
+    // CRITICAL v1.5.50-alpha.2 FIX: Use detailed Stripe subscription metadata for paid plans with proper status mapping
+    if (config.subscriptionMetadata && config.selectedPlan && config.selectedPlan.amount > 0) {
+      console.log(`💳 CLEAN SUBSCRIPTION [${subscriptionId}]: Using detailed Stripe subscription metadata for paid plan`);
+      console.log(`💳 CLEAN SUBSCRIPTION [${subscriptionId}]: Subscription metadata:`, config.subscriptionMetadata);
+      
+      // Get the Stripe status and properly map it to enum value
+      const stripeStatus = config.subscriptionMetadata.stripeSubscriptionStatus || subscriptionStatus;
+      const mappedStatus = mapToSubscriptionStatus(stripeStatus);
+      
+      console.log(`💳 CLEAN SUBSCRIPTION [${subscriptionId}]: Status mapping - Original: "${stripeStatus}" -> Mapped: "${mappedStatus}"`);
+      
+      // Override with detailed Stripe subscription information
+      subscriptionData = {
+        ...subscriptionData,
+        stripeCustomerId: config.subscriptionMetadata.stripeCustomerId || config.stripeCustomerId,
+        stripeSubscriptionId: config.subscriptionMetadata.stripeSubscriptionId || config.stripeSubscriptionId,
+        status: mappedStatus,
+        // Use trial end date from Stripe if available
+        ...(config.subscriptionMetadata.trialEnd && { 
+          currentPeriodEnd: config.subscriptionMetadata.trialEnd,
+          trialStart: currentTime,
+          trialEnd: config.subscriptionMetadata.trialEnd
+        }),
+      };
+      
+      console.log(`✅ CLEAN SUBSCRIPTION [${subscriptionId}]: Enhanced subscription data with Stripe metadata and proper status mapping`);
+    }
     
     console.log(`💾 CLEAN SUBSCRIPTION [${subscriptionId}]: Creating subscription with data:`, subscriptionData);
     

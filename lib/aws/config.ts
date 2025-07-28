@@ -2,8 +2,8 @@
 import { RekognitionClient } from '@aws-sdk/client-rekognition';
 import { S3Client } from '@aws-sdk/client-s3';
 import { SESClient } from '@aws-sdk/client-ses';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Function to load credentials from .env file explicitly
 function loadCredentialsFromEnv() {
@@ -37,10 +37,11 @@ function loadCredentialsFromEnv() {
 // Load credentials from .env file to override system environment
 const envFileCredentials = loadCredentialsFromEnv();
 
-// AWS Configuration - prioritize .env file over system environment
-const region = envFileCredentials.AWS_REGION || process.env.AWS_REGION || 'us-east-1';
-const accessKeyId = envFileCredentials.AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID || '';
-const secretAccessKey = envFileCredentials.AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY || '';
+// AWS Configuration - prioritize environment over .env file for credentials (better for security)
+const region = process.env.AWS_REGION || envFileCredentials.AWS_REGION || 'us-east-1';
+const accessKeyId = process.env.AWS_ACCESS_KEY_ID || envFileCredentials.AWS_ACCESS_KEY_ID || '';
+const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY || envFileCredentials.AWS_SECRET_ACCESS_KEY || '';
+const sessionToken = process.env.AWS_SESSION_TOKEN; // Session token only from environment
 
 // Log which credentials are being used (for debugging)
 console.log('AWS Config: Using credentials from', 
@@ -48,37 +49,44 @@ console.log('AWS Config: Using credentials from',
   `(${accessKeyId.substring(0, 8)}...)`
 );
 
+// Build credentials object with optional session token
+const awsCredentials: any = {
+  accessKeyId,
+  secretAccessKey,
+};
+
+// Add session token if available (for temporary credentials)
+if (sessionToken) {
+  awsCredentials.sessionToken = sessionToken;
+}
+
 // Initialize AWS clients
 export const rekognitionClient = new RekognitionClient({
   region,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
+  credentials: awsCredentials,
 });
 
 export const s3Client = new S3Client({
   region,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
+  credentials: awsCredentials,
 });
 
 export const sesClient = new SESClient({
   region,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
+  credentials: awsCredentials,
 });
 
 // Legacy AWS SDK v2 config for compatibility
-export const awsConfig = {
+export const awsConfig: any = {
   region,
   accessKeyId,
   secretAccessKey,
 };
+
+// Add session token for legacy config if available
+if (sessionToken) {
+  awsConfig.sessionToken = sessionToken;
+}
 
 // Configuration constants
 export const AWS_CONFIG = {

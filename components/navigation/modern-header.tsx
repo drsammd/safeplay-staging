@@ -27,7 +27,8 @@ import {
   CreditCard,
   Building,
   BarChart3,
-  Phone
+  Phone,
+  AlertTriangle
 } from "lucide-react";
 import { VerificationBadge } from "@/components/verification/verification-badge";
 import { cn } from "@/lib/utils";
@@ -109,9 +110,9 @@ export default function ModernHeader({ userRole, sidebarOpen, onSidebarToggle }:
         ];
       case 'venue-admin':
         return [
+          { name: "Safety Dashboard", href: "/venue-admin/core-safety-loop", icon: Shield },
           { name: "Zone Analytics", href: "/venue-admin/zone-analytics", icon: BarChart3 },
-          { name: "Emergency Management", href: "/venue-admin/emergency-management", icon: Shield },
-          { name: "Payment Setup", href: "/venue-admin/payment-setup", icon: CreditCard },
+          { name: "Emergency Management", href: "/venue-admin/emergency-management", icon: AlertTriangle },
           { name: "Documentation", href: "/docs", icon: HelpCircle },
         ];
       default:

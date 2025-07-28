@@ -57,12 +57,23 @@ const getNavigationItems = (role: string): NavigationItem[] => {
       return [
         { name: "Dashboard", href: "/parent", icon: Home },
         {
-          name: "Children & Family",
+          name: "My Children",
           icon: Users,
           children: [
-            { name: "My Children", href: "/parent/children", icon: Users },
+            { name: "Child Management", href: "/parent/children", icon: Users },
             { name: "Family Management", href: "/parent/family", icon: Users },
-            { name: "Memories", href: "/parent/memories", icon: Camera },
+            { name: "Safety Status", href: "/parent/children", icon: Shield, badge: "New!" },
+            { name: "Memories & Photos", href: "/parent/memories", icon: Camera },
+          ]
+        },
+        {
+          name: "Mobile & Safety",
+          icon: Phone,
+          children: [
+            { name: "Mobile App", href: "/parent/mobile", icon: Phone },
+            { name: "Check-In Status", href: "/parent/mobile/checkin", icon: UserCheck },
+            { name: "Location Updates", href: "/parent/mobile/location", icon: MapPin },
+            { name: "Emergency Contacts", href: "/parent/mobile/emergency", icon: AlertTriangle },
           ]
         },
         {
@@ -73,13 +84,6 @@ const getNavigationItems = (role: string): NavigationItem[] => {
             { name: "Subscription", href: "/parent/subscription", icon: CreditCard },
             { name: "Security & Verification", href: "/verification", icon: Shield },
             { name: "Discount History", href: "/parent/discount-history", icon: Tag },
-          ]
-        },
-        {
-          name: "Mobile Features",
-          icon: Phone,
-          children: [
-            { name: "Mobile App", href: "/parent/mobile", icon: Phone },
           ]
         },
       ];
@@ -136,6 +140,25 @@ const getNavigationItems = (role: string): NavigationItem[] => {
       return [
         { name: "Dashboard", href: "/venue-admin", icon: Home },
         {
+          name: "Child Safety Monitor",
+          icon: Shield,
+          children: [
+            { name: "Safety Dashboard", href: "/venue-admin/core-safety-loop", icon: Shield, badge: "Live!" },
+            { name: "Live Tracking", href: "/venue-admin/tracking", icon: MapPin },
+            { name: "Face Recognition", href: "/venue-admin/biometric", icon: Fingerprint },
+            { name: "Check-In/Out System", href: "/venue-admin/check-in-out", icon: UserCheck },
+            { name: "Child Pickup", href: "/venue-admin/pickup", icon: Users },
+          ]
+        },
+        {
+          name: "Emergency & Alerts",
+          icon: AlertTriangle,
+          children: [
+            { name: "Emergency Management", href: "/venue-admin/emergency-management", icon: AlertTriangle },
+            { name: "Alert System", href: "/venue-admin/alerts", icon: AlertTriangle },
+          ]
+        },
+        {
           name: "Venue Setup",
           icon: Building,
           children: [
@@ -145,25 +168,13 @@ const getNavigationItems = (role: string): NavigationItem[] => {
           ]
         },
         {
-          name: "Safety & Tracking",
-          icon: Shield,
-          children: [
-            { name: "Child Tracking", href: "/venue-admin/tracking", icon: MapPin },
-            { name: "Check-In/Out", href: "/venue-admin/check-in-out", icon: UserCheck },
-            { name: "Biometric Management", href: "/venue-admin/biometric", icon: Fingerprint },
-            { name: "Emergency Management", href: "/venue-admin/emergency-management", icon: AlertTriangle },
-            { name: "Alerts", href: "/venue-admin/alerts", icon: AlertTriangle },
-            { name: "Child Pickup", href: "/venue-admin/pickup", icon: Users },
-          ]
-        },
-        {
-          name: "Technology & AI",
+          name: "Smart Features",
           icon: Brain,
           children: [
-            { name: "AI Features", href: "/venue-admin/ai-features", icon: Brain },
+            { name: "AI Insights", href: "/venue-admin/ai-features", icon: Brain },
             { name: "AI Analytics", href: "/venue-admin/ai-analytics", icon: BarChart3 },
             { name: "QR Codes", href: "/venue-admin/qr-codes", icon: QrCode },
-            { name: "Kiosks", href: "/venue-admin/kiosks", icon: Users },
+            { name: "Digital Kiosks", href: "/venue-admin/kiosks", icon: Users },
           ]
         },
         {

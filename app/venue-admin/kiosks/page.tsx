@@ -216,17 +216,17 @@ export default function KioskManagement() {
   };
 
   const filteredKiosks = kiosks.filter(kiosk =>
-    kiosk.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    kiosk.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    kiosk.kioskId.toLowerCase().includes(searchTerm.toLowerCase())
+    kiosk?.name?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+    kiosk?.location?.toLowerCase()?.includes(searchTerm.toLowerCase()) ||
+    kiosk?.kioskId?.toLowerCase()?.includes(searchTerm.toLowerCase())
   );
 
   const stats = {
-    total: kiosks.length,
-    online: kiosks.filter(k => k.status === 'ONLINE' || k.status === 'IDLE' || k.status === 'BUSY').length,
-    offline: kiosks.filter(k => k.status === 'OFFLINE' || k.status === 'ERROR').length,
-    maintenance: kiosks.filter(k => k.status === 'MAINTENANCE').length,
-    activeSessions: sessions.length,
+    total: kiosks?.length ?? 0,
+    online: kiosks?.filter(k => k?.status === 'ONLINE' || k?.status === 'IDLE' || k?.status === 'BUSY')?.length ?? 0,
+    offline: kiosks?.filter(k => k?.status === 'OFFLINE' || k?.status === 'ERROR')?.length ?? 0,
+    maintenance: kiosks?.filter(k => k?.status === 'MAINTENANCE')?.length ?? 0,
+    activeSessions: sessions?.length ?? 0,
   };
 
   if (loading) {
@@ -417,9 +417,9 @@ export default function KioskManagement() {
 
         <TabsContent value="kiosks" className="space-y-6">
           <div className="grid gap-4">
-            {filteredKiosks.map((kiosk, index) => (
+            {filteredKiosks?.map?.((kiosk, index) => (
               <motion.div
-                key={kiosk.id}
+                key={kiosk?.id ?? index}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -432,16 +432,16 @@ export default function KioskManagement() {
                           <Monitor className="h-6 w-6 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold">{kiosk.name}</h3>
+                          <h3 className="font-semibold">{kiosk?.name ?? 'Unknown Kiosk'}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {kiosk.kioskId} | {kiosk.location}
+                            {kiosk?.kioskId ?? 'N/A'} | {kiosk?.location ?? 'Unknown Location'}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
-                            <Badge className={`${getStatusColor(kiosk.status)} text-white`}>
-                              {getStatusIcon(kiosk.status)}
-                              <span className="ml-1">{kiosk.status}</span>
+                            <Badge className={`${getStatusColor(kiosk?.status ?? 'UNKNOWN')} text-white`}>
+                              {getStatusIcon(kiosk?.status ?? 'UNKNOWN')}
+                              <span className="ml-1">{kiosk?.status ?? 'UNKNOWN'}</span>
                             </Badge>
-                            <Badge variant="outline">{kiosk.kioskType.replace('_', ' ')}</Badge>
+                            <Badge variant="outline">{kiosk?.kioskType?.replace('_', ' ') ?? 'Unknown Type'}</Badge>
                           </div>
                         </div>
                       </div>
@@ -450,42 +450,42 @@ export default function KioskManagement() {
                         {/* Performance Metrics */}
                         <div className="text-center">
                           <p className="text-xs text-muted-foreground">Performance</p>
-                          <p className={`text-lg font-bold ${getPerformanceColor(kiosk.performanceScore)}`}>
-                            {kiosk.performanceScore}%
+                          <p className={`text-lg font-bold ${getPerformanceColor(kiosk?.performanceScore ?? 0)}`}>
+                            {kiosk?.performanceScore ?? 0}%
                           </p>
                         </div>
 
                         <div className="text-center">
                           <p className="text-xs text-muted-foreground">Uptime</p>
-                          <p className="text-lg font-bold text-green-600">{kiosk.uptimePercentage}%</p>
+                          <p className="text-lg font-bold text-green-600">{kiosk?.uptimePercentage ?? 0}%</p>
                         </div>
 
                         <div className="text-center">
                           <p className="text-xs text-muted-foreground">Today</p>
-                          <p className="text-lg font-bold">{kiosk.stats.todayEvents}</p>
+                          <p className="text-lg font-bold">{kiosk?.stats?.todayEvents ?? 0}</p>
                         </div>
 
                         {/* System Metrics */}
                         <div className="space-y-2 min-w-[120px]">
                           <div className="flex items-center justify-between">
                             <Cpu className="h-4 w-4 text-blue-500" />
-                            <span className="text-xs">{kiosk.cpuUsage.toFixed(0)}%</span>
+                            <span className="text-xs">{kiosk?.cpuUsage?.toFixed?.(0) ?? 0}%</span>
                           </div>
-                          <Progress value={kiosk.cpuUsage} className="h-1" />
+                          <Progress value={kiosk?.cpuUsage ?? 0} className="h-1" />
                           
                           <div className="flex items-center justify-between">
                             <HardDrive className="h-4 w-4 text-green-500" />
-                            <span className="text-xs">{kiosk.memoryUsed.toFixed(1)}GB</span>
+                            <span className="text-xs">{kiosk?.memoryUsed?.toFixed?.(1) ?? 0}GB</span>
                           </div>
-                          <Progress value={kiosk.memoryUsed * 12.5} className="h-1" />
+                          <Progress value={(kiosk?.memoryUsed ?? 0) * 12.5} className="h-1" />
 
-                          {kiosk.batteryLevel && (
+                          {kiosk?.batteryLevel && (
                             <>
                               <div className="flex items-center justify-between">
                                 <Battery className="h-4 w-4 text-yellow-500" />
-                                <span className="text-xs">{kiosk.batteryLevel}%</span>
+                                <span className="text-xs">{kiosk?.batteryLevel ?? 0}%</span>
                               </div>
-                              <Progress value={kiosk.batteryLevel} className="h-1" />
+                              <Progress value={kiosk?.batteryLevel ?? 0} className="h-1" />
                             </>
                           )}
                         </div>
@@ -507,19 +507,19 @@ export default function KioskManagement() {
                                   <div className="grid grid-cols-2 gap-4">
                                     <div>
                                       <h4 className="font-semibold">Basic Information</h4>
-                                      <p className="text-sm">ID: {selectedKiosk.kioskId}</p>
-                                      <p className="text-sm">Type: {selectedKiosk.kioskType}</p>
-                                      <p className="text-sm">Location: {selectedKiosk.location}</p>
-                                      <p className="text-sm">IP: {selectedKiosk.ipAddress || 'Not set'}</p>
+                                      <p className="text-sm">ID: {selectedKiosk?.kioskId ?? 'N/A'}</p>
+                                      <p className="text-sm">Type: {selectedKiosk?.kioskType ?? 'Unknown'}</p>
+                                      <p className="text-sm">Location: {selectedKiosk?.location ?? 'Unknown'}</p>
+                                      <p className="text-sm">IP: {selectedKiosk?.ipAddress ?? 'Not set'}</p>
                                     </div>
                                     <div>
                                       <h4 className="font-semibold">Statistics</h4>
-                                      <p className="text-sm">Total Transactions: {selectedKiosk.totalTransactions}</p>
-                                      <p className="text-sm">Daily Transactions: {selectedKiosk.dailyTransactions}</p>
-                                      <p className="text-sm">Error Count: {selectedKiosk.errorCount}</p>
+                                      <p className="text-sm">Total Transactions: {selectedKiosk?.totalTransactions ?? 0}</p>
+                                      <p className="text-sm">Daily Transactions: {selectedKiosk?.dailyTransactions ?? 0}</p>
+                                      <p className="text-sm">Error Count: {selectedKiosk?.errorCount ?? 0}</p>
                                       <p className="text-sm">
                                         Last Heartbeat: {
-                                          selectedKiosk.lastHeartbeat 
+                                          selectedKiosk?.lastHeartbeat 
                                             ? new Date(selectedKiosk.lastHeartbeat).toLocaleString()
                                             : 'Never'
                                         }
@@ -529,11 +529,11 @@ export default function KioskManagement() {
                                   <div>
                                     <h4 className="font-semibold">Capabilities</h4>
                                     <div className="flex flex-wrap gap-2 mt-2">
-                                      {selectedKiosk.capabilities.map(capability => (
+                                      {selectedKiosk?.capabilities?.map?.(capability => (
                                         <Badge key={capability} variant="outline">
-                                          {capability.replace('_', ' ')}
+                                          {capability?.replace?.('_', ' ') ?? 'Unknown'}
                                         </Badge>
-                                      ))}
+                                      )) ?? []}
                                     </div>
                                   </div>
                                 </div>
@@ -541,11 +541,11 @@ export default function KioskManagement() {
                             </DialogContent>
                           </Dialog>
 
-                          {kiosk.status === 'OFFLINE' && (
+                          {kiosk?.status === 'OFFLINE' && (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleUpdateKioskStatus(kiosk.kioskId, 'ONLINE')}
+                              onClick={() => handleUpdateKioskStatus(kiosk?.kioskId ?? '', 'ONLINE')}
                             >
                               <RotateCcw className="h-4 w-4" />
                             </Button>
@@ -554,7 +554,7 @@ export default function KioskManagement() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleUpdateKioskStatus(kiosk.kioskId, 'MAINTENANCE')}
+                            onClick={() => handleUpdateKioskStatus(kiosk?.kioskId ?? '', 'MAINTENANCE')}
                           >
                             <Settings className="h-4 w-4" />
                           </Button>
@@ -575,33 +575,33 @@ export default function KioskManagement() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {sessions.map((session, index) => (
+                {sessions?.map?.((session, index) => (
                   <motion.div
-                    key={session.id}
+                    key={session?.id ?? index}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                     className="flex items-center justify-between p-4 border rounded-lg"
                   >
                     <div>
-                      <p className="font-medium">{session.kiosk.name}</p>
+                      <p className="font-medium">{session?.kiosk?.name ?? 'Unknown Kiosk'}</p>
                       <p className="text-sm text-muted-foreground">
-                        Session: {session.sessionId} | Type: {session.sessionType}
+                        Session: {session?.sessionId ?? 'N/A'} | Type: {session?.sessionType ?? 'Unknown'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Started: {new Date(session.startTime).toLocaleString()}
+                        Started: {session?.startTime ? new Date(session.startTime).toLocaleString() : 'Unknown'}
                       </p>
                     </div>
                     <div className="text-right">
-                      <Badge variant="outline">{session.status}</Badge>
-                      <p className="text-sm mt-1">Step: {session.currentStep || 'Unknown'}</p>
+                      <Badge variant="outline">{session?.status ?? 'Unknown'}</Badge>
+                      <p className="text-sm mt-1">Step: {session?.currentStep ?? 'Unknown'}</p>
                       <p className="text-xs text-muted-foreground">
-                        Children: {session.childrenIds.length} | Lang: {session.language}
+                        Children: {session?.childrenIds?.length ?? 0} | Lang: {session?.language ?? 'Unknown'}
                       </p>
                     </div>
                   </motion.div>
                 ))}
-                {sessions.length === 0 && (
+                {(sessions?.length ?? 0) === 0 && (
                   <p className="text-center text-muted-foreground py-8">
                     No active sessions found
                   </p>
