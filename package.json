@@ -1,6 +1,6 @@
 {
   "name": "mysafeplay",
-  "version": "1.5.50-alpha.5",
+  "version": "1.5.60-alpha.1",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
