@@ -93,7 +93,7 @@ async function main() {
           userId: newUser.id,
           planType: customer.planType,
           status: 'ACTIVE',
-          autoRenew: customer.planType !== 'FREE',
+          // autoRenew field removed - not present in database schema
           cancelAtPeriodEnd: false,
           currentPeriodStart: currentTime,
           currentPeriodEnd: new Date(currentTime.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days

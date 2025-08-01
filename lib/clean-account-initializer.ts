@@ -230,7 +230,6 @@ export class CleanAccountInitializer {
     
     // Determine plan type and subscription settings based on selected plan
     let planType = "FREE";
-    let autoRenew = false;
     let cancelAtPeriodEnd = false;
     let subscriptionStatus = "ACTIVE"; // Will be converted to enum value
     let currentPeriodEnd = new Date(currentTime.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year for free
@@ -260,7 +259,6 @@ export class CleanAccountInitializer {
       // Set subscription settings for paid plans (with safe access)
       const planAmount = config.selectedPlan.amount || 0;
       if (planAmount > 0) {
-        autoRenew = true;
         subscriptionStatus = "TRIALING"; // Start with trial for paid plans (will be converted to enum)
         
         // Calculate trial end date (7 days)
@@ -268,14 +266,12 @@ export class CleanAccountInitializer {
         
         console.log(`✅ CLEAN SUBSCRIPTION [${subscriptionId}]: Setting up PAID plan:`, {
           planType,
-          autoRenew,
           subscriptionStatus,
           trialEndDate: currentPeriodEnd
         });
       } else {
         console.log(`✅ CLEAN SUBSCRIPTION [${subscriptionId}]: Setting up FREE plan:`, {
           planType,
-          autoRenew,
           subscriptionStatus
         });
       }
@@ -290,14 +286,15 @@ export class CleanAccountInitializer {
     };
     
     // CRITICAL v1.5.50-alpha.2 FIX: Enhanced Stripe subscription data handling for paid plans
+    // CRITICAL v1.5.60 HOTFIX: Use correct database field names and types
     let subscriptionData: any = {
       userId: config.userId,
       status: mapToSubscriptionStatus(subscriptionStatus),
-      planType: planType as any,
-      autoRenew: autoRenew,
+      planType: planType, // Using string since database uses text type
       cancelAtPeriodEnd: cancelAtPeriodEnd,
       currentPeriodStart: currentTime,
       currentPeriodEnd: currentPeriodEnd,
+      metadata: {},
       // Add Stripe information if available
       ...(config.stripeCustomerId && { stripeCustomerId: config.stripeCustomerId }),
       ...(config.stripeSubscriptionId && { stripeSubscriptionId: config.stripeSubscriptionId }),
@@ -323,7 +320,6 @@ export class CleanAccountInitializer {
         // Use trial end date from Stripe if available
         ...(config.subscriptionMetadata.trialEnd && { 
           currentPeriodEnd: config.subscriptionMetadata.trialEnd,
-          trialStart: currentTime,
           trialEnd: config.subscriptionMetadata.trialEnd
         }),
       };

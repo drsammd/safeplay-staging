@@ -2689,26 +2689,21 @@ model VerificationAuditLog {
 model UserSubscription {
   id                String                 @id @default(cuid())
   userId            String                 @unique
-  planType          SubscriptionPlan
+  planType          String                 // Using String since database uses text type
   status            SubscriptionStatus     @default(ACTIVE)
-  startDate         DateTime               @default(now())
-  endDate           DateTime?
-  autoRenew         Boolean                @default(true)
-  paymentMethodId   String?                @unique
-  stripeSubscriptionId String?             @unique
   stripeCustomerId  String?
+  stripeSubscriptionId String?             @unique
+  stripePriceId     String?
   currentPeriodStart DateTime?
   currentPeriodEnd  DateTime?
-  cancelAtPeriodEnd Boolean                @default(false)
-  canceledAt        DateTime?
-  cancelReason      String?
-  trialStart        DateTime?
   trialEnd          DateTime?
-  metadata          Json?
+  cancelAtPeriodEnd Boolean                @default(false)
+  metadata          Json                   @default("{}")
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
   user              User                   @relation("UserSubscription", fields: [userId], references: [id])
-  paymentMethod     UserPaymentMethod?     @relation("SubscriptionPaymentMethod", fields: [paymentMethodId], references: [id])
   
-  @@index([status, endDate])
+  @@index([status])
   @@map("user_subscriptions")
 }
 
@@ -2726,7 +2721,6 @@ model UserPaymentMethod {
   billingAddress    Json?
   createdAt         DateTime               @default(now())
   user              User                   @relation("UserPaymentMethods", fields: [userId], references: [id])
-  subscription      UserSubscription?      @relation("SubscriptionPaymentMethod")
   transactions      PaymentTransaction[]
   
   @@index([userId, isActive])

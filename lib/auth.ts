@@ -141,6 +141,15 @@ export const authOptions: NextAuthOptions = {
     session: async ({ session, token }) => {
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      // Always ensure we return a valid session object
+      if (!session) {
+        console.log(`🔍 CLEAN SESSION [${sessionId}]: No session provided, creating empty session`);
+        return {
+          user: {},
+          expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days
+        };
+      }
+
       if (session?.user && token.sub) {
         try {
           const userId = token.sub as string;
@@ -164,12 +173,20 @@ export const authOptions: NextAuthOptions = {
 
           if (!user) {
             console.error(`❌ CLEAN SESSION [${sessionId}]: User not found in database: ${userId}`);
-            return null;
+            // Return empty session instead of null to prevent CLIENT_FETCH_ERROR
+            return {
+              user: {},
+              expires: session.expires
+            };
           }
 
           if (!user.isActive) {
             console.error(`❌ CLEAN SESSION [${sessionId}]: User account inactive: ${user.email}`);
-            return null;
+            // Return empty session instead of null to prevent CLIENT_FETCH_ERROR
+            return {
+              user: {},
+              expires: session.expires
+            };
           }
 
           console.log(`✅ CLEAN SESSION [${sessionId}]: Session validated for: ${user.email}`);
@@ -186,7 +203,11 @@ export const authOptions: NextAuthOptions = {
           
         } catch (error) {
           console.error(`❌ CLEAN SESSION [${sessionId}]: Session validation error:`, error);
-          return null;
+          // Return empty session instead of null to prevent CLIENT_FETCH_ERROR
+          return {
+            user: {},
+            expires: session.expires
+          };
         }
       }
       return session;
