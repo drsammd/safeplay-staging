@@ -17,7 +17,7 @@ function stakeholderAuthMiddleware(request: NextRequest) {
   const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
   const userAgent = request.headers.get('user-agent') || '';
 
-  console.log("🛡️ Stakeholder Auth v0.6.1: Processing request:", { 
+  console.log("🛡️ Stakeholder Auth v0.6.2: Processing request:", { 
     pathname, 
     ip: ip.substring(0, 8) + "...", // Partial IP for privacy
     userAgent: userAgent.substring(0, 50) + "..." 
