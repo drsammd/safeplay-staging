@@ -17,7 +17,7 @@ function stakeholderAuthMiddleware(request: NextRequest) {
   const ip = forwarded ? forwarded.split(',')[0] : request.headers.get('x-real-ip') || 'unknown';
   const userAgent = request.headers.get('user-agent') || '';
 
-  console.log("🛡️ Stakeholder Auth v0.5.1: Processing request:", { 
+  console.log("🛡️ Stakeholder Auth v0.6.0: Processing request:", { 
     pathname, 
     ip: ip.substring(0, 8) + "...", // Partial IP for privacy
     userAgent: userAgent.substring(0, 50) + "..." 
@@ -49,38 +49,30 @@ function stakeholderAuthMiddleware(request: NextRequest) {
     });
   }
 
-  // Allow staging auth page and API
-  if (pathname === '/staging-auth' || pathname.startsWith('/api/staging-auth')) {
-    console.log("🛡️ Stakeholder Auth: Allowing staging auth access");
-    const response = NextResponse.next();
-    return addSecurityHeaders(response);
-  }
+  // Define routes that should be excluded from stakeholder authentication
+  const EXCLUDED_PATHS = [
+    '/staging-auth',
+    '/api/staging-auth',
+    '/api/auth/',
+    '/auth/',
+    '/api/debug/',
+    '/api/stripe/',
+    '/unauthorized',
+    '/contact',
+    '/faq',
+    '/testimonials'
+  ];
 
-  // Allow auth pages and APIs (signup, signin, etc.)
-  if (pathname.startsWith('/auth/') || pathname.startsWith('/api/auth/')) {
-    console.log("🛡️ Stakeholder Auth: Allowing auth route access:", pathname);
-    const response = NextResponse.next();
-    return addSecurityHeaders(response);
-  }
+  // Check if current path should be excluded from stakeholder auth
+  const isExcludedPath = EXCLUDED_PATHS.some(excludedPath => {
+    if (excludedPath.endsWith('/')) {
+      return pathname.startsWith(excludedPath);
+    }
+    return pathname === excludedPath;
+  });
 
-  // Allow debug endpoints for diagnostics (no auth required)
-  if (pathname.startsWith('/api/debug/')) {
-    console.log("🔧 Stakeholder Auth: Allowing debug endpoint access:", pathname);
-    const response = NextResponse.next();
-    return addSecurityHeaders(response);
-  }
-
-  // Temporarily allow Stripe API endpoints for testing subscription fixes
-  if (pathname.startsWith('/api/stripe/')) {
-    console.log("💳 Stakeholder Auth: Allowing Stripe API access for testing:", pathname);
-    const response = NextResponse.next();
-    return addSecurityHeaders(response);
-  }
-
-  // 🚨 AUTHENTICATION FIX: Allow parent routes to bypass stakeholder auth 
-  // This prevents users from getting logged out when accessing subscription pages
-  if (pathname.startsWith('/parent/')) {
-    console.log("👨‍👩‍👧‍👦 Stakeholder Auth: Allowing parent route access (NextAuth will handle authorization):", pathname);
+  if (isExcludedPath) {
+    console.log("🛡️ Stakeholder Auth: Allowing excluded path access:", pathname);
     const response = NextResponse.next();
     return addSecurityHeaders(response);
   }
