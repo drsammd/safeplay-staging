@@ -184,12 +184,11 @@ const combinedMiddleware = withAuth(
 );
 
 export default function middleware(request: NextRequest) {
-  // TEMPORARY: Completely bypass stakeholder auth to fix redirect loop
-  console.log("🚨 EMERGENCY BYPASS: Stakeholder auth completely disabled");
+  // EMERGENCY: Completely disable all middleware to fix redirect loop
+  console.log("🚨 EMERGENCY: ALL MIDDLEWARE DISABLED");
   
-  // Only run NextAuth middleware
-  // @ts-ignore - NextAuth middleware has complex typing
-  return combinedMiddleware(request, {} as any);
+  // Just pass through all requests
+  return NextResponse.next();
 }
 
 export const config = {
