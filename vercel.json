@@ -15,7 +15,8 @@
     "DISABLE_ESLINT_PLUGIN": "true",
     "TS_NODE_TRANSPILE_ONLY": "true",
     "NEXTAUTH_URL": "https://safeplay-staging.vercel.app",
-    "NEXTAUTH_SECRET": "Uajbn31bb3KFvGz7EP7FTy8m/y/3hatWlp3e455/DQE="
+    "NEXTAUTH_SECRET": "Uajbn31bb3KFvGz7EP7FTy8m/y/3hatWlp3e455/DQE=",
+    "DATABASE_URL": "postgresql://neondb_owner:npg_Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8@ep-aged-butterfly-a5qkqhqh.us-east-2.aws.neon.tech/neondb?sslmode=require"
   },
   "buildCommand": "./build.sh",
   "build": {
@@ -30,6 +31,7 @@
       "NODE_OPTIONS": "--max-old-space-size=4096",
       "NEXTAUTH_URL": "https://safeplay-staging.vercel.app",
       "NEXTAUTH_SECRET": "Uajbn31bb3KFvGz7EP7FTy8m/y/3hatWlp3e455/DQE=",
+      "DATABASE_URL": "postgresql://neondb_owner:npg_Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8@ep-aged-butterfly-a5qkqhqh.us-east-2.aws.neon.tech/neondb?sslmode=require",
       "TWILIO_ACCOUNT_SID": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "TWILIO_AUTH_TOKEN": "mock_token",
       "TWILIO_PHONE_NUMBER": "+15551234567"

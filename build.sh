@@ -31,51 +31,63 @@ if ! npx prisma generate; then
 fi
 echo "Prisma client generated successfully"
 
-# Create/update database schema if DATABASE_URL is available
-if [ ! -z "$DATABASE_URL" ]; then
-    echo "Updating database schema (preserving existing data)..."
-    
-    # CRITICAL FIX: Use db push WITHOUT --force-reset to preserve user data
-    # The --force-reset flag was causing complete data loss during deployments
-    if npx prisma db push; then
-        echo "✅ Database schema updated successfully (data preserved)"
-    else
-        echo "⚠️  Database schema update failed - checking if fresh setup is needed"
+# Skip database operations during Vercel deployment to avoid authentication issues
+if [ "$VERCEL" = "1" ]; then
+    echo "⚠️  Vercel deployment detected - skipping database operations"
+    echo "Database schema will be managed separately from build process"
+else
+    # Create/update database schema if DATABASE_URL is available (local development only)
+    if [ ! -z "$DATABASE_URL" ]; then
+        echo "Updating database schema (preserving existing data)..."
         
-        # Only use force reset if this is genuinely a fresh database
-        echo "Checking if database is empty..."
-        if npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" | grep -q "0"; then
-            echo "Database is empty - performing fresh setup"
-            if npx prisma db push --force-reset --accept-data-loss; then
-                echo "✅ Fresh database schema created successfully"
+        # CRITICAL FIX: Use db push WITHOUT --force-reset to preserve user data
+        # The --force-reset flag was causing complete data loss during deployments
+        if npx prisma db push; then
+            echo "✅ Database schema updated successfully (data preserved)"
+        else
+            echo "⚠️  Database schema update failed - checking if fresh setup is needed"
+            
+            # Only use force reset if this is genuinely a fresh database
+            echo "Checking if database is empty..."
+            if npx prisma db execute --stdin <<< "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" | grep -q "0"; then
+                echo "Database is empty - performing fresh setup"
+                if npx prisma db push --force-reset --accept-data-loss; then
+                    echo "✅ Fresh database schema created successfully"
+                else
+                    echo "❌ Fresh database schema creation failed"
+                    exit 1
+                fi
             else
-                echo "❌ Fresh database schema creation failed"
+                echo "❌ Database schema update failed on existing database"
+                echo "This may require manual intervention to resolve schema conflicts"
                 exit 1
             fi
-        else
-            echo "❌ Database schema update failed on existing database"
-            echo "This may require manual intervention to resolve schema conflicts"
-            exit 1
         fi
+    else
+        echo "⚠️  DATABASE_URL not found - skipping database schema creation"
     fi
-else
-    echo "⚠️  DATABASE_URL not found - skipping database schema creation"
 fi
 
 # Run Next.js build with TypeScript checking disabled
 echo "Starting Next.js build..."
 npm run build
 
-# Run deployment-safe database seeding if DATABASE_URL is available
-if [ ! -z "$DATABASE_URL" ]; then
-    echo "Running deployment-safe database seeding (preserves user accounts)..."
-    if npx tsx scripts/deployment-safe-seed.ts; then
-        echo "✅ Deployment-safe database seeding completed successfully"
-        echo "🛡️  All user accounts preserved - no data loss!"
-    else
-        echo "⚠️  Deployment-safe seeding failed - continuing deployment"
-        echo "System accounts can be created manually via API if needed"
-    fi
+# Skip database seeding during Vercel deployment
+if [ "$VERCEL" = "1" ]; then
+    echo "⚠️  Vercel deployment detected - skipping database seeding"
+    echo "Database seeding will be handled post-deployment"
 else
-    echo "⚠️  DATABASE_URL not found - skipping automatic seeding"
+    # Run deployment-safe database seeding if DATABASE_URL is available (local development only)
+    if [ ! -z "$DATABASE_URL" ]; then
+        echo "Running deployment-safe database seeding (preserves user accounts)..."
+        if npx tsx scripts/deployment-safe-seed.ts; then
+            echo "✅ Deployment-safe database seeding completed successfully"
+            echo "🛡️  All user accounts preserved - no data loss!"
+        else
+            echo "⚠️  Deployment-safe seeding failed - continuing deployment"
+            echo "System accounts can be created manually via API if needed"
+        fi
+    else
+        echo "⚠️  DATABASE_URL not found - skipping automatic seeding"
+    fi
 fi
