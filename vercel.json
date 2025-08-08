@@ -14,7 +14,8 @@
     "NEXT_PRIVATE_SKIP_TYPE_CHECK": "true",
     "DISABLE_ESLINT_PLUGIN": "true",
     "TS_NODE_TRANSPILE_ONLY": "true",
-    "NEXTAUTH_URL": "https://safeplay-staging.vercel.app"
+    "NEXTAUTH_URL": "https://safeplay-staging.vercel.app",
+    "NEXTAUTH_SECRET": "Uajbn31bb3KFvGz7EP7FTy8m/y/3hatWlp3e455/DQE="
   },
   "buildCommand": "./build.sh",
   "build": {
@@ -28,6 +29,7 @@
       "TS_NODE_TRANSPILE_ONLY": "true",
       "NODE_OPTIONS": "--max-old-space-size=4096",
       "NEXTAUTH_URL": "https://safeplay-staging.vercel.app",
+      "NEXTAUTH_SECRET": "Uajbn31bb3KFvGz7EP7FTy8m/y/3hatWlp3e455/DQE=",
       "TWILIO_ACCOUNT_SID": "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       "TWILIO_AUTH_TOKEN": "mock_token",
       "TWILIO_PHONE_NUMBER": "+15551234567"

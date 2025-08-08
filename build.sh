@@ -64,7 +64,7 @@ fi
 
 # Run Next.js build with TypeScript checking disabled
 echo "Starting Next.js build..."
-yarn build
+npm run build
 
 # Run deployment-safe database seeding if DATABASE_URL is available
 if [ ! -z "$DATABASE_URL" ]; then
